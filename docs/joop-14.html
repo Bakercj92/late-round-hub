@@ -1,0 +1,914 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Late-Round Tracker</title><style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#0f131a;color:#e6e9ef;overscroll-behavior-y:none}
+header{position:sticky;top:0;z-index:30;background:#151a23;border-bottom:1px solid #232c3b}
+.hb{padding:8px 12px 0}
+h1{margin:0;font-size:15px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+h1 .ttl{display:flex;align-items:center;gap:7px;min-width:0}
+.mode{font-size:9.5px;font-weight:700;letter-spacing:.6px;padding:2px 7px;border-radius:9px;background:#123a5c;color:#7fb2f0;border:1px solid #1d4f7d;cursor:pointer;white-space:nowrap}
+.mode.season{background:#0d4429;color:#5ce39b;border-color:#17663f}
+.sub{font-size:10.5px;color:#7f8a9c;margin-top:2px}
+.hbtn{background:#222a38;border:0;color:#c3cede;border-radius:6px;padding:5px 9px;font-size:11.5px;cursor:pointer}
+.tabs{display:flex;margin-top:8px;border-bottom:1px solid #232c3b;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:1 0 auto;background:0;border:0;border-bottom:2px solid transparent;color:#8a94a6;padding:9px 10px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.tabs button.on{color:#fff;border-bottom-color:#3b82f6;font-weight:600}
+.ctl{padding:8px 12px}
+input,select,textarea,button{font:inherit;background:#1c232f;color:#e6e9ef;border:1px solid #2c3648;border-radius:6px;padding:7px 9px}
+#q{width:100%;font-size:16px}
+.row{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.row select{flex:1 1 auto;min-width:80px;font-size:12.5px;padding:6px 7px}
+.tgl{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+.tgl button{flex:1 1 auto;font-size:11.5px;padding:7px 5px;cursor:pointer}
+.tgl button.on{background:#1d4ed8;border-color:#2563eb;color:#fff;font-weight:600}
+main{padding:0 12px 80px}
+.warn{background:#332612;border:1px solid #63491a;color:#eecd99;padding:7px 10px;border-radius:6px;font-size:11px;margin:8px 0}
+.info{background:#122436;border:1px solid #1d3a5c;color:#9ecbff;padding:7px 10px;border-radius:6px;font-size:11px;margin:8px 0}
+.rh{position:sticky;top:0;background:#0f131a;padding:11px 0 5px;font-size:11.5px;font-weight:700;letter-spacing:.7px;color:#7fb2f0;text-transform:uppercase;border-bottom:1px solid #232c3b;z-index:5}
+.rh span{color:#6b7688;font-weight:400;text-transform:none;letter-spacing:0}
+.rh.now{color:#5ce39b}
+.c{background:#161c26;border:1px solid #212a38;border-radius:8px;padding:7px 9px;margin-top:6px;display:flex;gap:8px;align-items:stretch}
+.c.taken{opacity:.3}
+.c.taken .nm{text-decoration:line-through}
+.c.mine{border-color:#2b6b45;background:#13211a}
+.c.wall{border-bottom:2px solid #8a5a1a}
+.acts{flex:0 0 auto;display:flex;flex-direction:column;gap:4px;justify-content:center}
+.tk,.mn{width:30px;height:26px;border-radius:6px;border:1px solid #33405480;background:#1b2330;color:#8994a6;font-size:13px;cursor:pointer;padding:0;line-height:1}
+.tk.on{background:#7f1d3a;border-color:#a11d47;color:#fff}
+.mn{color:#5ce39b;border-color:#2b6b4580}
+.mn.on{background:#17663f;border-color:#2b8a57;color:#fff}
+.cc{flex:1;min-width:0;cursor:pointer}
+.ch{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.nm{font-weight:600;font-size:14px}
+.meta{font-size:10.5px;color:#7f8a9c;margin-top:2px}
+.adp{font-size:12px;color:#c3cede;text-align:right;white-space:nowrap}
+.adp b{font-size:14.5px;color:#fff;display:block}
+.adp i{font-size:9.5px;font-style:normal;color:#8a94a6}
+.mvu{color:#ff8fa3;font-size:10px;font-weight:700}
+.mvd{color:#5ce39b;font-size:10px;font-weight:700}
+.pill{display:inline-block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:9px;margin:4px 4px 0 0;letter-spacing:.4px}
+.BUY{background:#0d4429;color:#5ce39b}.FADE{background:#4a1620;color:#ff8fa3}
+.NEUTRAL{background:#28303e;color:#a9b6c9}.WATCH{background:#3a3210;color:#ecd07a}
+.rev{background:#45206b;color:#d3a6ff}
+.deep{background:#103647;color:#7fd4f0}
+.REACH{background:#5a2410;color:#ffb08a}
+.WAIT{background:#0e3a3a;color:#7fe3d4}
+.lg{display:block;font-size:9.5px;font-style:normal;color:#c98fd8;margin-top:1px;white-space:nowrap}
+.lg b{display:inline;font-size:11px;color:#e0b6ee}
+.lgna{display:block;font-size:9.5px;font-style:normal;color:#5d6675;margin-top:1px}
+.stale{background:#4a2a10;color:#f0b775}
+.tier{background:#3a2a0a;color:#e0b050}
+.cv{color:#77818f;font-size:10px}
+.snip{font-size:12px;color:#a4afc0;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ov{display:none;position:fixed;inset:0;background:#0b0e14;z-index:60;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.ov.show{display:block}
+.oh{position:sticky;top:0;background:#151a23;border-bottom:1px solid #232c3b;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;z-index:5}
+.ob{padding:12px 12px 60px}
+.x{background:#28303e;border:0;border-radius:6px;padding:7px 13px;cursor:pointer;font-size:13px;color:#e6e9ef;white-space:nowrap}
+.ev{border-left:2px solid #2a3446;padding:0 0 14px 12px;margin-left:5px;position:relative}
+.ev:before{content:"";position:absolute;left:-5px;top:5px;width:8px;height:8px;border-radius:50%;background:#3b82f6}
+.evd{font-size:10.5px;color:#7f8a9c}
+.evt{font-size:13px;margin-top:4px;color:#d2d9e4}
+.evs{font-size:11.5px;color:#8a9ab2;margin-top:4px;font-style:italic}
+.msv{display:inline-block;background:#1e3a5f;color:#9ecbff;border:1px solid #2b5488;border-radius:4px;padding:1px 5px;font-size:10px;font-style:normal;font-weight:600;margin-left:4px}
+.evn{font-size:11px;color:#eecd99;background:#332612;border:1px solid #63491a;border-radius:5px;padding:5px 7px;margin-top:5px;font-style:normal}
+.src{background:#1b2637;border:1px solid #2a3a52;color:#7fb2f0;border-radius:5px;padding:3px 8px;font-size:10.5px;cursor:pointer;margin-top:6px}
+.sec{font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:#77818f;margin:16px 0 7px;border-bottom:1px solid #212a38;padding-bottom:4px}
+.box{background:#131922;border-radius:6px;padding:9px;font-size:11.5px;color:#8a94a6;margin:9px 0}
+.cn{font-size:12px;color:#b3bdcd;padding:6px 0;border-bottom:1px solid #1b2330}
+.ep{background:#161c26;border:1px solid #212a38;border-radius:8px;padding:9px 11px;margin-top:6px;cursor:pointer}
+.md h1{font-size:17px;margin:0 0 10px}
+.md h2{font-size:13px;text-transform:uppercase;letter-spacing:.7px;color:#7fb2f0;margin:20px 0 7px;border-bottom:1px solid #232c3b;padding-bottom:4px}
+.md h3{font-size:14.5px;margin:16px 0 5px;color:#fff;scroll-margin-top:60px}
+.md h3.hl{background:#1d3a5c;margin-left:-8px;padding:4px 8px;border-radius:5px}
+.md li,.md p{font-size:12.5px;color:#b3bdcd}
+.md li{margin:3px 0}
+.md code{background:#1c232f;padding:1px 4px;border-radius:3px;font-size:11.5px}
+.md strong{color:#dfe6ef}
+.empty{text-align:center;color:#69748a;padding:40px 12px;font-size:13px}
+a{color:#68a9f0}
+/* roster grid */
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:8px}
+.slot{background:#161c26;border:1px dashed #2c3648;border-radius:7px;padding:7px 9px;min-height:52px}
+.slot.filled{border-style:solid;border-color:#2b6b45;background:#13211a}
+.slot .lb{font-size:9.5px;letter-spacing:.7px;color:#7f8a9c;text-transform:uppercase}
+.slot .pn{font-size:13px;font-weight:600;margin-top:2px}
+.slot .px{font-size:10px;color:#8a94a6}
+.slot .rm{float:right;background:0;border:0;color:#6b7688;cursor:pointer;font-size:14px;padding:0 2px}
+.need{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.need div{flex:1 1 auto;background:#131922;border:1px solid #212a38;border-radius:6px;padding:6px 8px;text-align:center;min-width:56px}
+.need b{display:block;font-size:16px;color:#fff}
+.need span{font-size:9.5px;color:#7f8a9c;letter-spacing:.5px}
+.need.crit{border-color:#7f1d3a}
+.bar{display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.bar label{font-size:11px;color:#8a94a6}
+.bar select,.bar input{padding:5px 7px;font-size:12px}
+#load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0f131a;z-index:99;font-size:13px;color:#8a94a6;text-align:center;padding:20px}
+.fab{position:fixed;right:12px;bottom:14px;z-index:40;display:flex;gap:8px}
+.fab button{background:#1d4ed8;border:1px solid #2563eb;color:#fff;border-radius:20px;padding:9px 15px;font-size:12.5px;font-weight:600;box-shadow:0 3px 12px #0008;cursor:pointer}
+.fab button.ghost{background:#222a38;border-color:#2c3648;color:#c3cede}
+.spark{display:inline-block;vertical-align:middle;margin-left:4px}
+</style></head><body>
+<div id="load">Unpacking the tracker&hellip;</div>
+
+<header><div class="hb">
+<h1><span class="ttl"><span>Late-Round Tracker</span><span class="mode" id="modeBadge" onclick="toggleMode()">DRAFT</span></span>
+<span><button class="hbtn" onclick="openSetup()">Setup</button></span></h1>
+<div class="sub" id="sub"></div>
+<div class="tabs" id="tabs"></div></div>
+<div class="ctl" id="ctl">
+<input id="q" placeholder="Search players&hellip;" autocomplete="off">
+<div class="row" id="filters">
+<select id="fp"><option value="">All pos</option><option>QB</option><option>RB</option><option>WR</option><option>TE</option><option>K</option><option>DEF</option></select>
+<select id="fl"><option value="">All leans</option><option>BUY</option><option>FADE</option><option>WATCH</option><option>NEUTRAL</option></select>
+<select id="fc"><option value="">Any conv</option><option value="3">Conv 3</option><option value="2">Conv 2+</option></select>
+</div>
+<div class="tgl" id="toggles">
+<button id="bd">Deep only</button><button id="br">Reversals</button>
+<button id="bt">Hide taken</button><button id="bk">Has takes</button>
+<button id="bl">Reach / wait</button>
+</div></div>
+</header>
+
+<main><div id="view"></div></main>
+
+<div class="fab" id="fab"><button class="ghost" onclick="undo()" id="undoBtn">Undo</button></div>
+
+<div class="ov" id="ov"><div class="oh"><div class="nm" id="on"></div><button class="x" onclick="closeOv()">Close</button></div><div class="ob" id="ob"></div></div>
+<div class="ov" id="ov2"><div class="oh"><div class="nm" id="on2"></div><button class="x" onclick="closeOv2()">Close</button></div><div class="ob md" id="ob2"></div></div>
+<div class="ov" id="ov3"><div class="oh"><div class="nm">Setup</div><button class="x" onclick="closeOv3()">Close</button></div><div class="ob" id="ob3"></div></div>
+
+
+<script>
+/* ---------- payload acquisition ----------
+   This page carries NO data of its own. There are exactly two ways data gets
+   in, and they must stay equivalent — the same base64 blobs reach the same two
+   variables either way:
+
+   1. HUB MODE (build/hub.py). manifest.js names content-hashed payload files
+      which are pulled in by <script> tag. A rebuild rewrites those files and
+      leaves this page untouched, so a refresh is the whole update procedure.
+      That is the point of the split: nothing has to be hand-carried again.
+
+   2. PARACHUTE MODE (build/artifact.py). The payload is inlined into the page
+      ABOVE this script, so window.__P is already populated and nothing is
+      loaded over the network. This is the single self-contained file that opens
+      off a laptop with no wifi — the draft-table fallback.
+
+   Script tags, NOT fetch(). fetch() is blocked on file:// in Chrome
+   ("URL scheme file is not supported"), and the hub must work from a local
+   bookmark as well as from a web server. <script src> works under both, so one
+   loader covers both without a protocol check. Verified 2026-08-13. */
+const LEAGUE_KEY="joop-14";
+let B64M=null, B64T=null, BUILT="", SOURCE="";
+function loadScript(src){
+ return new Promise((res,rej)=>{
+  const s=document.createElement('script');
+  s.src=src; s.async=false;
+  s.onload=()=>res(src);
+  s.onerror=()=>rej(new Error('could not load '+src));
+  document.head.appendChild(s);
+ });
+}
+async function acquire(){
+ if(window.__P && window.__P.main){
+  B64M=window.__P.main; B64T=window.__P.text; BUILT=window.__BUILT__||"";
+  return 'inline';
+ }
+ /* Cache-bust the manifest and ONLY the manifest. Everything it points at is
+    content-hashed, so those files are safe to cache forever: an unchanged board
+    reloads instantly, and a changed one arrives under a new name and therefore
+    cannot be served stale. Getting this backwards is how a "self-updating" page
+    quietly shows week-old data. */
+ await loadScript('./manifest.js?t='+Date.now());
+ const M=window.__MANIFEST__;
+ if(!M) throw new Error('manifest.js loaded but did not define __MANIFEST__');
+ const e=M.leagues && M.leagues[LEAGUE_KEY];
+ if(!e) throw new Error('manifest.js has no entry for league "'+LEAGUE_KEY+'"');
+ await loadScript('./'+e.main);
+ await loadScript('./'+e.text);
+ if(!window.__P || !window.__P.main || !window.__P.text)
+  throw new Error('payload scripts loaded but did not populate window.__P');
+ B64M=window.__P.main; B64T=window.__P.text; BUILT=M.built||"";
+ return 'hub';
+}
+
+let D,EPTXT,PL,BOARD,CN,EPS,DEPTH,META,BYID={};
+let TAKEN={}, MINE=[], HIST=[], SLOT=0, MODE='draft', LEAGUE=null;
+let S={tab:'board',q:'',p:'',l:'',c:'',deep:0,rev:0,hideTaken:0,hasTakes:0,lshift:0};
+
+/* ---------- league-adjusted price ----------
+   A second price for every board player, derived from THIS league's own 2024 and
+   2025 drafts: where the nth player at a position actually left this board.
+   See build/league_pace.py. It is DISPLAY ONLY — bestAvailable(), the tier
+   walls, deep_flag and the round filters all still read national ADP, so
+   turning this on cannot move a recommendation. */
+const LP=()=> (typeof META!=='undefined' && META.leaguePace) || null;
+const lpMaterial=()=>{const l=LP();return l&&l.material!=null?l.material:8;};
+const LP_WHY={
+ 'beyond-board':'never drafted this deep at his position here — a waiver name, not a late pick',
+ 'tail-censored':'lands in the last two rounds of the sample, where a 196-pick board censors the measurement',
+ 'off-board':'not on the national board at all, so there is no positional slot to price',
+ 'no-positional-rank':'no positional rank on this board',
+ 'unmeasured':'not measured in both prior drafts'};
+
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const RS=()=>META.roundSize;
+const rdOf=a=> a==null?null:Math.ceil(a/RS());
+
+async function ungz(b64){
+ const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+ if(typeof DecompressionStream==='undefined') throw new Error('no DecompressionStream');
+ const s=new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));
+ return JSON.parse(await new Response(s).text());
+}
+
+/* ---------- state persistence via the URL hash ----------
+   No storage APIs. The hash survives a reload and can be bookmarked, which is
+   what matters at a draft table where an accidental refresh would otherwise
+   wipe two hours of picks.
+
+   Players are referenced by gsis_id, NOT by index into PL. Indices are derived
+   from the ADP board and are not stable across rebuilds — a mid-draft bookmark
+   reopened after a fresh ADP pull would have silently pointed ~94% of the marked
+   picks at different players. Ids are stable by construction. The shared
+   "00-00" prefix is stripped to keep the hash short. */
+let STATE_OK=true;
+/* The escape prefix must NOT be the field separator. It was '~' for both, so
+   an id that did not start with '00-00' emitted a '~' INSIDE a field, the
+   split('~') in loadState() sheared into the wrong number of segments, and the
+   picks were silently misparsed — taken list emptied, roster list read from the
+   wrong segment, and the trailing segment dropped without even incrementing the
+   `miss` counter that exists to warn about exactly this. Total silent loss of a
+   mid-draft state, which is the failure this whole id-based scheme was written
+   to prevent.
+
+   Dormant in production only because every nflverse gsis_id happens to start
+   with '00-00', so the escape branch never fired. That is a property of the
+   data, not a guarantee — and "it has not happened yet" is not a fix. '!' is
+   not the separator and is legal in a fragment, so both id shapes now round
+   trip. Existing bookmarks are unaffected: they contain only stripped ids. */
+const encId=g=>g.startsWith('00-00')?g.slice(5):('!'+g);
+const decId=s=>s.startsWith('!')?s.slice(1):('00-00'+s);
+function saveState(){
+ try{
+  const t=Object.keys(TAKEN).filter(k=>TAKEN[k]&&!MINE.includes(k)).map(encId);
+  const m=MINE.map(encId);
+  history.replaceState(null,'','#s'+SLOT+'~'+MODE[0]+'~'+t.join('.')+'~'+m.join('.'));
+  if(!STATE_OK){STATE_OK=true;render();}
+ }catch(e){
+  // An opaque-origin iframe can refuse replaceState. Say so rather than
+  // letting the user believe their picks are being saved.
+  if(STATE_OK){STATE_OK=false;render();}
+ }
+}
+function loadState(){
+ try{
+  const h=decodeURIComponent(location.hash||'');
+  if(!h.startsWith('#s'))return;
+  const [a,md,t,m]=h.slice(2).split('~');
+  SLOT=parseInt(a)||0;
+  if(md==='s')MODE='season'; else if(md==='d')MODE='draft';
+  let miss=0;
+  (t||'').split('.').filter(Boolean).forEach(x=>{
+   const g=decId(x); if(BYID[g])TAKEN[g]=1; else miss++;});
+  MINE=(m||'').split('.').filter(Boolean).map(decId).filter(g=>{
+   if(BYID[g]){TAKEN[g]=1;return 1;} miss++;return 0;});
+  if(miss)setTimeout(()=>alert(miss+' saved pick'+(miss==1?'':'s')+' referenced players that are not in this build and were dropped.'),300);
+ }catch(e){}
+}
+
+/* ---------- draft maths ---------- */
+function picksMade(){return Object.keys(TAKEN).filter(k=>TAKEN[k]).length;}
+function currentPick(){return picksMade()+1;}
+function myPicks(){
+ // snake order. SLOT is 1-based; 0 means "not set".
+ if(!SLOT)return [];
+ const out=[],n=META.teams;
+ for(let r=1;r<=META.lineup.length+META.bench;r++){
+  out.push(r%2===1 ? (r-1)*n+SLOT : (r-1)*n+(n-SLOT+1));
+ }
+ return out;
+}
+function nextMyPick(){const cp=currentPick();return myPicks().find(p=>p>=cp)||null;}
+
+/* Which positions may fill a given lineup slot. Data-driven, from the league
+   config — a hardcoded 'FLEX' test cannot express a superflex slot, which
+   accepts QB as well as RB/WR/TE.
+
+   These read META lazily. META is not assigned until the payload is unzipped
+   at boot, so a module-scope `const X = META.foo` here throws a ReferenceError
+   before the loader ever clears — the page just hangs on the spinner. */
+function slotOK(){ return (typeof META!=='undefined' && META.slotEligible) || {}; }
+function slotTakes(slot,pos){
+ const list = slotOK()[slot] || [slot];
+ return list.indexOf(pos) >= 0;
+}
+/* Slots that accept more than one position, narrowest first. */
+function multiSlots(){
+ const se = slotOK();
+ return ((typeof META!=='undefined' && META.flexSlots) || []).slice()
+   .sort((a,b)=>(se[a]||[]).length-(se[b]||[]).length);
+}
+
+/* Positional need from the starting lineup that is still unfilled.
+
+   Fill order matters and is not cosmetic. Dedicated slots go first; then the
+   NARROWEST multi-position slot; then wider ones. Filling a superflex before a
+   plain flex would let a spare RB occupy SFLEX and leave FLEX empty, which
+   reports a need for a position the roster already has and — worse — hides the
+   fact that the superflex is the slot a quarterback should be competing for. */
+function rosterState(){
+ const bench=[];
+ const mine=MINE.map(g=>BYID[g]).filter(Boolean);
+ const used=new Set();
+ const slots=[...META.lineup].map(s=>({slot:s,p:null}));
+ slots.forEach(s=>{
+  if(multiSlots().indexOf(s.slot)>=0)return;
+  const cand=mine.find(p=>!used.has(p.g)&&slotTakes(s.slot,p.p));
+  if(cand){s.p=cand;used.add(cand.g);}
+ });
+ multiSlots().forEach(ms=>{
+  slots.forEach(s=>{
+   if(s.slot!==ms||s.p)return;
+   const cand=mine.find(p=>!used.has(p.g)&&slotTakes(s.slot,p.p));
+   if(cand){s.p=cand;used.add(cand.g);}
+  });
+ });
+ mine.forEach(p=>{if(!used.has(p.g))bench.push(p);});
+ return {slots,bench};
+}
+/* Which NFL roster statuses actually free an IR slot in THIS league.
+   nflverse status codes: RES = reserve/IR, PUP, NON = non-football injury,
+   EXE = exempt. ACT is an active player and never qualifies. */
+const IR_STATUS=new Set(['RES','PUP','NON','IR','NFI','OUT','DOU-NO']);
+function irEligible(p){
+ const st=(p.st||'').toUpperCase();
+ if(!st)return false;
+ if(st==='ACT')return false;
+ return IR_STATUS.has(st);
+}
+function need(){
+ const {slots}=rosterState(),n={};
+ slots.forEach(s=>{if(!s.p)n[s.slot]=(n[s.slot]||0)+1;});
+ return n;
+}
+
+/* Best available for THIS roster at THIS pick.
+
+   Scored as an EFFECTIVE ADP — lower is better — so every adjustment is in
+   units you can reason about ("he's ADP 120 but effectively 95 for you").
+
+   The previous version summed (adp - yourNextPick) as the base, which meant the
+   ADP term ran to +165 while every other term was worth ~20. That made the sort
+   monotonically INCREASING in ADP: it ranked the board in reverse and
+   confidently recommended the 179th player at pick 23. Base is now -adp, and
+   every adjustment is bounded, so talent leads and the adjustments move a
+   player by at most a round or two. */
+function bestAvailable(limit){
+ const cp=currentPick(), np=nextMyPick()||cp, n=need();
+ const starters=new Set(Object.keys(n));
+ const remaining=SLOT?myPicks().filter(p=>p>=cp).length:(META.lineup.length+META.bench);
+ // K and DEF are MANDATORY starters that nothing else can fill. Suppress them
+ // early, then force them up once the picks you have left no longer cover the
+ // slots you must fill. Derived from the lineup rather than hardcoded, so a
+ // league without a kicker slot simply has none of them.
+ const LATE_SLOTS=['K','DEF'].filter(s=>META.lineup.indexOf(s)>=0);
+ const mandatoryLeft=LATE_SLOTS.filter(s=>starters.has(s)).length;
+ const mustTakeKDef=mandatoryLeft>0 && remaining<=mandatoryLeft+1;
+ const out=[];
+ PL.forEach(p=>{
+  if(TAKEN[p.g]||p.adp==null)return;
+  let eff=p.adp, why=[];
+  // Dedicated slot beats a multi-position slot: a QB who fills the only QB
+  // slot is worth more than one who merely COULD fill the superflex.
+  const MS=multiSlots();
+  const dedicated=[...starters].filter(s=>MS.indexOf(s)<0&&slotTakes(s,p.p));
+  const flexible=[...starters].filter(s=>MS.indexOf(s)>=0&&slotTakes(s,p.p));
+  if(dedicated.length){eff-=20;why.push('fills '+dedicated[0]);}
+  else if(flexible.length){eff-=10;why.push('fills '+flexible[0]);}
+  else if(!starters.size){why.push('lineup full — best available');}
+  else {eff+=10;why.push('no open '+p.p+' slot');}
+  if(p.lean==='BUY'){eff-=5*(p.cv||1);why.push('BUY conv '+p.cv);}
+  if(p.lean==='FADE'){eff+=8*(p.cv||1);why.push('FADE conv '+p.cv);}
+  if(p.tw){eff-=8;why.push('last of tier '+p.tr);}
+  if(p.p==='K'||p.p==='DEF'){
+   if(mustTakeKDef){eff-=120;why.push('MANDATORY — only '+remaining+' picks left');}
+   else{eff+=90;why.push('K/DEF can wait');}
+  }
+  if(p.adp>np+META.roundSize)why.push('likely still there at #'+np);
+  out.push({p,eff,why});
+ });
+ out.sort((a,b)=>a.eff-b.eff);
+ return out.slice(0,limit||25);
+}
+
+/* ---------- filtering ---------- */
+function pass(x){
+ if(S.q && x.n.toLowerCase().indexOf(S.q)<0) return 0;
+ if(S.p && x.p!==S.p) return 0;
+ if(S.l && x.lean!==S.l) return 0;
+ if(S.c && (x.cv||0)<+S.c) return 0;
+ if(S.deep && !x.dp) return 0;
+ if(S.rev && !x.rev) return 0;
+ if(S.hideTaken && TAKEN[x.g]) return 0;
+ if(S.hasTakes && !x.m) return 0;
+ if(S.lshift && !(x.ls!=null && Math.abs(x.ls)>=lpMaterial())) return 0;
+ return 1;
+}
+
+/* The league-adjusted price, as it appears on a card. Returns '' when this
+   league has no draft history at all, so the whole feature disappears for
+   superflex-8 rather than rendering a row of em-dashes. */
+function leagueLine(x){
+ if(!LP())return '';
+ if(x.al==null)return '<i class="lgna">no league price</i>';
+ return '<i class="lg">→ <b>'+x.al.toFixed(1)+'</b> R'+(x.lr||rdOf(x.al))+'</i>';
+}
+function leaguePill(x){
+ if(!LP()||!x.lf||x.lf==='MARKET')return '';
+ return '<span class="pill '+x.lf+'">'+x.lf+' '+(x.ls>0?'+':'')+Math.round(x.ls)+'</span>';
+}
+
+function movePill(x){
+ // POSITIVE move = bigger ADP number = drafted later = FALLING = cheaper = good
+ // for you. It must render green with a down arrow. The previous version put
+ // positive moves in fade-red, so Tucker Kraft showed a red down-arrow beside a
+ // green BUY pill and an EDGE INTACT status.
+ const m=x.mv;
+ if(!m)return '';
+ return '<span class="'+(m>0?'mvd':'mvu')+'" title="'+(m>0?'fell '+m.toFixed(1)+' spots \u2014 cheaper':'rose '+Math.abs(m).toFixed(1)+' spots \u2014 pricier')+'">'
+   +(m>0?'\u25bc':'\u25b2')+Math.abs(m).toFixed(1)+'</span>';
+}
+
+function card(x){
+ const a=x.adp, i=x._i, isMine=MINE.includes(x.g);
+ const snip=x.h&&x.h.length?esc((x.h[x.h.length-1].t||'').slice(0,150)):
+   '<span style="color:#69748a">No podcast take \u2014 on the ADP board only.</span>';
+ return '<div class="c'+(TAKEN[x.g]?' taken':'')+(isMine?' mine':'')+(x.tw?' wall':'')+'" id="c'+i+'">'
+  +'<div class="acts">'
+  +'<button class="tk'+(TAKEN[x.g]&&!isMine?' on':'')+'" onclick="event.stopPropagation();mark('+i+')" title="Someone drafted him">'+(TAKEN[x.g]&&!isMine?'\u2715':'\u25cb')+'</button>'
+  +'<button class="mn'+(isMine?' on':'')+'" onclick="event.stopPropagation();claim('+i+')" title="I drafted him">'+(isMine?'\u2713':'+')+'</button>'
+  +'</div>'
+  +'<div class="cc" onclick="openP('+i+')"><div class="ch"><div style="min-width:0">'
+  +'<div class="nm">'+esc(x.n)+'</div>'
+  +'<div class="meta">'+esc(x.p)+' \u00b7 '+esc(x.tm)+(x.pr?' \u00b7 '+esc(x.pr):'')
+    +' \u00b7 '+(x.m?x.m+' mention'+(x.m==1?'':'s'):'no takes')+'</div>'
+  +'<div>'+(x.lean?'<span class="pill '+x.lean+'">'+esc(x.lean)+'</span>':'')
+  +(x.rev?'<span class="pill rev">REVERSAL</span>':'')
+  +(x.dp?'<span class="pill deep">DEEP</span>':'')
+  +(x.tw?'<span class="pill tier">TIER WALL</span>':'')
+  +(x.tc?'<span class="pill stale">TEAM CHANGED</span>':'')
+  +leaguePill(x)
+  +(x.cv?'<span class="cv">conv '+x.cv+'</span>':'')+'</div>'
+  +'<div class="snip">'+snip+'</div></div>'
+  +'<div class="adp"><b>'+(a==null?'\u2014':a.toFixed(1))+'</b>'+movePill(x)
+  +'<i>'+(a==null?'undrafted':'R'+rdOf(a)+(x.sd!=null&&x.sdok?' \u00b7 sd'+x.sd.toFixed(0):''))+'</i>'
+  +(a==null?'':leagueLine(x))+'</div>'
+  +'</div></div></div>';
+}
+
+/* ---------- views ---------- */
+function viewBoard(){
+ const r=PL.filter(pass), by={};
+ r.forEach(x=>{const a=x.adp;const k=a==null?99:Math.min(rdOf(a),15);(by[k]=by[k]||[]).push(x);});
+ const np=nextMyPick();
+ let h=headerNote();
+ for(let i=1;i<=15;i++){ if(!by[i])continue;
+  const lo=(i-1)*RS()+1, hi=i*RS();
+  const isNow=np&&np>=lo&&np<=hi;
+  h+='<div class="rh'+(isNow?' now':'')+'">Round '+i+' <span>\u00b7 picks '+lo+'\u2013'+hi+' \u00b7 '+by[i].length
+    +(isNow?' \u00b7 YOUR PICK #'+np+' IS HERE':'')+'</span></div>'+by[i].map(card).join('');}
+ if(by[99]) h+='<div class="rh">Undrafted <span>\u00b7 outside the 14-team board \u00b7 FAAB watch list \u00b7 '+by[99].length+'</span></div>'+by[99].map(card).join('');
+ return h||'<div class="empty">Nothing matches.</div>';
+}
+
+function viewTeam(){
+ const {slots,bench}=rosterState(), n=need(), np=nextMyPick();
+ let h='<div class="bar"><label>Draft slot</label><select id="slotSel" onchange="setSlot(this.value)">'
+  +'<option value="0">not set</option>';
+ for(let i=1;i<=META.teams;i++)h+='<option value="'+i+'"'+(SLOT==i?' selected':'')+'>'+i+'</option>';
+ h+='</select><span style="font-size:11.5px;color:#8a94a6">'
+  +(SLOT?('picks '+myPicks().slice(0,6).join(', ')+'\u2026'):'set this to get pick numbers and recommendations')
+  +'</span></div>';
+ h+='<div class="info">Pick <b>'+currentPick()+'</b> of '+(META.teams*(META.lineup.length+META.bench))
+   +' \u00b7 '+picksMade()+' off the board'+(np?' \u00b7 your next pick <b>#'+np+'</b>':'')+'</div>';
+
+ h+='<div class="sec">Starters</div><div class="slots">';
+ slots.forEach(s=>{
+  h+='<div class="slot'+(s.p?' filled':'')+'"><div class="lb">'+s.slot+'</div>';
+  if(s.p)h+='<button class="rm" onclick="claimById(\''+s.p.g+'\')">\u2715</button><div class="pn">'+esc(s.p.n)+'</div><div class="px">'+esc(s.p.p)+' '+esc(s.p.tm)+' \u00b7 ADP '+(s.p.adp==null?'\u2014':s.p.adp.toFixed(1))+'</div>';
+  else h+='<div class="pn" style="color:#4a5568">empty</div>';
+  h+='</div>';});
+ h+='</div>';
+
+ // IR slots may only hold a player whose designation actually qualifies.
+ // Pouring bench overflow into them (which the first version did) shows a
+ // roster that is illegal in this league.
+ const irPool=bench.filter(irEligible), benchPool=bench.filter(p=>!irEligible(p));
+ h+='<div class="sec">Bench ('+benchPool.length+' of '+META.bench+')</div><div class="slots">';
+ for(let i=0;i<Math.max(META.bench,benchPool.length);i++){
+  const p=benchPool[i], over=i>=META.bench;
+  h+='<div class="slot'+(p?' filled':'')+'"'+(over?' style="border-color:#7f1d3a"':'')+'>'
+    +'<div class="lb">'+(over?'OVER LIMIT':'BN '+(i+1))+'</div>';
+  if(p)h+='<button class="rm" onclick="claimById(\''+p.g+'\')">\u2715</button><div class="pn">'+esc(p.n)+'</div><div class="px">'+esc(p.p)+' '+esc(p.tm)+'</div>';
+  else h+='<div class="pn" style="color:#4a5568">empty</div>';
+  h+='</div>';}
+ h+='</div>';
+ if(benchPool.length>META.bench)h+='<div class="warn"><b>'+(benchPool.length-META.bench)
+   +' player(s) over the roster limit.</b> You have '+META.bench+' bench spots.</div>';
+
+ h+='<div class="sec">IR stash ('+irPool.length+' of '+META.ir+')</div><div class="slots">';
+ for(let i=0;i<META.ir;i++){
+  const p=irPool[i];
+  h+='<div class="slot'+(p?' filled':'')+'"><div class="lb">IR '+(i+1)+'</div>';
+  if(p)h+='<button class="rm" onclick="claimById(\''+p.g+'\')">\u2715</button><div class="pn">'+esc(p.n)+'</div><div class="px">'+esc(p.p)+' '+esc(p.tm)+' \u00b7 '+esc(p.st||'')+'</div>';
+  else h+='<div class="pn" style="color:#4a5568">no eligible player</div>';
+  h+='</div>';}
+ h+='</div>';
+ h+='<div class="box"><b style="color:#dfe6ef">IR slots only take Out, IR and PUP.</b> '
+  +'Doubtful, Suspended and NA do <b>not</b> qualify in this league \u2014 a Doubtful stash occupies a real bench spot. '
+  +'Read from the league settings. Eligibility here uses each player\u2019s NFL roster status; the weekly '
+  +'Out/Doubtful designation only exists once the season starts, so during camp this reflects '
+  +'reserve, PUP and NFI listings only.</div>';
+
+ const needKeys=Object.keys(n);
+ h+='<div class="sec">Still needed</div><div class="need">';
+ if(!needKeys.length)h+='<div><b>\u2713</b><span>LINEUP FULL</span></div>';
+ needKeys.forEach(k=>{h+='<div class="'+(k!=='K'&&k!=='DEF'?'crit':'')+'"><b>'+n[k]+'</b><span>'+k+'</span></div>';});
+ h+='</div>';
+
+ h+='<div class="sec">Best available for this roster</div>';
+ if(!SLOT)h+='<div class="warn">Set your draft slot above and these become pick-aware.</div>';
+ const ba=bestAvailable(20);
+ h+=ba.map(o=>'<div class="c"><div class="acts">'
+   +'<button class="tk" onclick="event.stopPropagation();mark('+o.p._i+')">\u25cb</button>'
+   +'<button class="mn" onclick="event.stopPropagation();claim('+o.p._i+')">+</button></div>'
+   +'<div class="cc" onclick="openP('+o.p._i+')"><div class="ch"><div style="min-width:0">'
+   +'<div class="nm">'+esc(o.p.n)+'</div><div class="meta">'+esc(o.p.p)+' \u00b7 '+esc(o.p.tm)+(o.p.pr?' \u00b7 '+esc(o.p.pr):'')+'</div>'
+   +'<div class="snip" style="-webkit-line-clamp:2;color:#8fa3bd">'+esc(o.why.join(' \u00b7 '))+'</div></div>'
+   +'<div class="adp"><b>'+o.p.adp.toFixed(1)+'</b><i>R'+rdOf(o.p.adp)+' \u00b7 eff '+o.eff.toFixed(0)+'</i></div></div></div></div>').join('');
+ return h;
+}
+
+function viewWaivers(){
+ let h='';
+ if(!LEAGUE){
+  h+='<div class="warn"><b>League not loaded.</b> Open <b>Setup</b> and tap \u201cSync league\u201d to pull live '
+   +'rosters and FAAB balances from Sleeper. Without it this list cannot tell you who is actually free.</div>';
+ } else {
+  const rostered=new Set(LEAGUE.rostered);
+  h+='<div class="info"><b>'+LEAGUE.name+'</b> \u00b7 '+LEAGUE.teams+' teams \u00b7 your FAAB <b>$'+LEAGUE.myFaab+'</b> of $'+META.faab
+   +' \u00b7 league median $'+LEAGUE.medFaab+'</div>';
+  const avail=PL.filter(p=>!rostered.has(p.sl)&&pass(p));
+  h+='<div class="rh">Available \u00b7 '+avail.length+'</div>';
+  h+=avail.slice(0,80).map(p=>{
+    const bid=faabBid(p);
+    return '<div class="c"><div class="cc" onclick="openP('+p._i+')"><div class="ch"><div style="min-width:0">'
+     +'<div class="nm">'+esc(p.n)+'</div><div class="meta">'+esc(p.p)+' \u00b7 '+esc(p.tm)+' \u00b7 '+(p.m||0)+' mentions</div>'
+     +'<div>'+(p.lean?'<span class="pill '+p.lean+'">'+p.lean+'</span>':'')+(p.dp?'<span class="pill deep">DEEP</span>':'')+'</div></div>'
+     +'<div class="adp"><b>'+bid.pct+'%</b><i>$'+bid.dollars+' bid</i></div></div></div></div>';}).join('');
+ }
+ return h;
+}
+
+/* FAAB as a share of REMAINING budget, priced against what rivals can still
+   spend. A 30% bid means something different when the league is broke. */
+function faabBid(p){
+ const my=LEAGUE?LEAGUE.myFaab:META.faab;
+ let base=6;
+ if(p.lean==='BUY')base+=8*(p.cv||1);
+ if(p.lean==='WATCH')base+=4;
+ if(p.lean==='FADE')base=2;
+ if(p.dp)base+=3;
+ const rivalPressure=LEAGUE?Math.min(1.6,Math.max(.5,LEAGUE.maxFaab/Math.max(1,my))):1;
+ const pct=Math.max(1,Math.min(60,Math.round(base*rivalPressure)));
+ return {pct,dollars:Math.max(1,Math.round(my*pct/100))};
+}
+
+function viewPlayers(){
+ const r=PL.filter(pass);
+ return headerNote()+'<div class="rh">'+r.length+' player'+(r.length==1?'':'s')+'</div>'
+  +(r.length?r.map(card).join(''):'<div class="empty">Nothing matches.</div>');
+}
+
+function viewOutlines(){
+ return '<div class="ctl" style="padding:8px 0"><input id="q2" placeholder="Search all '+EPS.length+' outlines\u2026" value="'+esc(S.q)+'"></div><div id="eplist"></div>';
+}
+function renderEps(){
+ const q=S.q;
+ const list=EPS.filter(e=>!q||e.t.toLowerCase().indexOf(q)>=0||(EPTXT[e.f]||'').toLowerCase().indexOf(q)>=0);
+ document.getElementById('eplist').innerHTML='<div class="rh">'+list.length+' episode'+(list.length==1?'':'s')+(q?' containing \u201c'+esc(q)+'\u201d':'')+'</div>'
+  +list.map(e=>{
+   let hint='';
+   if(q){const t=(EPTXT[e.f]||''),i=t.toLowerCase().indexOf(q);
+     if(i>=0)hint='<div class="snip">\u2026'+esc(t.slice(Math.max(0,i-70),i+130))+'\u2026</div>';}
+   return '<div class="ep" onclick="openEp(\''+e.f+'\')"><div class="nm">'+esc(e.t)+'</div>'
+    +'<div class="meta">'+esc(e.d)+' \u00b7 '+esc(e.s)+(e.e?' \u00b7 ep '+esc(e.e):'')+' \u00b7 '+esc(e.rt)+(e.g&&e.g!=='none'?' \u00b7 '+esc(e.g):'')+'</div>'+hint+'</div>';}).join('');
+}
+
+function viewCont(){
+ const q=S.q, r=CN.filter(c=>!q||c.r.toLowerCase().indexOf(q)>=0);
+ return '<div class="ctl" style="padding:8px 0"><input id="q3" placeholder="Search contingency\u2026" value="'+esc(q)+'"></div>'
+  +'<div class="box">The podcast\u2019s inferred depth chart. Where it disagrees with the team\u2019s posted '
+  +'depth chart (as of '+esc(META.depthAsOf)+'), the player detail view shows both.</div>'
+  +'<div class="rh">'+r.length+' relationship'+(r.length==1?'':'s')+'</div>'
+  +r.map(c=>'<div class="cn">'+esc(c.r)+(c.u?' <a href="'+esc(c.u)+'" target="_blank" rel="noopener">\u2192</a>':'')+'</div>').join('');
+}
+
+function headerNote(){
+ let out='';
+ if(!STATE_OK)out+='<div class="warn" style="background:#4a1620;border-color:#7f1d3a;color:#ff8fa3">'
+   +'<b>Picks are NOT being saved.</b> This browser refused to update the address bar, so a reload will lose them. '
+   +'Open the saved HTML file in a normal browser tab instead.</div>';
+ let bits=[];
+ bits.push('ADP basis <b>'+esc(META.adpBasis)+'</b>'+(META.adpPrev?' vs '+esc(META.adpPrev):''));
+ if(META.conflictRows)bits.push('<b>'+META.conflictRows+'</b> takes reference a player who has since changed teams \u2014 tagged TEAM CHANGED');
+ if(META.unresolved)bits.push('<b>'+META.unresolved+'</b> take rows named someone who could not be matched to a 2026 NFL player \u2014 tap Setup to see them');
+ out+='<div class="warn">'+bits.join(' \u00b7 ')+'</div>';
+ const l=LP();
+ if(l)out+='<div class="info"><b>\u2192 second number is this league\u2019s own price.</b> '
+   +'Measured over your '+l.seasons.join(' and ')+' drafts ('+l.priced+' of the board priced); '
+   +'<span class="pill REACH">REACH</span> means it goes earlier here, '
+   +'<span class="pill WAIT">WAIT</span> means it lasts longer. '
+   +'Display only \u2014 nothing is ranked or filtered on it.</div>';
+ return out;
+}
+
+const TABS={draft:[['board','Board'],['team','My Team'],['players','Players'],['outlines','Intel'],['cont','Contingency']],
+            season:[['waivers','Waivers'],['team','My Team'],['players','Players'],['outlines','Intel'],['cont','Contingency']]};
+
+function renderTabs(){
+ const t=TABS[MODE];
+ if(!t.find(x=>x[0]===S.tab))S.tab=t[0][0];
+ document.getElementById('tabs').innerHTML=t.map(([k,l])=>
+  '<button data-t="'+k+'"'+(S.tab===k?' class="on"':'')+'>'+l+'</button>').join('');
+ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  S.tab=b.dataset.t;S.q='';const qq=document.getElementById('q');if(qq)qq.value='';renderTabs();render();});
+}
+
+function render(){
+ const v=document.getElementById('view');
+ document.getElementById('ctl').style.display=(S.tab==='cont'||S.tab==='outlines'||S.tab==='team')?'none':'block';
+ document.getElementById('fab').style.display=(S.tab==='board'||S.tab==='team'||S.tab==='players')?'flex':'none';
+ document.getElementById('undoBtn').textContent='Undo'+(HIST.length?' ('+HIST.length+')':'');
+ if(S.tab==='board')v.innerHTML=viewBoard();
+ else if(S.tab==='team')v.innerHTML=viewTeam();
+ else if(S.tab==='players')v.innerHTML=viewPlayers();
+ else if(S.tab==='waivers')v.innerHTML=viewWaivers();
+ else if(S.tab==='outlines'){v.innerHTML=viewOutlines();
+   document.getElementById('q2').oninput=e=>{S.q=e.target.value.toLowerCase().trim();renderEps();};renderEps();}
+ else {v.innerHTML=viewCont();
+   document.getElementById('q3').oninput=e=>{S.q=e.target.value.toLowerCase().trim();render();};}
+ // The build stamp is not decoration. A hub page that silently serves a
+ // week-old payload looks exactly like a fresh one, and that failure is the
+ // whole reason this page stopped carrying its own data. Show when it was made.
+ const sub=picksMade()+' drafted \u00b7 '+MINE.length+' on your roster \u00b7 '
+  +META.takes+' takes \u00b7 '+META.eps+' episodes \u00b7 '
+  +(META.draft ? 'draft '+META.draft : 'draft date TBD')
+  +(BUILT?' \u00b7 built '+esc(BUILT.slice(0,16).replace('T',' '))+'Z':'');
+ document.getElementById('sub').textContent=sub;
+}
+
+/* ---------- actions ---------- */
+function mark(i){const p=PL[i];if(!p)return;
+ HIST.push(JSON.stringify({T:TAKEN,M:MINE}));
+ if(TAKEN[p.g]&&!MINE.includes(p.g))delete TAKEN[p.g];
+ else {TAKEN[p.g]=1;MINE=MINE.filter(g=>g!==p.g);}
+ saveState();render();}
+function claim(i){const p=PL[i];if(!p)return;claimById(p.g);}
+function claimById(g){
+ HIST.push(JSON.stringify({T:TAKEN,M:MINE}));
+ if(MINE.includes(g)){MINE=MINE.filter(x=>x!==g);delete TAKEN[g];}
+ else {MINE.push(g);TAKEN[g]=1;}
+ saveState();render();}
+function undo(){if(!HIST.length)return;const s=JSON.parse(HIST.pop());TAKEN=s.T;MINE=s.M;saveState();render();}
+function setSlot(v){SLOT=parseInt(v)||0;saveState();render();}
+function toggleMode(){MODE=MODE==='draft'?'season':'draft';applyMode();saveState();renderTabs();render();}
+function applyMode(){
+ const b=document.getElementById('modeBadge');
+ b.textContent=MODE==='draft'?'DRAFT':'SEASON';
+ b.className='mode'+(MODE==='season'?' season':'');
+}
+
+/* The league-adjusted price, explained. This is where the model has to justify
+   itself: both prices, the gap, what it means in rounds, and the caveat that it
+   is positional PACE rather than a per-pick reach claim about any manager. */
+function leagueBox(x){
+ const l=LP();
+ if(!l)return '';
+ if(x.al==null){
+  const why=LP_WHY[x.lc]||'not measured in both prior drafts';
+  return '<div class="box"><b style="color:#dfe6ef">League-adjusted price</b> — none. '
+   +esc(why)+'. National ADP is the only price for him.</div>';
+ }
+ const gap=x.ls, rd=x.lr||rdOf(x.al), natRd=rdOf(x.adp);
+ const verdict = gap<=-lpMaterial()
+   ? '<b style="color:#ffb08a">Take him earlier than the board says.</b> He goes about '
+     +Math.abs(Math.round(gap))+' picks sooner in this room'
+     +(rd<natRd?' — round '+rd+' here versus round '+natRd+' nationally.':'.')
+   : gap>=lpMaterial()
+   ? '<b style="color:#7fe3d4">He lasts longer here.</b> About '+Math.round(gap)
+     +' picks of extra patience'+(rd>natRd?' — round '+rd+' here versus round '+natRd+' nationally.':'.')
+   : '<b>Trades at market.</b> This room prices him within '+lpMaterial()+' picks of the national board.';
+ return '<div class="box"><b style="color:#dfe6ef">League-adjusted price</b><br>'
+  +'National ADP <b>'+x.adp.toFixed(1)+'</b> (R'+natRd+') → this league <b>'+x.al.toFixed(1)+'</b> (R'+rd+') '
+  +'· shift <b>'+(gap>0?'+':'')+gap.toFixed(1)+'</b><br>'+verdict
+  +'<div style="margin-top:6px;color:#69748a">'+esc(l.caveat)+'</div>'
+  +'<div style="margin-top:4px;color:#69748a">Display only — best-available, tier walls and the '
+  +'round filters all still run on national ADP.</div></div>';
+}
+
+function openP(i){
+ const x=PL[i],a=x.adp;
+ document.getElementById('on').textContent=x.n+'  \u00b7  '+x.p+' '+x.tm;
+ let h='<div class="box"><b style="color:#dfe6ef">ADP</b> '+(a==null
+   ? 'not on the 14-team board. Genuinely undrafted at this size \u2014 a FAAB target, not a draft pick.'
+   : a.toFixed(1)+' \u2014 '+(x.pr||'')+', round '+rdOf(a)+' of 14'
+     +(x.mv?'<br>Moved '+(x.mv>0?'+':'')+x.mv.toFixed(1)+' since '+esc(META.adpPrev)+' \u2192 <b>'+esc(x.es)+'</b>':'<br>Edge status: <b>'+esc(x.es)+'</b>')
+     +(x.sd!=null?'<br>stddev '+x.sd.toFixed(1)+' on n='+x.nd+(x.sdok?'':' \u2014 <b>below n=100, do not rank on this</b>'):''))
+   +'</div>';
+ h+=leagueBox(x);
+ if(x.tc)h+='<div class="warn"><b>Team changed since these takes.</b> The outlines have him on '
+   +esc(x.tcf)+'; the 2026 roster and the ADP feed both say <b>'+esc(x.tm)+'</b>. '
+   +'Any reasoning about his offense, target competition or scheme needs re-checking.</div>';
+ if(x.ro===false)h+='<div class="warn"><b>Not on a 2026 NFL roster.</b> The team shown is his last known team, not a current one.</div>';
+ const d=DEPTH[x.g];
+ if(d)h+='<div class="box"><b style="color:#dfe6ef">Posted depth chart</b> \u2014 '+esc(d.t)+' '+esc(d.s)+', rank '+esc(d.r)+' (as of '+esc(META.depthAsOf)+'). This is the team\u2019s own listing, not the podcast\u2019s inference.</div>';
+ if(x.tg&&x.tg.length)h+='<div>'+x.tg.map(t=>'<span class="pill NEUTRAL">'+esc(t)+'</span>').join('')+'</div>';
+
+ if(!x.h||!x.h.length){h+='<div class="box">No podcast take on this player. He is here because he is on the ADP board.</div>';}
+ else{
+  h+='<div class="sec">Opinion history \u2014 oldest first \u00b7 '+x.h.length+'</div>';
+  h+=x.h.map(e=>'<div class="ev"><div class="evd">'+esc(e.d)+' \u00b7 '+esc(e.s)+(e.e?' ep '+esc(e.e):'')+' \u00b7 '+esc(e.sp)+'</div>'
+   +'<div>'+(e.l?'<span class="pill '+e.l+'">'+esc(e.l)+'</span>':'')+'<span class="cv">conv '+(e.c||'\u2014')+'</span>'
+   +(e.rk&&e.rk!=='blank'?'<span class="cv"> \u00b7 stated '+esc(e.rk)+'</span>':'')+'</div>'
+   +'<div class="evt">'+esc(e.t)+'</div>'
+   +(e.st&&e.st!=='none'?'<div class="evs">Stats: '+esc(e.st)+(e.ms?'<span class="msv">Market Score '+esc(e.ms)+'</span>':'')+'</div>':'')
+   +(e.mv&&e.mv!=='n/a'?'<div class="evs">Model vs JJ: '+esc(e.mv)+'</div>':'')
+   +(e.nr?'<div class="evn">\u26a0 '+esc(e.nr)+'</div>':'')
+   +'<div><button class="src" onclick="openEp(\''+e.f+'\',\''+x.n.replace(/'/g,"\\'")+'\')">Read the outline \u2192</button>'
+   +(e.u?' <a href="'+esc(e.u)+'" target="_blank" rel="noopener" style="font-size:10.5px">episode</a>':'')+'</div></div>').join('');
+ }
+ const rel=CN.filter(c=>c.r.toLowerCase().indexOf(x.n.toLowerCase())>=0);
+ h+='<div class="sec">Contingency ('+rel.length+')</div>'+(rel.length
+  ?rel.map(c=>'<div class="cn">'+esc(c.r)+'</div>').join('')
+  :'<div class="cn" style="color:#69748a">No contingency relationship logged. The podcast never addressed this situation \u2014 that is an absence of data, not a judgement.</div>');
+ document.getElementById('ob').innerHTML=h;
+ const ov=document.getElementById('ov');ov.classList.add('show');ov.scrollTop=0;}
+function closeOv(){document.getElementById('ov').classList.remove('show');}
+function closeOv2(){document.getElementById('ov2').classList.remove('show');}
+function closeOv3(){document.getElementById('ov3').classList.remove('show');}
+
+function md(t){
+ const L=t.split('\n');let o='',inl=0;
+ for(let ln of L){
+  let s=ln.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  s=s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/`(.+?)`/g,'<code>$1</code>')
+     .replace(/\[(.+?)\]\((https?:[^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+  if(/^###\s/.test(s)){if(inl){o+='</ul>';inl=0}o+='<h3>'+s.slice(4)+'</h3>';}
+  else if(/^##\s/.test(s)){if(inl){o+='</ul>';inl=0}o+='<h2>'+s.slice(3)+'</h2>';}
+  else if(/^#\s/.test(s)){if(inl){o+='</ul>';inl=0}o+='<h1>'+s.slice(2)+'</h1>';}
+  else if(/^\s*[-*]\s/.test(s)){if(!inl){o+='<ul>';inl=1}o+='<li>'+s.replace(/^\s*[-*]\s/,'')+'</li>';}
+  else{if(inl){o+='</ul>';inl=0} if(s.trim())o+='<p>'+s+'</p>';}
+ }
+ if(inl)o+='</ul>';return o;}
+
+function openEp(f,hl){
+ const e=EPS.find(x=>x.f===f)||{t:f};
+ document.getElementById('on2').textContent=e.t;
+ document.getElementById('ob2').innerHTML=md(EPTXT[f]||'Outline not found.');
+ const ov=document.getElementById('ov2');ov.classList.add('show');ov.scrollTop=0;
+ if(hl){setTimeout(()=>{
+   const hs=[...document.querySelectorAll('#ob2 h3')];
+   const t=hs.find(h=>h.textContent.toLowerCase().indexOf(hl.toLowerCase())>=0);
+   if(t){t.classList.add('hl');t.scrollIntoView({block:'center'});}
+ },60);}}
+
+/* ---------- setup / league sync ---------- */
+function openSetup(){
+ document.getElementById('ob3').innerHTML=
+  '<div class="box">League <b>'+esc(META.league)+'</b> \u00b7 id <code>'+esc(META.leagueId)+'</code> \u00b7 '
+  +META.teams+' teams \u00b7 $'+META.faab+' FAAB \u00b7 '+META.lineup.join('/')+' + '+META.bench+'BN + '+META.ir+'IR</div>'
+  +'<div class="box">Data source <b>'+esc(SOURCE==='inline'?'built into this file':'loaded from manifest.js')+'</b>'
+  +(BUILT?' \u00b7 built <b>'+esc(BUILT.slice(0,16).replace('T',' '))+'Z</b>':'')
+  +(SOURCE==='hub'?'<br>This page holds no data. Refreshing it picks up whatever the last build wrote next to it \u2014 there is nothing to import.':'')
+  +'</div>'
+  +'<div class="sec">Mode</div>'
+  +'<div class="box">Currently <b>'+MODE.toUpperCase()+'</b>. Tap the badge next to the title to switch. '
+  +'Draft mode is the round board and roster builder; season mode is waivers and FAAB.</div>'
+  +'<div class="sec">Live league sync</div>'
+  +'<div class="box">Pulls rosters and FAAB balances straight from Sleeper so the waiver list knows who is '
+  +'actually free in your league. Needs a network connection.</div>'
+  +'<button class="hbtn" style="padding:8px 14px" onclick="syncLeague()">Sync league</button>'
+  +'<div id="syncMsg" style="font-size:11.5px;color:#8a94a6;margin-top:8px"></div>'
+  +'<div class="sec">Reset</div>'
+  +'<button class="hbtn" style="padding:8px 14px" onclick="if(confirm(\'Clear every pick?\')){TAKEN={};MINE=[];HIST=[];saveState();render();closeOv3();}">Clear all picks</button>';
+ document.getElementById('ov3').classList.add('show');
+}
+async function syncLeague(){
+ const m=document.getElementById('syncMsg');
+ m.textContent='Contacting Sleeper\u2026';
+ try{
+  const L=META.leagueId;
+  const [rosters,users]=await Promise.all([
+   fetch('https://api.sleeper.app/v1/league/'+L+'/rosters').then(r=>r.json()),
+   fetch('https://api.sleeper.app/v1/league/'+L+'/users').then(r=>r.json())
+  ]);
+  const rostered=[];const faabOf={};
+  rosters.forEach(r=>{(r.players||[]).forEach(p=>rostered.push(p));
+    faabOf[r.roster_id]=META.faab-((r.settings&&r.settings.waiver_budget_used)||0);});
+  // Identify by user_id, not display name. A display-name lookup that misses
+  // used to fall through to a full $100 budget while still reporting success.
+  const mine=rosters.find(r=>r.owner_id===META.sleeperUserId);
+  if(!mine){
+   LEAGUE=null;
+   m.innerHTML='<b style="color:#ff8fa3">Could not find your roster.</b> No team in this league is owned by '
+     +'user id '+esc(META.sleeperUserId)+'. FAAB advice would be guesswork, so the waiver view stays off.';
+   render();return;
+  }
+  const myFaab=faabOf[mine.roster_id];
+  const rivals=rosters.filter(r=>r.roster_id!==mine.roster_id).map(r=>faabOf[r.roster_id]).sort((a,b)=>a-b);
+  const mid=rivals.length?(rivals.length%2?rivals[(rivals.length-1)/2]
+            :(rivals[rivals.length/2-1]+rivals[rivals.length/2])/2):META.faab;
+  LEAGUE={name:META.league,teams:rosters.length,rostered,myFaab,
+    maxFaab:rivals.length?rivals[rivals.length-1]:META.faab,   // rivals only, not you
+    medFaab:mid};
+  m.innerHTML='<b style="color:#5ce39b">Synced.</b> '+rosters.length+' rosters, '+rostered.length
+    +' players rostered. Your FAAB $'+myFaab+', richest rival $'+LEAGUE.maxFaab+'.';
+  render();
+ }catch(e){
+  m.innerHTML='<b style="color:#ff8fa3">Could not reach Sleeper.</b> '
+   +'This can happen if the artifact sandbox blocks outbound requests \u2014 open the saved HTML file '
+   +'in a normal browser tab and try again. The draft board works fully offline either way.';
+ }
+}
+
+/* ---------- boot ---------- */
+(async()=>{
+ try{ SOURCE=await acquire(); }
+ catch(err){
+  document.getElementById('load').innerHTML=
+    '<div style="max-width:470px;text-align:left;line-height:1.6">'
+   +'<b style="color:#ff8fa3">The data files did not load.</b><br><br>'
+   +'<code style="font-size:11.5px">'+esc(err.message)+'</code><br><br>'
+   +'This page deliberately holds no data of its own \u2014 it reads <code>manifest.js</code> and the '
+   +'payload files sitting in the same folder. Check that they were copied across together. '
+   +'If you need a board right now, <b>tracker-artifact.html</b> is the self-contained build and '
+   +'needs no other files.</div>';
+  return;
+ }
+ try{ D=await ungz(B64M); EPTXT=await ungz(B64T); }
+ catch(err){ document.getElementById('load').textContent=
+   'This browser cannot unpack the data (it needs DecompressionStream). Try Chrome, Edge, or Safari 16.4+.'; return; }
+ META=D.meta; CN=D.cont; EPS=D.eps; DEPTH=D.depth||{};
+
+ // Merge the full ADP board with the players who have podcast takes, so the
+ // board is a real board rather than only the names JJ happened to mention.
+ const withTakes={}; D.players.forEach(p=>withTakes[p.g]=p);
+ PL=[];
+ D.board.forEach(b=>{
+  const p=withTakes[b.g];
+  if(p){PL.push(p);delete withTakes[b.g];}
+  else PL.push({g:b.g,n:b.n,p:b.p,tm:b.tm,sl:b.sl,adp:b.adp,pr:b.pr,sd:b.sd,nd:b.nd,bi:b.bi,
+    sdok:b.sdok,mv:null,es:'',dp:Math.ceil(b.adp/META.roundSize)>=META.deepRound,lean:'',cv:0,m:0,rev:0,tg:[],h:[],
+    ro:true,tc:false,tcf:'',tr:null,tw:0,
+    // Most of the board has no podcast take. The league-adjusted price is a
+    // property of the BOARD, so it has to ride along here too — omitting it
+    // would leave the second price visible only on the ~1 in 3 players JJ
+    // happened to mention.
+    al:b.al,ls:b.ls,lf:b.lf,lr:b.lr,lc:b.lc});
+ });
+ Object.values(withTakes).forEach(p=>PL.push(p));   // discussed but undrafted
+ // Tie-break on the snapshot rank (bi), not the name: FFC shows ADP to a tenth
+ // but ranks at full precision, so top-of-board ties are routine and an
+ // alphabetical tie-break disagreed with the rank-ordered board sort.
+ PL.sort((a,b)=>(a.adp==null)-(b.adp==null)||(a.adp||0)-(b.adp||0)||
+   ((a.bi==null?1e9:a.bi)-(b.bi==null?1e9:b.bi))||a.n.localeCompare(b.n));
+ PL.forEach((p,i)=>{p._i=i;BYID[p.g]=p;});
+
+ // Mode defaults to the calendar but the badge always wins if the hash says so.
+ MODE = (META.draft && new Date().toISOString().slice(0,10) > META.draft) ? 'season' : 'draft';
+ loadState();
+ applyMode();
+
+ document.getElementById('q').oninput=e=>{S.q=e.target.value.toLowerCase().trim();render();};
+ ['fp','fl','fc'].forEach((id,k)=>{document.getElementById(id).onchange=e=>{S[['p','l','c'][k]]=e.target.value;render();};});
+ [['bd','deep'],['br','rev'],['bt','hideTaken'],['bk','hasTakes'],['bl','lshift']].forEach(([id,key])=>{
+  document.getElementById(id).onclick=e=>{S[key]^=1;e.target.classList.toggle('on');render();};});
+ // A league with no prior drafts on file has no second price to filter by.
+ if(!LP())document.getElementById('bl').style.display='none';
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeOv();closeOv2();closeOv3();}});
+
+ document.getElementById('load').remove();
+ renderTabs();render();
+ // Test hook. The suite needs to assert that the hub path and the parachute
+ // path deliver byte-identical payloads; without this it can only compare
+ // rendered HTML, which would pass even if one path silently truncated a blob.
+ window.__READY__={source:SOURCE,built:BUILT,league:LEAGUE_KEY,
+   mainLen:B64M.length,textLen:B64T.length,
+   players:PL.length,board:D.board.length,eps:EPS.length,takes:META.takes};
+})();
+</script></body></html>
