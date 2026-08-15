@@ -26,7 +26,12 @@ input,select,textarea,button{font:inherit;background:#1c232f;color:#e6e9ef;borde
 main{padding:0 12px 80px}
 .warn{background:#332612;border:1px solid #63491a;color:#eecd99;padding:7px 10px;border-radius:6px;font-size:11px;margin:8px 0}
 .info{background:#122436;border:1px solid #1d3a5c;color:#9ecbff;padding:7px 10px;border-radius:6px;font-size:11px;margin:8px 0}
-.rh{position:sticky;top:0;background:#0f131a;padding:11px 0 5px;font-size:11.5px;font-weight:700;letter-spacing:.7px;color:#7fb2f0;text-transform:uppercase;border-bottom:1px solid #232c3b;z-index:5}
+/* Round headers stick BELOW the header, not behind it. `top:0` put them under
+   an 84-205px opaque sticky header, so they were invisible for the entire time
+   they were stuck — the one moment a sticky header exists to be visible.
+   --hh is written by JS from the real header height, which changes with the
+   filter strip and with wrapping. */
+.rh{position:sticky;top:var(--hh,84px);background:#0f131a;padding:11px 0 5px;font-size:11.5px;font-weight:700;letter-spacing:.7px;color:#7fb2f0;text-transform:uppercase;border-bottom:1px solid #232c3b;z-index:5}
 .rh span{color:#6b7688;font-weight:400;text-transform:none;letter-spacing:0}
 .rh.now{color:#5ce39b}
 .c{background:#161c26;border:1px solid #212a38;border-radius:8px;padding:7px 9px;margin-top:6px;display:flex;gap:8px;align-items:stretch}
@@ -35,7 +40,7 @@ main{padding:0 12px 80px}
 .c.mine{border-color:#2b6b45;background:#13211a}
 .c.wall{border-bottom:2px solid #8a5a1a}
 .acts{flex:0 0 auto;display:flex;flex-direction:column;gap:4px;justify-content:center}
-.tk,.mn{width:30px;height:26px;border-radius:6px;border:1px solid #33405480;background:#1b2330;color:#8994a6;font-size:13px;cursor:pointer;padding:0;line-height:1}
+.tk,.mn{width:36px;height:32px;border-radius:6px;border:1px solid #33405480;background:#1b2330;color:#9aa6b8;font-size:14px;cursor:pointer;padding:0;line-height:1}
 .tk.on{background:#7f1d3a;border-color:#a11d47;color:#fff}
 .mn{color:#5ce39b;border-color:#2b6b4580}
 .mn.on{background:#17663f;border-color:#2b8a57;color:#fff}
@@ -110,6 +115,198 @@ a{color:#68a9f0}
 .fab button{background:#1d4ed8;border:1px solid #2563eb;color:#fff;border-radius:20px;padding:9px 15px;font-size:12.5px;font-weight:600;box-shadow:0 3px 12px #0008;cursor:pointer}
 .fab button.ghost{background:#222a38;border-color:#2c3648;color:#c3cede}
 .spark{display:inline-block;vertical-align:middle;margin-left:4px}
+/* ---------- draft room ---------- */
+.lvbar{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;background:#131922;border:1px solid #212a38;border-radius:8px;padding:7px 10px;margin-top:8px}
+.lvtop{display:flex;align-items:center;gap:9px;flex:0 0 auto}
+.lvbar .lvst{flex:1 1 200px}
+.lvbar.onclock{background:#13211a;border-color:#2b6b45}
+.dot{width:9px;height:9px;border-radius:50%;background:#4a5568;flex:0 0 auto}
+.dot.live{background:#5ce39b;animation:pulse 2s infinite}
+.dot.err{background:#ff8fa3}
+.dot.man{background:#ecd07a}
+@keyframes pulse{0%{box-shadow:0 0 0 0 #5ce39b99}70%{box-shadow:0 0 0 7px #5ce39b00}100%{box-shadow:0 0 0 0 #5ce39b00}}
+.lvst{font-size:11.5px;color:#8a94a6;flex:1 1 auto;min-width:0}
+.lvst b{color:#e6e9ef}
+.clock{font-variant-numeric:tabular-nums;font-size:22px;font-weight:700;color:#e6e9ef;letter-spacing:.5px}
+.clock.warn{color:#ecd07a}.clock.crit{color:#ff8fa3}
+.pk{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.pk div{flex:1 1 auto;background:#131922;border:1px solid #212a38;border-radius:6px;padding:7px 9px;text-align:center;min-width:66px}
+.pk b{display:block;font-size:17px;color:#fff;font-variant-numeric:tabular-nums}
+.pk span{font-size:9px;color:#7f8a9c;letter-spacing:.5px;text-transform:uppercase}
+/* ---- the shortlist row -------------------------------------------------
+   Grid, not flex, so the survival pair can drop to its own strip on a narrow
+   screen without duplicating the markup. Reading order left to right is:
+   rank, VERDICT, who, the numbers, the button. The verdict leads because it is
+   the only token on the row that is an instruction rather than a fact. */
+.rec{background:#161c26;border:1px solid #212a38;border-radius:8px;padding:8px 10px;margin-top:6px;
+ display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+ grid-template-areas:"n b a" "s s s";gap:5px 9px;align-items:center}
+.rec.n1{border-color:#2b6b45;background:#141d1b}
+.recn{grid-area:n;width:17px;font-size:18px;font-weight:700;color:#3d4657;line-height:1;text-align:center}
+.rec.n1 .recn{color:#5ce39b}
+.recb{grid-area:b;min-width:0;cursor:pointer}
+.racts{grid-area:a;display:flex;align-items:center}
+/* The verdict chip and the name share a line, chip first. It used to be 9.5px
+   and the LAST element in the card — the smallest, lowest-placed thing on the
+   screen was the one telling him what to do. */
+.rh1{display:flex;align-items:center;gap:7px;min-width:0;flex-wrap:wrap}
+.rh1 .nm{font-size:14.5px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vd{display:inline-block;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px;
+ letter-spacing:.6px;white-space:nowrap;flex:0 0 auto;border:1px solid transparent}
+.vd.now{background:#5a1020;color:#ffb3c1;border-color:#8d2038}
+.vd.wait{background:#0e3a3a;color:#8fe9db;border-color:#1c5d57}
+.vd.flip{background:#3a3210;color:#f0d68a;border-color:#5f5118}
+/* Both survival numbers are the SAME SIZE and both are labelled. The old card
+   printed national at 17px and the room number at 12.5px underneath, while the
+   verdict was computed off the room number — the eye landed on the figure that
+   was not driving the recommendation. */
+.svpair{grid-area:s;display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;
+ border-top:1px solid #1e2836;padding-top:5px;margin-top:1px}
+.svone{display:flex;align-items:baseline;gap:5px;white-space:nowrap}
+.sv{font-size:15.5px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.sv.hi{color:#5ce39b}.sv.mid{color:#ecd07a}.sv.lo{color:#ff8fa3}
+.svl{font-size:10px;color:#95a1b5;letter-spacing:.3px}
+.svthin{font-size:9.5px;color:#f0c46a;background:#2a2110;border:1px solid #3f3315;border-radius:4px;padding:1px 5px;display:inline-block}
+.why{font-size:11.5px;color:#9db1c9;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.why em{color:#77839a;font-style:normal}
+.jjq{color:#b6c6da;font-style:italic}
+.jjl{font-size:9.5px;font-weight:800;letter-spacing:.4px;padding:1px 5px;border-radius:4px;margin-right:2px}
+.jjl.BUY{background:#0d4429;color:#5ce39b}
+.jjl.FADE{background:#4a1620;color:#ff8fa3}
+/* Need flag. The shortlist stays pure best-available — this marks the rows
+   that also plug an open starting slot, so roster need is visible without
+   being allowed to reorder anything. */
+.nf{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+ color:#9ecbff;background:#12243a;border:1px solid #24456d;border-radius:4px;
+ padding:2px 6px;flex:0 0 auto;white-space:nowrap}
+/* "I drafted him", reachable with a pointer. Before this the only path was
+   Ctrl+Enter in the quick-entry box, which does not exist on a touch device. */
+.dh{background:#17663f;border:1px solid #2b8a57;color:#eafff3;border-radius:7px;
+ padding:8px 10px;font-size:11.5px;font-weight:700;line-height:1.15;cursor:pointer;
+ min-width:46px;min-height:44px;text-align:center}
+.dh:hover{background:#1d7d4d}
+.dh.sm{min-height:36px;padding:6px 8px;font-size:11px}
+/* ---- gone-before: deliberately NOT a recommendation ----
+   These used to reuse .rec verbatim, differing only by a missing rank digit.
+   Under a clock a "he is about to be gone" name read as "take him". */
+.gone{display:flex;align-items:baseline;gap:8px;font-size:12px;color:#9aa6b8;
+ padding:5px 8px;border-left:2px solid #5a3a1a;background:#14161d;border-radius:0 5px 5px 0;
+ margin-top:3px;cursor:pointer}
+.gone .gn{font-weight:600;color:#cdd6e3;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gone .gm{font-size:10.5px;color:#8590a3;flex:0 0 auto}
+.gone .gs{margin-left:auto;font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;flex:0 0 auto;white-space:nowrap}
+.gs.hi{color:#5ce39b}.gs.mid{color:#ecd07a}.gs.lo{color:#ff8fa3}
+.runbar{display:flex;gap:2px;margin-top:7px;height:9px;border-radius:5px;overflow:hidden;background:#1b2330}
+.runbar i{display:block;height:100%}
+.cRB{background:#5ce39b}.cWR{background:#7fb2f0}.cTE{background:#d3a6ff}.cQB{background:#ecd07a}.cK{background:#8a94a6}.cDEF{background:#69748a}
+.rl{display:flex;gap:9px;flex-wrap:wrap;font-size:11px;color:#8a94a6;margin-top:6px}
+.rl b{color:#e6e9ef;font-variant-numeric:tabular-nums}
+.hot{background:#4a1620;border:1px solid #7f1d3a;color:#ff8fa3;padding:7px 10px;border-radius:6px;font-size:11.5px;margin-top:8px}
+.hot b{color:#ffc0cb}
+.qe{position:relative;margin-top:8px}
+#qei{width:100%;font-size:16px;border-color:#2b6b45}
+.qed{position:absolute;left:0;right:0;top:100%;z-index:20;background:#161c26;border:1px solid #2c3648;border-radius:0 0 7px 7px;max-height:44vh;overflow-y:auto;box-shadow:0 8px 22px #000a}
+.qer{padding:6px 8px;font-size:13px;cursor:pointer;border-bottom:1px solid #1b2330;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.qer.sel{background:#1d3a5c}
+.qer small{color:#7f8a9c;font-size:10.5px;white-space:nowrap}
+.log{font-size:11.5px;color:#a4afc0;padding:4px 0;border-bottom:1px solid #1b2330;display:flex;gap:8px}
+.log b{color:#6b7688;font-variant-numeric:tabular-nums;flex:0 0 34px}
+.log.me{color:#5ce39b}
+.log.unm{color:#ecd07a}
+.path{background:#131922;border:1px solid #212a38;border-radius:7px;padding:8px 10px;margin-top:6px}
+.path .ph{font-size:11.5px;color:#7fb2f0;font-weight:700}
+.path .pb{font-size:11.5px;color:#a4afc0;margin-top:3px}
+.path .pb em{color:#8590a3;font-style:normal}
+
+/* ================= contrast repairs =====================================
+   These are the captions that explain the numbers — "national", "on the
+   clock", "conviction". Every one of them was under 3:1 on its own
+   background, at 9-10px, in a room with bad lighting and a clock running. */
+.pk span{color:#95a1b5}
+.cv{color:#95a1b5}
+.lvst{color:#a4b0c2}
+.box{color:#9aa6b8}
+.rl{color:#9aa6b8}
+.meta{color:#95a1b5}
+.sub{color:#95a1b5}
+
+/* ================= collapsible secondary sections =======================
+   Everything below the decision is real information that is real ballast in a
+   two-minute window. <details> keeps it one click away without keeping it in
+   the scroll path. Open state is remembered per section in S.open. */
+.fold{border:1px solid #212a38;border-radius:8px;background:#131922;margin-top:8px;overflow:hidden}
+.fold>summary{list-style:none;cursor:pointer;padding:9px 11px;font-size:11.5px;
+ text-transform:uppercase;letter-spacing:.8px;color:#a4b0c2;font-weight:700;
+ display:flex;align-items:center;gap:8px;user-select:none}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary:before{content:"\25b8";color:#68748a;font-size:11px;transition:transform .12s}
+.fold[open]>summary:before{transform:rotate(90deg)}
+.fold>summary .cnt{margin-left:auto;font-size:10.5px;font-weight:600;color:#8590a3;
+ background:#1b2330;border-radius:9px;padding:1px 8px;letter-spacing:0;text-transform:none}
+.fold>summary.alert{color:#ffb3c1}
+.fold>summary.alert .cnt{background:#4a1620;color:#ff9fb0}
+.foldb{padding:0 11px 11px}
+
+/* ================= the draft room, laid out for a screen =================
+   There were ZERO media queries in this file. On a laptop the phone column
+   stretched to the full window: the name at the far left, the ADP at the far
+   right, and most of the screen empty — while the thing he actually had to
+   read was below the fold. */
+.roomgrid{display:grid;grid-template-columns:1fr;gap:0 16px;align-items:start}
+.rcolB,.rcolC{min-width:0}
+.rtiles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.rtiles div{background:#131922;border:1px solid #212a38;border-radius:6px;padding:6px 8px;text-align:center}
+.rtiles b{display:block;font-size:17px;color:#fff;font-variant-numeric:tabular-nums;line-height:1.2}
+.rtiles span{font-size:9px;color:#95a1b5;letter-spacing:.2px;text-transform:uppercase;white-space:nowrap}
+
+@media(min-width:560px){
+ .rec{grid-template-columns:auto minmax(0,1fr) auto auto;grid-template-areas:"n b s a"}
+ .svpair{border-top:0;padding-top:0;margin-top:0;flex-direction:column;gap:3px;
+  align-items:flex-end;min-width:104px}
+ .svone{gap:6px}
+}
+@media(min-width:900px){
+ main{padding:0 16px 80px}
+ /* The filter strip was three stacked full-width rows — search, three selects,
+    five toggles — costing ~120px of every Board and Players screen on a
+    machine with width to spare. One row. */
+ .ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+ .ctl #q{flex:1 1 240px;width:auto;font-size:13.5px;padding:6px 9px}
+ .ctl .row{margin-top:0;flex:0 1 auto;gap:6px}
+ .ctl .row select{min-width:92px;flex:0 0 auto}
+ .ctl .tgl{margin-top:0;flex:1 1 auto;justify-content:flex-end}
+ .ctl .tgl button{flex:0 0 auto;padding:6px 10px}
+ /* Same idea for the two explainer banners: real information, but they were
+    two full-width paragraphs above every board. */
+ .hn{display:flex;gap:8px;flex-wrap:wrap}
+ .hn>*{flex:1 1 340px;margin:8px 0}
+ .roomgrid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}
+ .rcolA{grid-column:1;grid-row:1}
+ .rcolB{grid-column:2;grid-row:1}
+ .rcolC{grid-column:1 / -1;grid-row:2}
+ .rcolC .foldwrap{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+ .rtiles{grid-template-columns:repeat(4,1fr)}
+ .sec{margin-top:12px}
+}
+@media(min-width:1280px){
+ main{padding:0 22px 80px;max-width:1700px;margin:0 auto}
+ .roomgrid{grid-template-columns:minmax(0,1.25fr) minmax(0,.95fr) minmax(0,.85fr)}
+ .rcolA{grid-column:1;grid-row:1}
+ .rcolB{grid-column:2;grid-row:1}
+ .rcolC{grid-column:3;grid-row:1}
+ .rcolC .foldwrap{display:block}
+ .rec{padding:9px 12px}
+ .rh1 .nm{font-size:15.5px}
+ .sv{font-size:17px}
+ /* The board is a list of 256 one-line rows on a 1400px screen. Two columns
+    halves the scroll without shrinking anything. */
+ .cards2{column-count:2;column-gap:16px}
+ .cards2>.c{break-inside:avoid;margin-top:0;margin-bottom:6px}
+ .slots{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+}
+@media(min-width:1700px){
+ .cards2{column-count:3}
+}
 </style></head><body>
 <div id="load">Unpacking the tracker&hellip;</div>
 
@@ -195,9 +392,43 @@ async function acquire(){
  return 'hub';
 }
 
-let D,EPTXT,PL,BOARD,CN,EPS,DEPTH,META,BYID={};
+let D,EPTXT,PL,BOARD,CN,EPS,DEPTH,META,BYID={},BYSL={};
 let TAKEN={}, MINE=[], HIST=[], SLOT=0, MODE='draft', LEAGUE=null;
-let S={tab:'board',q:'',p:'',l:'',c:'',deep:0,rev:0,hideTaken:0,hasTakes:0,lshift:0};
+/* tab defaults to the Draft Room, not the Board. It used to open on 'board',
+   and renderTabs() only redirects when the saved tab is absent from the mode's
+   tab list — which 'board' is not — so draft day started on the wrong screen
+   every time. `open` holds the collapsed-section state; it is deliberately NOT
+   persisted to the hash, so a fresh page is always in the default shape. */
+let S={tab:'room',q:'',p:'',l:'',c:'',deep:0,rev:0,hideTaken:0,hasTakes:0,lshift:0,
+       open:{gone:1,runs:1,path:0,log:0,drift:0}};
+
+/* ---------- who is off the board, and who says so ----------
+   TAKEN and MINE are now DERIVED, not authoritative. Two independent sources
+   feed them and they must not be able to clobber each other:
+
+     MANUAL / MANUAL_MINE / SUPPRESS   what Chris marked by hand. Persisted in
+                                       the URL hash, exactly as before.
+     FEED / FEED_MINE                  what Sleeper's draft endpoint says.
+                                       Never persisted — it is re-fetched.
+
+   The failure this shape prevents: a poll returning a short or empty list (a
+   blip, a paused draft, a 500) rebuilding TAKEN from scratch and silently
+   erasing two hours of hand-marked picks. Manual marks live in their own
+   object and survive every poll. SUPPRESS is the reverse override — the feed
+   claims a player Chris knows it got wrong, and he can veto it. */
+let MANUAL={}, MANUAL_MINE=[], SUPPRESS={};
+let FEED={}, FEED_MINE=[];
+let DRIFT={n:0,ready:false,nat:0,room:0};
+let SDBANDS=[];
+
+const LIVE={
+ on:0,            // polling right now
+ draftId:null, cfg:null, status:'', type:'', teams:null, rounds:null,
+ pickTimer:120, pollMs:3000, lastPicked:0, order:null, myRoster:null,
+ seq:[],          // the real pick log, INCLUDING players not on our board
+ maxPick:0, unmatched:0, err:'', lastOk:0, fails:0, timer:null, tick:null,
+ autoSlot:null, serverNow:0, drew:0
+};
 
 /* ---------- league-adjusted price ----------
    A second price for every board player, derived from THIS league's own 2024 and
@@ -215,6 +446,14 @@ const LP_WHY={
  'unmeasured':'not measured in both prior drafts'};
 
 const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* Last name for the compact lists. Naively taking the final token renders
+   Marvin Harrison Jr. as "Jr." and Oronde Gadsden II as "II" — which is not a
+   cosmetic problem, it is a list of players you cannot identify. */
+const SUFFIX=/^(jr|sr|ii|iii|iv|v)\.?$/i;
+function surname(n){
+ const w=(n||'').trim().split(/\s+/).filter(x=>!SUFFIX.test(x));
+ return w.length?w[w.length-1]:(n||'');
+}
 const RS=()=>META.roundSize;
 const rdOf=a=> a==null?null:Math.ceil(a/RS());
 
@@ -252,11 +491,17 @@ let STATE_OK=true;
    trip. Existing bookmarks are unaffected: they contain only stripped ids. */
 const encId=g=>g.startsWith('00-00')?g.slice(5):('!'+g);
 const decId=s=>s.startsWith('!')?s.slice(1):('00-00'+s);
+/* Segments 5 and 6 (SUPPRESS, live draft id) were appended, never inserted.
+   A hash written before the Draft Room existed has four segments, so those two
+   destructure to undefined and load exactly as they used to. Old bookmarks
+   keep working; that is the whole reason they went on the end. */
 function saveState(){
  try{
-  const t=Object.keys(TAKEN).filter(k=>TAKEN[k]&&!MINE.includes(k)).map(encId);
-  const m=MINE.map(encId);
-  history.replaceState(null,'','#s'+SLOT+'~'+MODE[0]+'~'+t.join('.')+'~'+m.join('.'));
+  const t=Object.keys(MANUAL).filter(k=>MANUAL[k]&&!MANUAL_MINE.includes(k)).map(encId);
+  const m=MANUAL_MINE.map(encId);
+  const x=Object.keys(SUPPRESS).filter(k=>SUPPRESS[k]).map(encId);
+  history.replaceState(null,'','#s'+SLOT+'~'+MODE[0]+'~'+t.join('.')+'~'+m.join('.')
+    +'~'+x.join('.')+'~'+(LIVE.draftId||''));
   if(!STATE_OK){STATE_OK=true;render();}
  }catch(e){
   // An opaque-origin iframe can refuse replaceState. Say so rather than
@@ -268,20 +513,96 @@ function loadState(){
  try{
   const h=decodeURIComponent(location.hash||'');
   if(!h.startsWith('#s'))return;
-  const [a,md,t,m]=h.slice(2).split('~');
+  const [a,md,t,m,x,dr]=h.slice(2).split('~');
   SLOT=parseInt(a)||0;
   if(md==='s')MODE='season'; else if(md==='d')MODE='draft';
   let miss=0;
-  (t||'').split('.').filter(Boolean).forEach(x=>{
-   const g=decId(x); if(BYID[g])TAKEN[g]=1; else miss++;});
-  MINE=(m||'').split('.').filter(Boolean).map(decId).filter(g=>{
-   if(BYID[g]){TAKEN[g]=1;return 1;} miss++;return 0;});
+  (t||'').split('.').filter(Boolean).forEach(s=>{
+   const g=decId(s); if(BYID[g])MANUAL[g]=1; else miss++;});
+  MANUAL_MINE=(m||'').split('.').filter(Boolean).map(decId).filter(g=>{
+   if(BYID[g])return 1; miss++;return 0;});
+  (x||'').split('.').filter(Boolean).forEach(s=>{
+   const g=decId(s); if(BYID[g])SUPPRESS[g]=1;});
+  if(dr)LIVE.draftId=dr;
+  recompute();
   if(miss)setTimeout(()=>alert(miss+' saved pick'+(miss==1?'':'s')+' referenced players that are not in this build and were dropped.'),300);
  }catch(e){}
 }
 
-/* ---------- draft maths ---------- */
-function picksMade(){return Object.keys(TAKEN).filter(k=>TAKEN[k]).length;}
+/* Wipe every pick, from both sources. "Clear all picks" used to empty TAKEN and
+   MINE, which are now derived — that would have cleared the screen for exactly
+   one render and then been undone by the next poll. */
+function resetPicks(){
+ MANUAL={};MANUAL_MINE=[];SUPPRESS={};FEED={};FEED_MINE=[];
+ LIVE.seq=[];LIVE.maxPick=0;LIVE.unmatched=0;
+ DRIFT={n:0,ready:false,nat:0,room:0,spread:1,spreadReady:false};
+ recompute();
+}
+
+/* The single place TAKEN and MINE are produced. Everything else writes to
+   MANUAL / SUPPRESS / FEED and calls this. */
+function recompute(){
+ rcBust();          // every derived cache dies with the thing it was derived from
+ TAKEN={};
+ Object.keys(FEED).forEach(g=>{if(!SUPPRESS[g])TAKEN[g]=1;});
+ Object.keys(MANUAL).forEach(g=>{if(MANUAL[g])TAKEN[g]=1;});
+ const mine=[];
+ FEED_MINE.forEach(g=>{if(!SUPPRESS[g]&&mine.indexOf(g)<0)mine.push(g);});
+ MANUAL_MINE.forEach(g=>{if(mine.indexOf(g)<0)mine.push(g);});
+ MINE=mine;
+ MINE.forEach(g=>{TAKEN[g]=1;});
+}
+
+/* ---------- draft maths ----------
+
+   picksMade() USED to be "how many players are marked taken", which is only
+   the same number as "how many picks have been made" while every pick lands on
+   a player this board knows about. It does not. The board is 256 players deep
+   and a 14-team draft is 196 picks, but the rooms drafts kickers, defenses and
+   names FFC never priced — run #10's own data has 26 defenses on the board and
+   the league has taken players off it in both prior drafts.
+
+   Every pick that lands on an off-board player used to advance nothing: the
+   round header, "your next pick", the survival maths and best-available would
+   all sit one pick behind reality for the rest of the draft, and the error
+   accumulates. Sleeper hands us the authoritative counter — pick_no — so when
+   the feed is live, use it. Hand marks the feed has not caught up on are added
+   on top, because being ahead of the commissioner is normal at a live table. */
+/* ---------- per-render memo ----------
+   These functions were being recomputed thousands of times inside a single
+   render pass:
+
+     bestAvailable() calls multiSlots() INSIDE its 256-iteration loop, and every
+                     call does a .slice().sort()
+     rosterState()   calls multiSlots() once per lineup slot, and need() calls
+                     rosterState() again
+     liveSd()        is asked for the same player's spread over a thousand times
+                     by goneBefore() and rosterPath(), and effSd() does a linear
+                     band scan each time
+
+   What is cached here is deliberately ONLY the things that are pure over
+   (META, MINE, DRIFT). Nothing derived from the live pick counter is cached —
+   see the note on currentPick() below. The cache is dropped on every render, on
+   every recompute() and whenever the drift model moves, so the window in which
+   it can be wrong is a single synchronous pass. */
+let RC=null;
+function rcBust(){RC=null;}
+function rc(k,f){ if(!RC)RC={}; if(!(k in RC))RC[k]=f(); return RC[k]; }
+
+/* NOT memoised, on purpose. picksMade() reads TAKEN directly, and caching it
+   would mean any code path that touches TAKEN without going through
+   recompute() would silently read a stale pick number — and a stale pick
+   number is the one error in this file that corrupts everything downstream.
+   The cost is removed instead by HOISTING it: the hot loops (goneBefore,
+   rosterPath) now compute the current pick once and pass it down, rather than
+   asking for it 256 or 1,280 times. */
+function picksMade(){
+ if(LIVE.maxPick){
+  const ahead=Object.keys(MANUAL).filter(g=>MANUAL[g]&&!FEED[g]).length;
+  return LIVE.maxPick+ahead;
+ }
+ return Object.keys(TAKEN).filter(k=>TAKEN[k]).length;
+}
 function currentPick(){return picksMade()+1;}
 function myPicks(){
  // snake order. SLOT is 1-based; 0 means "not set".
@@ -308,9 +629,11 @@ function slotTakes(slot,pos){
 }
 /* Slots that accept more than one position, narrowest first. */
 function multiSlots(){
- const se = slotOK();
- return ((typeof META!=='undefined' && META.flexSlots) || []).slice()
-   .sort((a,b)=>(se[a]||[]).length-(se[b]||[]).length);
+ return rc('ms',()=>{
+  const se = slotOK();
+  return ((typeof META!=='undefined' && META.flexSlots) || []).slice()
+    .sort((a,b)=>(se[a]||[]).length-(se[b]||[]).length);
+ });
 }
 
 /* Positional need from the starting lineup that is still unfilled.
@@ -320,7 +643,8 @@ function multiSlots(){
    plain flex would let a spare RB occupy SFLEX and leave FLEX empty, which
    reports a need for a position the roster already has and — worse — hides the
    fact that the superflex is the slot a quarterback should be competing for. */
-function rosterState(){
+function rosterState(){ return rc('rs',_rosterState); }
+function _rosterState(){
  const bench=[];
  const mine=MINE.map(g=>BYID[g]).filter(Boolean);
  const used=new Set();
@@ -351,9 +675,11 @@ function irEligible(p){
  return IR_STATUS.has(st);
 }
 function need(){
- const {slots}=rosterState(),n={};
- slots.forEach(s=>{if(!s.p)n[s.slot]=(n[s.slot]||0)+1;});
- return n;
+ return rc('need',()=>{
+  const {slots}=rosterState(),n={};
+  slots.forEach(s=>{if(!s.p)n[s.slot]=(n[s.slot]||0)+1;});
+  return n;
+ });
 }
 
 /* Best available for THIS roster at THIS pick.
@@ -399,10 +725,464 @@ function bestAvailable(limit){
    else{eff+=90;why.push('K/DEF can wait');}
   }
   if(p.adp>np+META.roundSize)why.push('likely still there at #'+np);
-  out.push({p,eff,why});
+  // Which OPEN starting slot he actually fills, carried out so the row can flag
+  // it visually. The shortlist stays pure best-available — this marks the ones
+  // that plug a hole rather than reordering anything.
+  const fills=dedicated.length?dedicated[0]:(flexible.length?flexible[0]:null);
+  out.push({p,eff,why,fills});
  });
  out.sort((a,b)=>a.eff-b.eff);
  return out.slice(0,limit||25);
+}
+
+/* ================= DRAFT ROOM =================================================
+
+   Everything from here to the end of this block exists for one two-minute
+   window. The design constraint is not cleverness, it is that Chris is looking
+   at this while fourteen people wait for him.
+
+   Three separate things are happening:
+     1. the FEED   — Sleeper says who is gone, so nothing has to be typed
+     2. the MATHS  — who survives to his next pick, nationally and in this room
+     3. the FALLBACK — the venue wifi dies and none of the above matters
+   ============================================================================ */
+
+/* ---------- where a player goes, as a distribution ----------
+
+   Draft position is modelled as LOGISTIC, not normal, and the reason is the
+   tail — which is the only part of it this tool actually reads.
+
+   Every survival number here is CONDITIONAL: given he is still on the board at
+   pick c, does he reach pick k. Under a normal curve that conditional is
+   unusable for exactly the players who matter most. A normal has an increasing
+   hazard rate in the tail, so a player three sigma past his ADP who is
+   somehow still sitting there comes out at 0.0000 — the model reports a
+   mathematical certainty that he is gone in the next eight picks, about a
+   player who is visibly, presently, not gone. That is the distribution's tail
+   artefact, not a forecast, and acting on it at a draft table would be acting
+   on nothing.
+
+   A logistic has an asymptotically CONSTANT hazard: past his price, a player
+   carries a steady per-pick chance of being taken and the estimate degrades
+   gracefully instead of collapsing. It is also the better description of what
+   actually happens — a player falling well past ADP is usually falling on
+   information the board has not priced, and those players keep falling.
+
+   Scale is variance-matched to the reported stddev, s = sd*sqrt(3)/pi, so the
+   spread still means what the ADP feed says it means.
+
+   Everything is in log space via softplus, because exp((k-mu)/s) overflows for
+   a deep player and Infinity/Infinity is NaN — which would render as a blank
+   card rather than a wrong number, and be noticed only at the table. */
+const softplus=z=>z>30?z:Math.log1p(Math.exp(z));
+function logistS(mu,sd,x){        // log P(still available at pick x)
+ const s=Math.max(0.6,sd*0.5513);
+ return -softplus((x-0.5-mu)/s);
+}
+function condSurvive(mu,sd,c,k){  // P(reaches k | available at c)
+ if(k<=c)return 1;
+ return Math.max(0,Math.min(1,Math.exp(logistS(mu,sd,k)-logistS(mu,sd,c))));
+}
+
+/* ---------- how wide is a player's price? ----------
+   Every board row carries a stddev, but only rows with times_drafted >= 100
+   are flagged sdok, and the deep band is where that bites: on the 08-13 board
+   100% of the top 50 are rankable and 41% of the 113-180 band are. That band
+   is exactly the part of the draft this whole project exists to cover, so
+   "suppress the number" and "trust the number" are both wrong answers.
+
+   What is stable is the RATIO. Median sd/adp runs .147 / .118 / .108 / .093
+   across the four bands — a smooth, shallow decline. So a thin-sample stddev
+   gets clamped toward the band model rather than believed or discarded, and
+   the player is visibly flagged.
+
+   The worked example is Ricky Pearsall: stddev 6.3 on n=87, which read as the
+   tightest price inside the top 130 while he was on season-ending IR. A tight
+   spread on a stale feed is not a consensus. Clamping upward is what stops
+   that becoming a confident survival curve. */
+function buildSdModel(){
+ const edges=[[0,50],[50,113],[113,180],[180,1e9]];
+ SDBANDS=edges.map(([lo,hi])=>{
+  const r=PL.filter(p=>p.adp!=null&&p.adp>=lo&&p.adp<hi&&p.sdok&&p.sd>0)
+            .map(p=>p.sd/p.adp).sort((a,b)=>a-b);
+  return {lo,hi,n:r.length,ratio:r.length?r[Math.floor(r.length/2)]:null};
+ });
+ // A band with no rankable rows inherits the last measured one rather than a
+ // made-up constant. The 180+ band has zero on this board.
+ let last=0.12;
+ SDBANDS.forEach(b=>{if(b.ratio==null)b.ratio=last;else last=b.ratio;});
+}
+function effSd(p){
+ const b=SDBANDS.find(b=>p.adp>=b.lo&&p.adp<b.hi)||SDBANDS[SDBANDS.length-1]||{ratio:.12};
+ const model=Math.max(1.5,p.adp*b.ratio);
+ if(p.sd==null||p.sd<=0)
+  return {sd:model,thin:true,why:'no usable spread on this board — width modelled from the band'};
+ if(p.sdok)return {sd:p.sd,thin:false,why:''};
+ const clamped=Math.min(Math.max(p.sd,model*0.6),model*1.6);
+ return {sd:clamped,thin:true,
+   why:'n='+(p.nd||0)+' drafts, under the 100 floor — spread pulled toward the band model'};
+}
+/* The spread the SURVIVAL maths actually uses.
+
+   FFC's stddev is the dispersion of a player's ADP across mock drafts, and a
+   mock field is more homogeneous than fourteen humans in a room reacting to
+   each other. Used raw over a long wait it reads far too confident: at 13 picks
+   out it put an entire screen of different players at "0%", which is both
+   almost certainly too tight AND useless, because a column of zeroes cannot
+   tell you which of three players to take.
+
+   Rather than invent an inflation factor, measure it. As picks arrive, compare
+   the observed scatter of (pick_no - ADP) against what the board's own spreads
+   predicted, and scale by the ratio. That is the same self-calibration as the
+   drift, applied to the width instead of the centre: this room's actual chaos,
+   measured live, on this draft. Before there is enough data it is exactly 1 and
+   changes nothing.
+
+   There is no external calibration available for this — the project has no
+   2024/2025 historical ADP, so the two prior drafts cannot supply an empirical
+   spread. Measuring it live is the only honest source. */
+function liveSd(p){
+ // Memoised per player per render: goneBefore() and rosterPath() between them
+ // ask for the same player's spread well over a thousand times in one pass,
+ // and effSd() does a linear band scan every time.
+ return rc('sd:'+p.g,()=>{
+  const e=effSd(p);
+  return {...e,sd:e.sd*(DRIFT.spread||1)};
+ });
+}
+
+/* ---------- live pace calibration ----------
+   Compare where players ACTUALLY went against where the board said they would.
+   Positive drift = the room is taking players later than market = things last
+   longer than the national curve implies.
+
+   Measured twice, because there are two curves: against national ADP, and
+   against this league's own pace price. They are different questions and
+   sharing one number would double-count this room's known tendencies.
+
+   Median, not mean — one manager reaching 40 picks early should not move it.
+   Last 24 picks, so it tracks the draft as it changes rather than averaging a
+   frantic round 2 into a slow round 9. Needs 12 picks before it says anything,
+   and is clamped to +/-25 because beyond that it has stopped being calibration
+   and started being a different draft.
+
+   Honest caveat, stated in the UI: this is measured only on players who HAVE
+   been drafted, so it is survivorship-biased by construction. It reads the
+   room's aggression, not the whole board. */
+function computeDrift(){
+ const rows=[];
+ LIVE.seq.forEach(s=>{
+  if(!s.g)return; const p=BYID[s.g]; if(!p||p.adp==null)return;
+  // Carry the base spread on the row. Looking the player back up by pick number
+  // later would break on any duplicated pick_no a commissioner edit can create.
+  rows.push({no:s.no,dn:s.no-p.adp,dr:p.al!=null?s.no-p.al:null,sd:effSd(p).sd});
+ });
+ // Hand-marked players carry no pick number, so they cannot calibrate pace.
+ // They are excluded rather than assigned a guessed position in the order.
+ rows.sort((a,b)=>a.no-b.no);
+ const recent=rows.slice(-24);
+ const med=a=>{a=a.filter(v=>v!=null).sort((x,y)=>x-y);
+  return a.length?(a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2):0;};
+ const cl=v=>Math.max(-25,Math.min(25,v));
+ const ready=rows.length>=12;
+ const nat=ready?cl(med(recent.map(r=>r.dn))):0;
+
+ /* Width, measured the same way as the centre. MAD scaled by 1.4826 is the
+    robust sigma estimate; the model side deliberately reads effSd (the BASE
+    spread) and not liveSd, or this would feed on its own output and run away.
+    Needs 20 priced picks — more than the centre, because a spread estimate is
+    noisier than a median — and is clamped to [0.8, 2.5] so one strange round
+    cannot make the whole board read as a coin toss. */
+ let spread=1;
+ if(rows.length>=20){
+  const dev=rows.map(r=>Math.abs(r.dn-nat));
+  const obs=med(dev)*1.4826;
+  const mod=med(rows.map(r=>r.sd));
+  if(mod>0&&obs>0)spread=Math.max(0.8,Math.min(2.5,obs/mod));
+ }
+ rcBust();   // liveSd() is memoised against DRIFT.spread
+ DRIFT={n:rows.length,ready,nat,
+   room:ready?cl(med(recent.map(r=>r.dr))):0,
+   spread,spreadReady:rows.length>=20};
+}
+
+/* ---------- survival ----------
+   P(still on the board at pick k, GIVEN he is on the board now).
+
+   The conditional is the whole point. Unconditionally, a player with ADP 40
+   has a low chance of lasting to pick 60. But if it is already pick 55 and he
+   is still sitting there, the market in this room has already told you
+   something, and the conditional form uses it. That is what makes a faller
+   read correctly instead of being written off. */
+/* `c` (the current pick) is an optional parameter so the callers that ask for
+   hundreds of players in one pass can compute it ONCE and pass it down.
+   Omitted, it behaves exactly as before. */
+function survivalAt(p,k,c){
+ if(c==null)c=currentPick();
+ const {sd,thin,why}=liveSd(p);
+ const out={thin,why,sd,nat:condSurvive(p.adp+DRIFT.nat,sd,c,k),room:null};
+ if(LP()&&p.al!=null)out.room=condSurvive(p.al+DRIFT.room,sd,c,k);
+ return out;
+}
+function survivalNext(p){
+ const np=nextMyPick();
+ if(!np||p.adp==null)return null;
+ return survivalAt(p,np);
+}
+const svClass=v=>v>=.65?'hi':v>=.35?'mid':'lo';
+function verdict(s){
+ if(!s)return null;
+ // The room number decides when it exists. It is measured on this league's own
+ // two drafts, and the reason it exists is that this room is not the market:
+ // TE goes 30+ picks early here and defenses 26-37 late. Deferring to national
+ // in a room known to be different would be the wrong way round.
+ const v=s.room!=null?s.room:s.nat;
+ if(v<.30)return {k:'now',t:'TAKE NOW'};
+ if(v>.70)return {k:'wait',t:'HE LASTS'};
+ return {k:'flip',t:'COIN FLIP'};
+}
+
+/* ---------- the live Sleeper feed ---------------------------------------- */
+const SLEEPER='https://api.sleeper.app/v1/draft/';
+
+function liveEnabled(){return META.liveDraft&&META.liveDraft.enabled&&(LIVE.draftId||META.liveDraft.draftId);}
+function liveStart(id){
+ LIVE.draftId=(id||LIVE.draftId||META.liveDraft.draftId||'').trim();
+ if(!LIVE.draftId){LIVE.err='no draft id';render();return;}
+ LIVE.on=1;LIVE.err='';LIVE.fails=0;
+ LIVE.pollMs=Math.max(2000,((META.liveDraft&&META.liveDraft.pollSeconds)||3)*1000);
+ saveState();
+ livePoll(true);
+ if(LIVE.timer)clearInterval(LIVE.timer);
+ LIVE.timer=setInterval(()=>livePoll(false),LIVE.pollMs);
+ if(!LIVE.tick)LIVE.tick=setInterval(tickClock,500);
+}
+function liveStop(){
+ LIVE.on=0;
+ if(LIVE.timer){clearInterval(LIVE.timer);LIVE.timer=null;}
+ render();
+}
+async function livePoll(force){
+ if(!LIVE.on)return;
+ try{
+  const d=await fetch(SLEEPER+LIVE.draftId,{cache:'no-store'}).then(r=>{
+   if(!r.ok)throw new Error('draft '+r.status);return r.json();});
+  if(!d||!d.draft_id)throw new Error('no draft at that id');
+  const moved=(d.last_picked||0)!==LIVE.lastPicked;
+  LIVE.cfg=d; LIVE.status=d.status||''; LIVE.type=d.type||'';
+  LIVE.lastPicked=d.last_picked||0;
+  const st=d.settings||{};
+  // Read the shape from the draft itself, every poll. The config file carries
+  // only the id precisely so a stale local number can never drive pick maths.
+  if(st.pick_timer)LIVE.pickTimer=st.pick_timer;
+  if(st.teams)LIVE.teams=st.teams;
+  if(st.rounds)LIVE.rounds=st.rounds;
+  LIVE.order=d.draft_order||null;
+  autoSlot();
+  if(force||moved||LIVE.drew%5===0){
+   const picks=await fetch(SLEEPER+LIVE.draftId+'/picks',{cache:'no-store'}).then(r=>{
+    if(!r.ok)throw new Error('picks '+r.status);return r.json();});
+   if(Array.isArray(picks))applyPicks(picks);
+  }
+  LIVE.drew++; LIVE.fails=0; LIVE.err=''; LIVE.lastOk=Date.now();
+  renderIfChanged();
+ }catch(e){
+  LIVE.fails++; LIVE.err=e.message||'network';
+  // Back off, but never stop and NEVER touch FEED. A failed poll must leave
+  // the board exactly as it was — the one thing worse than a stale board at a
+  // draft table is a board that empties itself.
+  if(LIVE.timer&&LIVE.fails===3){
+   clearInterval(LIVE.timer);
+   LIVE.timer=setInterval(()=>livePoll(false),Math.min(LIVE.pollMs*4,15000));
+  }
+  renderIfChanged();
+ }
+}
+
+/* Rebuild FEED from the full pick list every time, rather than appending.
+   Picks can be edited or removed by a commissioner mid-draft; an append-only
+   log would keep a player marked gone after he was handed back. */
+function applyPicks(picks){
+ const feed={}, mine=[], seq=[]; let unmatched=0, max=0;
+ picks.forEach(pk=>{
+  const no=pk.pick_no||0; if(no>max)max=no;
+  const md=pk.metadata||{};
+  const nm=((md.first_name||'')+' '+(md.last_name||'')).trim()||md.player_id||'?';
+  const pos=(md.position||'').toUpperCase();
+  const g=matchPick(pk);
+  if(g){
+   feed[g]=({no,rid:pk.roster_id,by:pk.picked_by});
+   if(isMyPick(pk)&&mine.indexOf(g)<0)mine.push(g);
+  }else unmatched++;
+  seq.push({no,g,nm:g?BYID[g].n:nm,pos:pos||(g?BYID[g].p:''),
+            rid:pk.roster_id,me:isMyPick(pk),slot:pk.draft_slot});
+ });
+ seq.sort((a,b)=>a.no-b.no);
+ FEED=feed; FEED_MINE=mine; LIVE.seq=seq; LIVE.maxPick=max; LIVE.unmatched=unmatched;
+ recompute(); computeDrift();
+}
+
+/* Sleeper's player_id is the join key and it covers essentially the whole
+   board — one player on the 08-13 board has no sleeper_id, and team defenses
+   join natively because Sleeper uses the team abbreviation as the id, which is
+   exactly what this board stores. Name matching is the backstop for that one
+   gap, not the primary path. */
+function matchPick(pk){
+ const id=String(pk.player_id||'');
+ if(id&&BYSL[id])return BYSL[id];
+ const md=pk.metadata||{};
+ const nm=normName((md.first_name||'')+' '+(md.last_name||''));
+ if(!nm)return null;
+ const pos=(md.position||'').toUpperCase();
+ const hit=PL.filter(p=>normName(p.n)===nm&&(!pos||p.p===pos));
+ return hit.length===1?hit[0].g:null;
+}
+const normName=s=>(s||'').toLowerCase().replace(/[^a-z]/g,'');
+function isMyPick(pk){
+ if(META.sleeperUserId&&pk.picked_by&&String(pk.picked_by)===String(META.sleeperUserId))return true;
+ if(LIVE.myRoster&&pk.roster_id===LIVE.myRoster)return true;
+ return false;
+}
+/* Chris's draft slot, without him setting it. draft_order is {user_id: slot}
+   and is null until the order is randomised, so fall back to reading it off
+   his own first pick. Manual selection still wins if he has set one. */
+function autoSlot(){
+ let s=null;
+ if(LIVE.order&&META.sleeperUserId&&LIVE.order[META.sleeperUserId])s=LIVE.order[META.sleeperUserId];
+ if(!s){const m=LIVE.seq.find(x=>x.me&&x.slot);if(m)s=m.slot;}
+ LIVE.autoSlot=s||null;
+ if(s&&!SLOT){SLOT=s;saveState();}
+}
+function tickClock(){
+ if(S.tab==='room'&&LIVE.on)paintClock();
+}
+function clockLeft(){
+ if(!LIVE.lastPicked||!LIVE.pickTimer)return null;
+ const el=(Date.now()-LIVE.lastPicked)/1000;
+ return Math.max(0,Math.min(LIVE.pickTimer,LIVE.pickTimer-el));
+}
+const mmss=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+function paintClock(){
+ const el=document.getElementById('clk'); if(!el)return;
+ const l=clockLeft(); if(l==null){el.textContent='--:--';return;}
+ el.textContent=mmss(l);
+ el.className='clock'+(l<=15?' crit':l<=40?' warn':'');
+}
+
+/* ---------- runs ---------- */
+function runStats(){
+ const seq=LIVE.seq.filter(s=>s.pos);
+ const last=seq.slice(-12);
+ const cnt=a=>{const o={};a.forEach(s=>{o[s.pos]=(o[s.pos]||0)+1;});return o;};
+ const myLast=(()=>{const m=LIVE.seq.filter(s=>s.me);return m.length?m[m.length-1].no:0;})();
+ const since=seq.filter(s=>s.no>myLast);
+ const l12=cnt(last), sinceC=cnt(since);
+ // A run worth naming: 5+ of the last 12 at one position. In a 14-team league
+ // the flat expectation for any one position is nowhere near that.
+ const hot=Object.keys(l12).filter(k=>l12[k]>=5&&k!=='K'&&k!=='DEF')
+   .sort((a,b)=>l12[b]-l12[a]);
+ return {last:last.length,l12,since:sinceC,sinceN:since.length,myLast,hot};
+}
+/* How many players are left at a position before the next tier wall breaks.
+   Tier walls are computed over the FULL board by the pipeline, so this counts
+   real remaining supply, not supply among players JJ happened to mention. */
+function tierLeft(pos){
+ const av=PL.filter(p=>!TAKEN[p.g]&&p.p===pos&&p.adp!=null).sort((a,b)=>a.adp-b.adp);
+ const i=av.findIndex(p=>p.tw);
+ return i<0?null:{n:i+1,wall:av[i]};
+}
+/* The panel: good players who probably will NOT be there next time round.
+   Ranked by what you lose, not by how likely they are to go — a 95%-gone K is
+   not news. */
+/* `skip` is the set of players already on the shortlist. Without it the same
+   name appears twice on one screen — recommended at #4 with TAKE NOW, and
+   again three inches to the right under "gone before your pick". Both are
+   true and saying it twice costs a re-read at exactly the wrong moment. */
+function goneBefore(limit,skip){
+ const np=nextMyPick(); if(!np)return [];
+ const cp=currentPick();          // hoisted: this used to be recomputed 256 times
+ const out=[];
+ PL.forEach(p=>{
+  if(TAKEN[p.g]||p.adp==null)return;
+  if(skip&&skip.has(p.g))return;
+  const s=survivalAt(p,np,cp); const v=s.room!=null?s.room:s.nat;
+  if(v>=.55)return;
+  if(p.p==='K'||p.p==='DEF')return;
+  // What you LOSE = how good he is x how likely he is to be gone. A 95%-gone
+  // K is not news; a 60%-gone player 40 picks better than your next pick is.
+  out.push({p,s,v,risk:(1-v)*(1/Math.max(1,p.adp))});
+ });
+ /* This used to sort by ADP while computing `risk` and never reading it — the
+    comment above the function claimed "ranked by what you lose, not by how
+    likely they are to go", and the code did the opposite of both. */
+ out.sort((a,b)=>b.risk-a.risk);
+ return out.slice(0,limit||8);
+}
+/* What the board looks like at each of your remaining picks. "Projected" is
+   doing real work here: a player only appears at a pick if he is more likely
+   than not to still be there. */
+function rosterPath(){
+ const cp=currentPick(), np=myPicks().filter(p=>p>=cp).slice(0,5);
+ const n=need(), open=Object.keys(n);
+ return np.map(pick=>{
+  const pool={};
+  PL.forEach(p=>{
+   if(TAKEN[p.g]||p.adp==null||p.p==='K'||p.p==='DEF')return;
+   const s=survivalAt(p,pick,cp); const v=s.room!=null?s.room:s.nat;   // cp hoisted
+   if(v<.5)return;
+   (pool[p.p]=pool[p.p]||[]).push(p);
+  });
+  Object.keys(pool).forEach(k=>pool[k].sort((a,b)=>a.adp-b.adp));
+  return {pick,round:Math.ceil(pick/RS()),pool,open};
+ });
+}
+
+/* ---------- quick entry ----------
+   The fallback that has to work when nothing else does. Subsequence match, so
+   "jjett" finds Jaxon Smith-Njigba and "cmc" finds McCaffrey, with a hard
+   preference for surname prefixes because that is what gets called out at a
+   draft table. */
+let QE={q:'',sel:0,rows:[]};
+/* 🔴 THE WORST BUG IN THE DRAFT ROOM, and it was silent.
+
+   An UNDRAFTED player has adp === null, and every branch below read
+   `1000 - p.adp`. That is NOT NaN — in JavaScript `null` coerces to 0 — so
+   every undrafted player scored a perfect 1000 and swept the top of the
+   dropdown ahead of the entire priced board.
+
+   Measured on the 2026-08-13 build, typing "smi" returned, in this order:
+       Arian Smith, Brashard Smith, Geno Smith, JuJu Smith-Schuster,
+       Jaxon Smith-Njigba (ADP 6), DeVonta Smith (ADP 29)
+   and "gib" returned Antonio Gibson ahead of Jahmyr Gibbs (ADP 2).
+
+   Enter marks rows[0]. So at the table someone calls "Smith" or "Gibbs", he
+   types three letters and hits Enter, and the board silently records the WRONG
+   player as drafted — with nothing to notice until the name he actually meant
+   turns up still available several rounds later, by which point the pick
+   counter, best-available and every survival number have been running on a
+   corrupted board.
+
+   Undrafted players must stay typeable — they are the FAAB watch list — so
+   they are ranked BEHIND the priced board rather than excluded. The floor sits
+   below the deepest real ADP, which keeps them reachable without letting one
+   outrank a priced player inside the same match tier. */
+const qeAdp=p=>(p.adp==null?900:p.adp);
+function qeScore(p,q){
+ const n=p.n.toLowerCase(), parts=n.split(' '), last=parts[parts.length-1]||'';
+ const a=qeAdp(p);
+ if(last.startsWith(q))return 4000-a;
+ if(n.startsWith(q))return 3000-a;
+ if(n.indexOf(q)>=0)return 2000-a;
+ const initials=parts.map(x=>x[0]||'').join('');
+ if(initials.startsWith(q))return 1500-a;
+ let i=0; for(const ch of n){if(ch===q[i])i++; if(i===q.length)break;}
+ return i===q.length?1000-a:-1;
+}
+function qeMatch(q){
+ q=(q||'').toLowerCase().trim();
+ if(q.length<2)return [];
+ return PL.filter(p=>!TAKEN[p.g]).map(p=>({p,s:qeScore(p,q)}))
+   .filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,8).map(x=>x.p);
 }
 
 /* ---------- filtering ---------- */
@@ -479,10 +1259,302 @@ function viewBoard(){
  for(let i=1;i<=15;i++){ if(!by[i])continue;
   const lo=(i-1)*RS()+1, hi=i*RS();
   const isNow=np&&np>=lo&&np<=hi;
+  // Cards go in a .cards2 wrapper so a wide screen gets 2-3 columns of them
+  // instead of one 1400px-wide row per player, with the name at the far left
+  // and the ADP at the far right. The round header stays full width and stays
+  // sticky, which column-count would have broken.
   h+='<div class="rh'+(isNow?' now':'')+'">Round '+i+' <span>\u00b7 picks '+lo+'\u2013'+hi+' \u00b7 '+by[i].length
-    +(isNow?' \u00b7 YOUR PICK #'+np+' IS HERE':'')+'</span></div>'+by[i].map(card).join('');}
- if(by[99]) h+='<div class="rh">Undrafted <span>\u00b7 outside the 14-team board \u00b7 FAAB watch list \u00b7 '+by[99].length+'</span></div>'+by[99].map(card).join('');
+    +(isNow?' \u00b7 YOUR PICK #'+np+' IS HERE':'')+'</span></div>'
+    +'<div class="cards2">'+by[i].map(card).join('')+'</div>';}
+ if(by[99]) h+='<div class="rh">Undrafted <span>\u00b7 outside the 14-team board \u00b7 FAAB watch list \u00b7 '+by[99].length+'</span></div>'
+   +'<div class="cards2">'+by[99].map(card).join('')+'</div>';
  return h||'<div class="empty">Nothing matches.</div>';
+}
+
+/* ---------- one reason, not a chain ----------
+   bestAvailable() emits every clause that applied, in the order it happened to
+   test them: "fills FLEX · BUY conv 3 · last of tier 4 · likely still there at
+   #47". Four clauses at 11.5px is not a reason, it is a paragraph, and the
+   order it arrives in has nothing to do with which one matters.
+   Rank them, lead with the strongest, and put a count on the rest — the full
+   list is one tap away in the player overlay. */
+const WHY_PRI=[[/^MANDATORY/,0],[/^last of tier/,1],[/^BUY conv/,2],[/^FADE conv/,2],
+               [/^fills /,3],[/^likely still there/,4],[/^K\/DEF can wait/,5],
+               [/^no open /,6],[/^lineup full/,7]];
+function whyPri(s){for(let i=0;i<WHY_PRI.length;i++)if(WHY_PRI[i][0].test(s))return WHY_PRI[i][1];return 9;}
+function whyTop(why){
+ if(!why||!why.length)return{top:'',rest:0,all:[]};
+ const w=why.slice().sort((a,b)=>whyPri(a)-whyPri(b));
+ return {top:w[0],rest:w.length-1,all:w};
+}
+/* JJ's own words, when he actually committed to them.
+   The structural why ("fills FLEX", "last of tier 4") is always available and
+   always the same shape, which makes it reliable and slightly lifeless. Where
+   JJ has taken a real position — a BUY or a FADE at conviction 2 or better —
+   his sentence is the more useful thing to read, because it is the reason the
+   player is on this board at all. Below that bar the structural clause wins:
+   a conviction-1 aside is not a reason to spend a pick.
+
+   `·` is stripped because the reason line is deliberately ONE clause and a
+   middot inside a quote would read as a second one. */
+const JJ_CONV_FLOOR=2;
+function jjLine(p){
+ if(!p.h||!p.h.length)return null;
+ if(p.lean!=='BUY'&&p.lean!=='FADE')return null;
+ if((p.cv||0)<JJ_CONV_FLOOR)return null;
+ let t=(p.h[p.h.length-1].t||'').replace(/\s+/g,' ').replace(/·/g,',').trim();
+ if(t.length<12)return null;
+ if(t.length>80){t=t.slice(0,80); const c=t.lastIndexOf(' '); if(c>52)t=t.slice(0,c); t+='…';}
+ return t;
+}
+/* `fills` is the slot already shown as a chip beside the name. Passing it here
+   drops the duplicate "fills QB" clause, so each row says a thing once and the
+   reason line is free to carry the NEXT strongest clause instead of echoing
+   the chip. */
+function whyLine(why,p,fills){
+ const w=whyTop(fills?(why||[]).filter(x=>x!=='fills '+fills):why);
+ const q=p?jjLine(p):null;
+ if(q)return '<div class="why" title="'+esc(w.all.join(' · '))+'">'
+   +'<b class="jjl '+esc(p.lean)+'">'+esc(p.lean)+' '+(p.cv||'')+'</b> '
+   +'<span class="jjq">“'+esc(q)+'”</span></div>';
+ if(!w.top)return '';
+ return '<div class="why" title="'+esc(w.all.join(' · '))+'">'+esc(w.top)
+  +(w.rest?' <em>+'+w.rest+' more</em>':'')+'</div>';
+}
+
+/* Collapsible section. Everything below the decision is genuinely useful and
+   genuinely ballast while the clock runs — 596px of "gone before" used to sit
+   between the recommendations and the run tracker. Open state persists in S. */
+function fold(key,title,body,o){
+ o=o||{};
+ const open=o.force||S.open[key];
+ return '<details class="fold"'+(open?' open':'')
+  +' ontoggle="S.open[\''+key+'\']=this.open?1:0">'
+  +'<summary'+(o.alert?' class="alert"':'')+'>'+title
+  +(o.count!=null?'<span class="cnt">'+o.count+'</span>':'')+'</summary>'
+  +'<div class="foldb">'+body+'</div></details>';
+}
+
+/* ---------- the Draft Room ----------
+   Rebuilt for the two-minute window. The decision — five ranked names, each
+   with a verdict, one reason and both survival numbers — is the first and
+   largest thing on the screen, and on a laptop it sits beside the room
+   context rather than 600px above it. */
+function viewRoom(){
+ const cp=currentPick(), np=nextMyPick(), n=need();
+ let h='';
+
+ /* status bar */
+ const onClock=np&&np===cp;
+ const SW={drafting:'live from Sleeper',paused:'paused by the commissioner',
+           pre_draft:'not started yet',complete:'complete'};
+ const st=LIVE.on
+  ? (LIVE.err?'<b style="color:#ff8fa3">feed error</b> — '+esc(LIVE.err)
+      +' · retrying, board untouched · type names below and carry on'
+     :'<b>'+esc(SW[LIVE.status]||LIVE.status||'connected')+'</b>'
+      +(LIVE.unmatched?' · <b>'+LIVE.unmatched+'</b> pick'+(LIVE.unmatched==1?'':'s')+' not on this board':''))
+  : (liveEnabled()?'<b>not connected</b> — tap Go live and picks stop being your problem'
+     :'<b>manual</b> — no draft id configured for this league');
+ // Clock and control on the first line with the status dot; the prose wraps
+ // underneath. The old single flex row let a long status message push the
+ // clock onto a third line on a phone — the clock being the one thing on this
+ // bar that is worth glancing at.
+ h+='<div class="lvbar'+(onClock?' onclock':'')+'">'
+  +'<div class="lvtop">'
+   +'<span class="dot '+(LIVE.on?(LIVE.err?'err':'live'):'man')+'"></span>'
+   +'<span class="clock" id="clk">'+(LIVE.on&&clockLeft()!=null?mmss(clockLeft()):'--:--')+'</span>'
+   +(LIVE.on?'<button class="hbtn" onclick="liveStop()">Stop</button>'
+           :'<button class="hbtn" onclick="liveStart()">Go live</button>')
+  +'</div>'
+  +'<span class="lvst">'+st+'</span>'
+  +'</div>';
+
+ if(onClock)h+='<div class="hot" style="background:#13211a;border-color:#2b6b45;color:#5ce39b">'
+   +'<b>You are on the clock — pick #'+cp+'.</b></div>';
+
+ if(LIVE.on&&LIVE.fails>=3)h+='<div class="warn"><b>The feed has failed '+LIVE.fails+' times running.</b> '
+  +'Every pick already on the board is still there and nothing has been lost. If you are on the '
+  +'offline copy, the hosted hub at the same address is the better bet for the live feed; if the '
+  +'venue wifi is gone, use the box above and keep drafting — the maths works identically on '
+  +'hand-typed picks.</div>';
+
+ h+='<div class="rtiles">'
+  +'<div><b>'+cp+'</b><span>on clock</span></div>'
+  +'<div><b>'+(np||'—')+'</b><span>your pick</span></div>'
+  +'<div><b>'+(np?Math.max(0,np-cp):'—')+'</b><span>picks away</span></div>'
+  +'<div><b>'+(SLOT||'—')+'</b><span>slot'+(LIVE.autoSlot?' ✓':'')+'</span></div></div>';
+
+ // The slot control now lives HERE as well as on My Team. The warning used to
+ // end "or set it on the My Team tab" — sending him to another screen, mid
+ // draft, to fix the one field that switches this one on.
+ if(!SLOT){
+  let sel='<select onchange="setSlot(this.value)" style="padding:5px 8px;font-size:12.5px">'
+   +'<option value="0">set slot…</option>';
+  for(let i=1;i<=META.teams;i++)sel+='<option value="'+i+'">'+i+'</option>';
+  sel+='</select>';
+  h+='<div class="warn" style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">'
+   +'<span style="flex:1 1 220px">Draft slot not set — everything pick-aware is off until it is. '
+   +'It fills in by itself the moment the feed sees one of your picks.</span>'+sel+'</div>';
+ }
+
+ /* quick entry — always present, not only when the feed is down */
+ h+='<div class="qe"><input id="qei" autocomplete="off" spellcheck="false" placeholder="'
+  +(LIVE.on?'Type a name to mark someone gone (feed is live, you should not need this)'
+           :'Type 3–4 letters, Enter — marks him gone. Ctrl+Enter = you drafted him.')
+  +'" value="'+esc(QE.q)+'"><div class="qed" id="qed" style="display:none"></div></div>';
+
+ h+='<div class="roomgrid">';
+
+ /* ---- column A: the decision ---- */
+ h+='<div class="rcolA">';
+ h+='<div class="sec">Take one of these</div>';
+ if(!Object.keys(n).length&&MINE.length)h+='<div class="info">Starting lineup is full — this is best available, not need.</div>';
+ const ba=bestAvailable(5);
+ if(!ba.length)h+='<div class="empty">Nothing left on the board.</div>';
+ ba.forEach((o,i)=>{
+  const p=o.p, s=survivalNext(p), v=verdict(s);
+  h+='<div class="rec'+(i===0?' n1':'')+'">'
+   +'<div class="recn">'+(i+1)+'</div>'
+   +'<div class="recb" onclick="openP('+p._i+')">'
+   +'<div class="rh1">'+(v?'<span class="vd '+v.k+'">'+v.t+'</span>':'')
+     +'<span class="nm">'+esc(p.n)+'</span>'
+     +(o.fills?'<span class="nf">fills '+esc(o.fills)+'</span>':'')+'</div>'
+   +'<div class="meta">'+esc(p.p)+' · '+esc(p.tm)+' · ADP '+p.adp.toFixed(1)+' R'+rdOf(p.adp)
+     +(p.al!=null?' · this room '+p.al.toFixed(1):'')
+     +(p.bye?' · bye '+esc(String(p.bye)):'')+'</div>'
+   +whyLine(o.why,p,o.fills)
+   +'</div>'
+   +survBlock(s)
+   +'<div class="racts"><button class="dh" onclick="event.stopPropagation();claimById(\''+p.g+'\')" '
+     +'title="I drafted him">Draft<br>him</button></div>'
+   +'</div>';
+ });
+ h+='</div>';
+
+ /* ---- column B: what the room is doing to you ---- */
+ h+='<div class="rcolB">';
+ if(np){
+  const shown=new Set(ba.map(o=>o.p.g));
+  const gb=goneBefore(8,shown), away=np-cp;
+  let gbody='';
+  if(!gb.length)gbody='<div class="box" style="margin-top:0">Nobody worth worrying about — everything of value is more '
+    +'likely than not to survive '+(away<=0?'until you are back on the clock'
+      :away===1?'the one pick in between':'the next '+away+' picks')
+    +'. Take the best player rather than the scarcest one.</div>';
+  gb.forEach(o=>{
+   const val=o.s.room!=null?o.s.room:o.s.nat;
+   gbody+='<div class="gone" onclick="openP('+o.p._i+')">'
+    +'<span class="gn">'+esc(o.p.n)+'</span>'
+    +'<span class="gm">'+esc(o.p.p)+' · '+o.p.adp.toFixed(0)+'</span>'
+    +'<span class="gs '+svClass(val)+'">'+pct(val)+' survives</span></div>';
+  });
+  h+=fold('gone','Gone before your pick at #'+np,gbody,{count:gb.length||null,force:1});
+ }
+ const rstat=runStats();
+ h+=fold('runs','What the room is doing',runBlock(),
+   {alert:!!rstat.hot.length,force:!!rstat.hot.length,
+    count:rstat.hot.length?rstat.hot.join(' ')+' run':null});
+ h+='</div>';
+
+ /* ---- column C: context, folded by default ---- */
+ h+='<div class="rcolC"><div class="foldwrap">';
+ const path=rosterPath();
+ let pbody='';
+ if(!path.length)pbody='<div class="box" style="margin-top:0">No picks left, or no draft slot set.</div>';
+ path.forEach(st=>{
+  const bits=Object.keys(st.pool).sort().map(k=>
+    '<b>'+k+'</b> '+st.pool[k].slice(0,3).map(p=>esc(surname(p.n))).join(', '));
+  pbody+='<div class="path"><div class="ph">Pick #'+st.pick+' · round '+st.round
+   +(st.pick===np?' · next':'')+'</div>'
+   +'<div class="pb">'+(bits.length?bits.join(' · '):'<em>nothing projected to survive this far</em>')+'</div></div>';
+ });
+ pbody+='<div class="box">Projected pools list only players more likely than not to '
+  +'still be there, using the same curve as the survival numbers above. They get thinner '
+  +'the further out you look, which is the honest shape of the information — not a bug.</div>';
+ h+=fold('path','Your path from here',pbody,{count:path.length||null});
+
+ if(LIVE.seq.length){
+  const lbody=LIVE.seq.slice(-12).reverse().map(s=>
+   '<div class="log'+(s.me?' me':'')+(s.g?'':' unm')+'"><b>'+s.no+'</b>'
+   +'<span>'+esc(s.nm)+(s.pos?' · '+esc(s.pos):'')
+   +(s.g?'':' — not on this board')+(s.me?' ← you':'')+'</span></div>').join('');
+  h+=fold('log','Last picks',lbody,{count:LIVE.seq.length});
+ }
+ const db=driftBox();
+ if(db)h+=fold('drift','Live pace',db);
+ h+='</div></div>';
+
+ h+='</div>';
+ return h;
+}
+
+/* "0%" is a claim of impossibility and this model is not entitled to make one —
+   a top-35 player does occasionally fall twenty picks on news the board has not
+   caught. Anything under a half point reads "<1%", and 99.5+ reads ">99%".
+   Same reason the project would rather show a missing number than a made-up
+   one: the rounding was inventing certainty at both ends. */
+function pct(v){
+ if(v<0.005)return '&lt;1%';
+ if(v>0.995)return '&gt;99%';
+ return Math.round(v*100)+'%';
+}
+/* Both numbers, same size, both labelled, never blended.
+   The old block printed national at 17px with the room number at 12.5px
+   underneath — while verdict() defers to the room number whenever one exists.
+   The largest figure on the card was not the one driving the recommendation. */
+function survBlock(s){
+ if(!s)return '<div class="svpair"><span class="svl">survival needs your slot</span></div>';
+ let h='<div class="svpair">'
+  +'<span class="svone"><b class="sv '+svClass(s.nat)+'">'+pct(s.nat)+'</b><i class="svl">national</i></span>';
+ if(s.room!=null)
+  h+='<span class="svone"><b class="sv '+svClass(s.room)+'">'+pct(s.room)+'</b><i class="svl">this room</i></span>';
+ else if(LP())h+='<span class="svone"><i class="svl">no room price</i></span>';
+ if(s.thin)h+='<span class="svthin" title="'+esc(s.why)+'">thin</span>';
+ return h+'</div>';
+}
+
+function runBlock(){
+ const r=runStats();
+ if(!r.last)return '<div class="box">No picks seen yet. Once the feed is live this shows '
+   +'position runs and how much supply is left above each tier wall.</div>';
+ const order=['RB','WR','TE','QB','K','DEF'];
+ const tot=Object.values(r.l12).reduce((a,b)=>a+b,0)||1;
+ let h='<div class="runbar">'+order.filter(k=>r.l12[k]).map(k=>
+   '<i class="c'+k+'" style="width:'+(100*r.l12[k]/tot)+'%" title="'+k+' '+r.l12[k]+'"></i>').join('')+'</div>';
+ h+='<div class="rl">'+order.filter(k=>r.l12[k]).map(k=>k+' <b>'+r.l12[k]+'</b>').join('')+'</div>';
+ h+='<div class="rl" style="color:#7f8a9c">last '+r.last+' picks'
+  +(r.sinceN?' · since your last pick: '+order.filter(k=>r.since[k]).map(k=>r.since[k]+' '+k).join(', '):'')+'</div>';
+ r.hot.forEach(k=>{
+  h+='<div class="hot"><b>'+k+' run — '+r.l12[k]+' of the last '+r.last+'.</b> '
+   +'Supply at '+k+' is leaving faster than the board prices it.</div>';
+ });
+ const walls=['RB','WR','TE','QB'].map(p=>({p,t:tierLeft(p)})).filter(x=>x.t&&x.t.n<=6);
+ walls.forEach(w=>{
+  h+='<div class="rl" style="color:#e0b050">▾ <b>'+w.t.n+'</b> '+w.p
+   +' left before the tier breaks at '+esc(w.t.wall.n)+'</div>';
+ });
+ return h;
+}
+
+function driftBox(){
+ if(!LIVE.seq.length)return '';
+ if(!DRIFT.ready)return '<div class="box">Pace calibration needs 12 drafted players that this '
+   +'board prices; it has '+DRIFT.n+'. Until then the survival numbers run on the pre-draft '
+   +'board with no live adjustment.</div>';
+ const dir=d=>d>0?'later than':d<0?'earlier than':'exactly at';
+ return '<div class="box"><b style="color:#dfe6ef">Live pace</b><br>'
+  +'Over the last 24 priced picks this room is drafting <b>'+Math.abs(DRIFT.nat).toFixed(0)
+  +'</b> picks '+dir(DRIFT.nat)+' national ADP'
+  +(LP()?', and <b>'+Math.abs(DRIFT.room).toFixed(0)+'</b> picks '+dir(DRIFT.room)+' its own two-draft pace price':'')
+  +'. Both survival curves are shifted by that much.'
+  +(DRIFT.spreadReady?'<br>Scatter around that centre is <b>'+DRIFT.spread.toFixed(2)+'×</b> what the '
+    +'board’s own spreads predicted, so every curve is widened by the same factor. '
+    +(DRIFT.spread>1.15?'This room is messier than the mock-draft field — treat single-pick certainties with suspicion.'
+      :DRIFT.spread<0.9?'This room is running tighter to the board than the mock field does.'
+      :'This room is tracking the board’s own dispersion closely.'):'')
+  +'<div style="margin-top:6px;color:#69748a">Median, not mean, so one reach cannot move it. '
+  +'Measured only on players who have actually been drafted — it reads this room’s '
+  +'aggression, not the whole board, and it is survivorship-biased by construction.</div></div>';
 }
 
 function viewTeam(){
@@ -543,13 +1615,13 @@ function viewTeam(){
  h+='<div class="sec">Best available for this roster</div>';
  if(!SLOT)h+='<div class="warn">Set your draft slot above and these become pick-aware.</div>';
  const ba=bestAvailable(20);
- h+=ba.map(o=>'<div class="c"><div class="acts">'
+ h+='<div class="cards2">'+ba.map(o=>'<div class="c"><div class="acts">'
    +'<button class="tk" onclick="event.stopPropagation();mark('+o.p._i+')">\u25cb</button>'
    +'<button class="mn" onclick="event.stopPropagation();claim('+o.p._i+')">+</button></div>'
    +'<div class="cc" onclick="openP('+o.p._i+')"><div class="ch"><div style="min-width:0">'
    +'<div class="nm">'+esc(o.p.n)+'</div><div class="meta">'+esc(o.p.p)+' \u00b7 '+esc(o.p.tm)+(o.p.pr?' \u00b7 '+esc(o.p.pr):'')+'</div>'
-   +'<div class="snip" style="-webkit-line-clamp:2;color:#8fa3bd">'+esc(o.why.join(' \u00b7 '))+'</div></div>'
-   +'<div class="adp"><b>'+o.p.adp.toFixed(1)+'</b><i>R'+rdOf(o.p.adp)+' \u00b7 eff '+o.eff.toFixed(0)+'</i></div></div></div></div>').join('');
+   +whyLine(o.why,o.p,o.fills)+'</div>'
+   +'<div class="adp"><b>'+o.p.adp.toFixed(1)+'</b><i>R'+rdOf(o.p.adp)+' \u00b7 eff '+o.eff.toFixed(0)+'</i></div></div></div></div>').join('')+'</div>';
  return h;
 }
 
@@ -591,7 +1663,7 @@ function faabBid(p){
 function viewPlayers(){
  const r=PL.filter(pass);
  return headerNote()+'<div class="rh">'+r.length+' player'+(r.length==1?'':'s')+'</div>'
-  +(r.length?r.map(card).join(''):'<div class="empty">Nothing matches.</div>');
+  +(r.length?'<div class="cards2">'+r.map(card).join('')+'</div>':'<div class="empty">Nothing matches.</div>');
 }
 
 function viewOutlines(){
@@ -627,17 +1699,17 @@ function headerNote(){
  bits.push('ADP basis <b>'+esc(META.adpBasis)+'</b>'+(META.adpPrev?' vs '+esc(META.adpPrev):''));
  if(META.conflictRows)bits.push('<b>'+META.conflictRows+'</b> takes reference a player who has since changed teams \u2014 tagged TEAM CHANGED');
  if(META.unresolved)bits.push('<b>'+META.unresolved+'</b> take rows named someone who could not be matched to a 2026 NFL player \u2014 tap Setup to see them');
- out+='<div class="warn">'+bits.join(' \u00b7 ')+'</div>';
+ out+='<div class="hn"><div class="warn">'+bits.join(' \u00b7 ')+'</div>';
  const l=LP();
  if(l)out+='<div class="info"><b>\u2192 second number is this league\u2019s own price.</b> '
    +'Measured over your '+l.seasons.join(' and ')+' drafts ('+l.priced+' of the board priced); '
    +'<span class="pill REACH">REACH</span> means it goes earlier here, '
    +'<span class="pill WAIT">WAIT</span> means it lasts longer. '
    +'Display only \u2014 nothing is ranked or filtered on it.</div>';
- return out;
+ return out+'</div>';
 }
 
-const TABS={draft:[['board','Board'],['team','My Team'],['players','Players'],['outlines','Intel'],['cont','Contingency']],
+const TABS={draft:[['room','Draft Room'],['board','Board'],['team','My Team'],['players','Players'],['outlines','Intel'],['cont','Contingency']],
             season:[['waivers','Waivers'],['team','My Team'],['players','Players'],['outlines','Intel'],['cont','Contingency']]};
 
 function renderTabs(){
@@ -649,12 +1721,40 @@ function renderTabs(){
   S.tab=b.dataset.t;S.q='';const qq=document.getElementById('q');if(qq)qq.value='';renderTabs();render();});
 }
 
+/* A cheap fingerprint of everything the Draft Room draws from. livePoll() used
+   to call render() unconditionally on every successful poll — every three
+   seconds, whether or not a single thing had changed — rebuilding a ~2,250px
+   screen from a string and swapping innerHTML. That destroyed text selection,
+   scroll position inside the folds, and the caret in the quick-entry box.
+   Nothing here is expensive: it is counters and ids, not board state. */
+function roomSig(){
+ const d=DRIFT||{}, f=v=>(typeof v==='number'?v.toFixed(2):'-');
+ return [S.tab,MODE,SLOT,picksMade(),MINE.length,LIVE.on?1:0,LIVE.status,LIVE.err,
+   LIVE.seq.length,LIVE.unmatched,LIVE.fails,LIVE.autoSlot,d.n,
+   f(d.nat),f(d.room),f(d.spread),
+   QE.q,STATE_OK?1:0].join('|');
+}
+let LASTSIG=null;
+function renderIfChanged(){
+ rcBust();
+ const sig=roomSig();
+ if(sig===LASTSIG)return false;
+ render();
+ return true;
+}
+
 function render(){
+ rcBust();
+ LASTSIG=roomSig();
  const v=document.getElementById('view');
- document.getElementById('ctl').style.display=(S.tab==='cont'||S.tab==='outlines'||S.tab==='team')?'none':'block';
- document.getElementById('fab').style.display=(S.tab==='board'||S.tab==='team'||S.tab==='players')?'flex':'none';
+ // Round headers stick below the real header, whatever height it currently is.
+ const hdr=document.querySelector('header');
+ if(hdr)document.documentElement.style.setProperty('--hh',hdr.offsetHeight+'px');
+ document.getElementById('ctl').style.display=(S.tab==='cont'||S.tab==='outlines'||S.tab==='team'||S.tab==='room')?'none':'block';
+ document.getElementById('fab').style.display=(S.tab==='board'||S.tab==='team'||S.tab==='players'||S.tab==='room')?'flex':'none';
  document.getElementById('undoBtn').textContent='Undo'+(HIST.length?' ('+HIST.length+')':'');
- if(S.tab==='board')v.innerHTML=viewBoard();
+ if(S.tab==='room'){v.innerHTML=viewRoom();wireRoom();}
+ else if(S.tab==='board')v.innerHTML=viewBoard();
  else if(S.tab==='team')v.innerHTML=viewTeam();
  else if(S.tab==='players')v.innerHTML=viewPlayers();
  else if(S.tab==='waivers')v.innerHTML=viewWaivers();
@@ -672,19 +1772,86 @@ function render(){
  document.getElementById('sub').textContent=sub;
 }
 
-/* ---------- actions ---------- */
-function mark(i){const p=PL[i];if(!p)return;
- HIST.push(JSON.stringify({T:TAKEN,M:MINE}));
- if(TAKEN[p.g]&&!MINE.includes(p.g))delete TAKEN[p.g];
- else {TAKEN[p.g]=1;MINE=MINE.filter(g=>g!==p.g);}
- saveState();render();}
+/* ---------- the quick-entry box ----------
+   Rebuilt on every render, so the listeners are attached here rather than once
+   at boot. Focus and caret position are restored because a poll arriving
+   mid-word must not eat what he is typing — at three seconds a poll, that
+   would happen constantly. */
+function wireRoom(){
+ const i=document.getElementById('qei'); if(!i)return;
+ /* Focus restoration used to sit INSIDE `if(QE.q)`, so an EMPTY box lost the
+    caret on the next poll: tap it, hesitate for three seconds, and the cursor
+    silently vanished before the first keystroke. Restore whenever the box was
+    focused, empty or not. */
+ i.value=QE.q||'';
+ if(QE.focus){i.focus(); const n=(QE.q||'').length; try{i.setSelectionRange(n,n);}catch(e){}}
+ i.oninput=e=>{QE.q=e.target.value;QE.sel=0;QE.focus=1;qeDraw();};
+ i.onblur=()=>{QE.focus=0;setTimeout(qeDraw,150);};
+ i.onfocus=()=>{QE.focus=1;qeDraw();};
+ i.onkeydown=e=>{
+  const rows=QE.rows;
+  if(e.key==='ArrowDown'){e.preventDefault();QE.sel=Math.min(QE.sel+1,rows.length-1);qeDraw();}
+  else if(e.key==='ArrowUp'){e.preventDefault();QE.sel=Math.max(QE.sel-1,0);qeDraw();}
+  else if(e.key==='Enter'){
+   e.preventDefault();
+   const p=rows[QE.sel]; if(!p)return;
+   if(e.ctrlKey||e.metaKey)claimById(p.g); else markById(p.g);
+   QE.q='';QE.sel=0;QE.focus=1;
+  }
+  else if(e.key==='Escape'){QE.q='';qeDraw();}
+ };
+ qeDraw();
+}
+function qeDraw(){
+ const d=document.getElementById('qed'); if(!d)return;
+ QE.rows=qeMatch(QE.q);
+ if(!QE.rows.length||!QE.focus){d.style.display='none';d.innerHTML='';return;}
+ d.style.display='block';
+ /* Each row carries BOTH actions. The row used to call markById only, so on a
+    touch device — where Ctrl+Enter does not exist — there was no pointer path
+    to "I drafted him" anywhere in the Draft Room. */
+ d.innerHTML=QE.rows.map((p,i)=>
+  '<div class="qer'+(i===QE.sel?' sel':'')+'">'
+  +'<span onmousedown="event.preventDefault();markById(\''+p.g+'\')" style="flex:1;min-width:0">'
+  +esc(p.n)+'</span>'
+  +'<small>'+esc(p.p)+' '+esc(p.tm)+' · '+(p.adp==null?'undrafted':p.adp.toFixed(1))+'</small>'
+  +'<button class="dh sm" onmousedown="event.preventDefault();event.stopPropagation();claimById(\''+p.g+'\')">Mine</button>'
+  +'</div>').join('');
+}
+
+/* ---------- actions ----------
+   These write to the HAND-MARK objects, never to TAKEN. TAKEN is rebuilt from
+   the hand marks and the feed together by recompute(). Un-marking a player the
+   feed says is gone records a SUPPRESS override rather than doing nothing —
+   that is the escape hatch for a bad id match, and without it a single wrong
+   match would be uncorrectable for the rest of the draft. */
+function snap(){HIST.push(JSON.stringify({A:MANUAL,M:MANUAL_MINE,S:SUPPRESS}));}
+function mark(i){const p=PL[i];if(!p)return;markById(p.g);}
+function markById(g){
+ if(!BYID[g])return;
+ snap();
+ if(TAKEN[g]&&MINE.indexOf(g)<0){
+  delete MANUAL[g];
+  if(FEED[g])SUPPRESS[g]=1;
+ }else{
+  MANUAL[g]=1; delete SUPPRESS[g];
+  MANUAL_MINE=MANUAL_MINE.filter(x=>x!==g);
+ }
+ recompute();saveState();render();}
 function claim(i){const p=PL[i];if(!p)return;claimById(p.g);}
 function claimById(g){
- HIST.push(JSON.stringify({T:TAKEN,M:MINE}));
- if(MINE.includes(g)){MINE=MINE.filter(x=>x!==g);delete TAKEN[g];}
- else {MINE.push(g);TAKEN[g]=1;}
- saveState();render();}
-function undo(){if(!HIST.length)return;const s=JSON.parse(HIST.pop());TAKEN=s.T;MINE=s.M;saveState();render();}
+ if(!BYID[g])return;
+ snap();
+ if(MINE.indexOf(g)>=0){
+  MANUAL_MINE=MANUAL_MINE.filter(x=>x!==g);
+  delete MANUAL[g];
+  if(FEED[g])SUPPRESS[g]=1;
+ }else{
+  MANUAL_MINE.push(g); delete SUPPRESS[g];
+ }
+ recompute();saveState();render();}
+function undo(){if(!HIST.length)return;const s=JSON.parse(HIST.pop());
+ MANUAL=s.A;MANUAL_MINE=s.M;SUPPRESS=s.S||{};recompute();saveState();render();}
 function setSlot(v){SLOT=parseInt(v)||0;saveState();render();}
 function toggleMode(){MODE=MODE==='draft'?'season':'draft';applyMode();saveState();renderTabs();render();}
 function applyMode(){
@@ -799,13 +1966,45 @@ function openSetup(){
   +'<div class="sec">Mode</div>'
   +'<div class="box">Currently <b>'+MODE.toUpperCase()+'</b>. Tap the badge next to the title to switch. '
   +'Draft mode is the round board and roster builder; season mode is waivers and FAAB.</div>'
+  +'<div class="sec">Live draft feed</div>'
+  +'<div class="box">The Draft Room reads picks straight from Sleeper’s draft endpoint, so '
+  +'nothing has to be typed while the draft runs. No login and no API key — the endpoint is '
+  +'public and read-only. Polling two endpoints every '
+  +(((META.liveDraft&&META.liveDraft.pollSeconds)||3))+'s is about 40 calls a minute against a '
+  +'documented ceiling of 1000.<br><br><b>Draft id</b> '
+  +(META.liveDraft&&META.liveDraft.draftId?'<code>'+esc(META.liveDraft.draftId)+'</code>':'<i>none configured</i>')
+  +(LIVE.cfg?'<br>'+esc(LIVE.cfg.type||'')+' · '+esc(LIVE.status)+' · '
+    +(LIVE.teams||'?')+' teams · '+(LIVE.rounds||'?')+' rounds · '+LIVE.pickTimer+'s clock':'')
+  +'<br><br>Rounds, teams, clock, snake type and the draft order are all re-read from Sleeper '
+  +'when it connects. Only the id comes from the build — a stale local setting can never '
+  +'drive the pick maths.</div>'
+  +'<div class="bar"><input id="drId" placeholder="override draft id (e.g. a mock)" value="'
+  +esc(LIVE.draftId||'')+'" style="flex:1 1 auto;min-width:150px">'
+  +'<button class="hbtn" onclick="liveStart(document.getElementById(\'drId\').value)">Connect</button>'
+  +(LIVE.on?'<button class="hbtn" onclick="liveStop()">Stop</button>':'')+'</div>'
   +'<div class="sec">Live league sync</div>'
   +'<div class="box">Pulls rosters and FAAB balances straight from Sleeper so the waiver list knows who is '
   +'actually free in your league. Needs a network connection.</div>'
   +'<button class="hbtn" style="padding:8px 14px" onclick="syncLeague()">Sync league</button>'
   +'<div id="syncMsg" style="font-size:11.5px;color:#8a94a6;margin-top:8px"></div>'
+  /* headerNote() has always promised "tap Setup to see them" about the
+     unresolved take rows. Setup never rendered them — D.unresolved is shipped
+     as a full array by payload.py and was read by nothing, so the banner sent
+     him to a screen that did not contain the thing it advertised. */
+  +(function(){
+    const u=(D&&D.unresolved)||[];
+    let s='<div class="sec">Unresolved take rows ('+u.length+')</div>';
+    if(!u.length)return s+'<div class="box">Every take row resolved to a 2026 NFL player.</div>';
+    s+='<div class="box">These take rows named someone the pipeline could not match to a 2026 '
+     +'NFL player. Most are correct non-matches — college players, retirees, defensive players. '
+     +'They are listed rather than dropped so a genuine miss is visible.</div>';
+    return s+u.slice(0,80).map(x=>'<div class="cn"><b>'+esc(x.n||'(no name)')+'</b>'
+      +(x.p?' · '+esc(x.p):'')+(x.d?' · '+esc(x.d):'')
+      +(x.why?' <span class="cv">'+esc(x.why)+'</span>':'')+'</div>').join('')
+      +(u.length>80?'<div class="box">…and '+(u.length-80)+' more.</div>':'');
+   })()
   +'<div class="sec">Reset</div>'
-  +'<button class="hbtn" style="padding:8px 14px" onclick="if(confirm(\'Clear every pick?\')){TAKEN={};MINE=[];HIST=[];saveState();render();closeOv3();}">Clear all picks</button>';
+  +'<button class="hbtn" style="padding:8px 14px" onclick="if(confirm(\'Clear every pick, including anything pulled from the live feed?\')){liveStop();resetPicks();HIST=[];saveState();render();closeOv3();}">Clear all picks</button>';
  document.getElementById('ov3').classList.add('show');
 }
 async function syncLeague(){
@@ -846,6 +2045,31 @@ async function syncLeague(){
  }
 }
 
+/* One request at boot, not a polling loop. Deliberate: this page is public, and
+   a hub that hammers Sleeper every three seconds for anyone who happens to open
+   it is both rude and pointless. If the draft is actually running, polling
+   starts by itself and Chris does not have to remember anything on the day. */
+async function liveProbe(){
+ if(MODE!=='draft'||!liveEnabled())return;
+ const id=LIVE.draftId||META.liveDraft.draftId;
+ try{
+  const d=await fetch(SLEEPER+id,{cache:'no-store'}).then(r=>r.ok?r.json():null);
+  if(!d||!d.draft_id)return;
+  LIVE.cfg=d;LIVE.status=d.status||'';LIVE.draftId=id;
+  // Take the clock from the probe too. It costs nothing — the response is
+  // already here — and without it the timer reads --:-- until the first poll
+  // lands, which on draft day is the first three seconds of being on the clock.
+  LIVE.lastPicked=d.last_picked||0;
+  const st=d.settings||{};
+  if(st.pick_timer)LIVE.pickTimer=st.pick_timer;
+  if(st.teams)LIVE.teams=st.teams; if(st.rounds)LIVE.rounds=st.rounds;
+  LIVE.order=d.draft_order||null;
+  if(d.status==='drafting'||d.status==='paused')liveStart(id);
+  else render();
+ }catch(e){ /* offline, blocked, or the id is wrong. The board still works,
+    and the Draft Room says so rather than pretending to be connected. */ }
+}
+
 /* ---------- boot ---------- */
 (async()=>{
  try{ SOURCE=await acquire(); }
@@ -871,10 +2095,26 @@ async function syncLeague(){
  PL=[];
  D.board.forEach(b=>{
   const p=withTakes[b.g];
-  if(p){PL.push(p);delete withTakes[b.g];}
+  // A player WITH takes still gets his bye week from the board row — build_players
+  // never carries one, so bye was shipped on all 256 board rows and rendered
+  // nowhere.
+  if(p){if(p.bye==null)p.bye=b.bye; PL.push(p); delete withTakes[b.g];}
   else PL.push({g:b.g,n:b.n,p:b.p,tm:b.tm,sl:b.sl,adp:b.adp,pr:b.pr,sd:b.sd,nd:b.nd,bi:b.bi,
     sdok:b.sdok,mv:null,es:'',dp:Math.ceil(b.adp/META.roundSize)>=META.deepRound,lean:'',cv:0,m:0,rev:0,tg:[],h:[],
-    ro:true,tc:false,tcf:'',tr:null,tw:0,
+    ro:true,tc:false,tcf:'',
+    /* 🔴 These were hardcoded `tr:null, tw:0` — for every board player without a
+       podcast take, which is roughly TWO THIRDS OF THE BOARD.
+       payload.py's compute_tiers() carries a docstring insisting tiers must run
+       over the whole board and not the take subset, and it does: every board row
+       ships a real `tr` and `tw`. The client then threw them away and substituted
+       zeroes. The result was that the TIER WALL pill, the LAST OF TIER chip, the
+       .c.wall border, bestAvailable()'s -8 tier bonus and tierLeft()'s
+       "3 WR left before the tier breaks" all silently ignored ~170 of 256
+       players — the exact failure the Python comment exists to prevent,
+       reintroduced on this side of the wire.
+       `st` was dropped the same way, which made irEligible() false for every
+       board-only player, so the My Team IR stash could never fill from one. */
+    tr:b.tr,tw:b.tw,st:b.st,bye:b.bye,
     // Most of the board has no podcast take. The league-adjusted price is a
     // property of the BOARD, so it has to ride along here too — omitting it
     // would leave the second price visible only on the ~1 in 3 players JJ
@@ -887,7 +2127,16 @@ async function syncLeague(){
  // alphabetical tie-break disagreed with the rank-ordered board sort.
  PL.sort((a,b)=>(a.adp==null)-(b.adp==null)||(a.adp||0)-(b.adp||0)||
    ((a.bi==null?1e9:a.bi)-(b.bi==null?1e9:b.bi))||a.n.localeCompare(b.n));
- PL.forEach((p,i)=>{p._i=i;BYID[p.g]=p;});
+ PL.forEach((p,i)=>{p._i=i;BYID[p.g]=p;if(p.sl)BYSL[String(p.sl)]=p.g;});
+ buildSdModel();
+
+ /* On a laptop the context sections cost nothing — the decision already fits
+    above them and there is column left over. On a phone every one of them is
+    a screen of scrolling between him and the next thing he needs. So the
+    default differs by the only thing that actually differs: how much room
+    there is. */
+ if(window.innerWidth>=1280)S.open={gone:1,runs:1,path:1,log:1,drift:0};
+ else if(window.innerWidth>=900)S.open={gone:1,runs:1,path:0,log:1,drift:0};
 
  // Mode defaults to the calendar but the badge always wins if the hash says so.
  MODE = (META.draft && new Date().toISOString().slice(0,10) > META.draft) ? 'season' : 'draft';
@@ -904,6 +2153,7 @@ async function syncLeague(){
 
  document.getElementById('load').remove();
  renderTabs();render();
+ liveProbe();
  // Test hook. The suite needs to assert that the hub path and the parachute
  // path deliver byte-identical payloads; without this it can only compare
  // rendered HTML, which would pass even if one path silently truncated a blob.
