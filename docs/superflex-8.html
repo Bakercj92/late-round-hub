@@ -1,250 +1,457 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Late-Round Tracker</title><style>
+<title>Late-Round Tracker</title><style>/* ==========================================================================
+   FANTASY HUB — DRAFT-DAY TOKENS v2
+   Ported 2026-08-20 (run #17, Phase 2) from the Claude Design project
+   "Design token consolidation brief". 16 colours · 5 type steps · 5 spacing
+   steps · 3 radii · 3 weights · 2 letter-spacings.
+
+   Before this port: 104 distinct colours (61 used exactly once), 18 font sizes
+   across 85 declarations, 0 custom properties. Nothing was ranked because
+   everything was bespoke.
+
+   The rules that govern every value below:
+     - the type scale is SEMANTIC, not a size list. --fs-hero is the one
+       decision on the screen and appears once. --fs-answer is what you act on
+       cold. --fs-support is what you check to confirm. --fs-body is read
+       between picks. --fs-meta names things and never carries data.
+     - a colour is a ROLE. There is no "a slightly different green".
+     - anything not expressible as a token is listed under OFF-TOKEN at the
+       foot of this block, with the reason. Nothing is inlined silently.
+   ========================================================================== */
+:root{
+ /* ---- type: 5 steps ---- */
+ --fs-hero:28px;    /* the one decision on the screen */
+ --fs-answer:20px;  /* names and numbers you act on */
+ --fs-support:15px; /* numbers you check, not read */
+ --fs-body:13px;    /* meta, reasons, quotes, prose */
+ --fs-meta:11px;    /* uppercase naming only, never data */
+
+ /* ---- weights: 3 ---- */
+ --w-reg:400; --w-med:600; --w-bold:700;
+
+ /* ---- letter-spacing: 2 ---- */
+ --ls-caps:.06em; --ls-none:0;
+
+ /* ---- line-height: 2 ---- */
+ --lh-tight:1.15; --lh-text:1.45;
+
+ /* ---- font stacks: system only, no network ---- */
+ --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+
+ /* ---- colour: 16 tokens ----
+    Contrast ratios measured against --raised unless noted. Recomputed in this
+    session rather than taken on trust; see the report. */
+ --surface:#0F131A;      /* page, and the recessed step */
+ --raised:#242D3E;       /* rows, panels — 1.35x surface */
+ --raised-hi:#384459;    /* inputs, chips — 1.41x raised */
+ --line:#6C7689;         /* default border — 3.02:1 */
+ --line-strong:#8A94A6;  /* focus, hard dividers — 4.52:1 */
+
+ --text:#EDF1F7;         /* 14.4:1 */
+ --text-dim:#B4BFD0;     /* 7.6:1 — 5.3:1 on --raised-hi, the only
+                            non-full text legal on that surface */
+ --text-mute:#8F9AAD;    /* 4.9:1 floor. Legal on --surface and --raised
+                            ONLY — it is 3.2-4.1:1 on every *-fill token, which
+                            the contrast matrix in the report shows in full. */
+
+ /* --muted is an ALIAS, not a 17th colour. Everything that wants "quiet text"
+    reads it; the handful of containers painted with a fill token re-point it
+    to --text-dim so quiet text never lands below AA just because the surface
+    under it changed. Measured, not assumed: the failure this fixes was 26 real
+    text nodes on the Plan tab that the previous audit's zero-failure count
+    never saw, because that audit read declared colours and this one folds in
+    the surface a node is actually sitting on. */
+ --muted:var(--text-mute);
+
+ --positive:#5CE39B;     /* take it / it survives */
+ --positive-fill:#14532D;
+ --urgent:#FF9DAE;       /* gone or going */
+ --urgent-fill:#6B1F2E;
+ --caution:#ECD07A;      /* check before you act */
+ --caution-fill:#4A3712;
+ --accent:#96C1F5;       /* structure, never a verdict */
+ --accent-fill:#1E3A5F;
+
+ /* position hues are ALIASES, not new tokens */
+ --pos-rb:var(--positive);
+ --pos-wr:var(--accent);
+ --pos-te:var(--urgent);
+ --pos-qb:var(--caution);
+
+ /* ---- spacing: 5 steps ---- */
+ --s1:4px; --s2:8px; --s3:12px; --s4:20px; --s5:32px;
+
+ /* ---- radius: 3 ---- */
+ --r1:4px; --r2:8px; --r3:999px;
+
+ /* ---- OFF-TOKEN, deliberately literal ----
+    --fs-input   16px is the iOS zoom-on-focus floor. A 15px input makes
+                 Safari zoom the page the moment he taps the quick-entry box
+                 mid-draft. Platform requirement, not a type step.
+    --tap        44px is the accessibility touch floor, not a spacing step.
+    --edge-alert 3px, deliberately thinner than --s1 (4px) so an alert panel
+                 never competes with the hero row's 4px green edge.
+    --shadow     drop shadows are not in the token set; two remain, both on
+                 floating layers (the FAB and the quick-entry dropdown). */
+ --fs-input:16px;
+ --tap:44px;
+ --edge-alert:3px;
+ --shadow-fab:0 3px 12px #00000088;
+ --shadow-pop:0 8px 22px #000000aa;
+}
+
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#0f131a;color:#e6e9ef;overscroll-behavior-y:none}
-header{position:sticky;top:0;z-index:30;background:#151a23;border-bottom:1px solid #232c3b}
-.hb{padding:8px 12px 0}
-h1{margin:0;font-size:15px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-h1 .ttl{display:flex;align-items:center;gap:7px;min-width:0}
-.mode{font-size:9.5px;font-weight:700;letter-spacing:.6px;padding:2px 7px;border-radius:9px;background:#123a5c;color:#7fb2f0;border:1px solid #1d4f7d;cursor:pointer;white-space:nowrap}
-.mode.season{background:#0d4429;color:#5ce39b;border-color:#17663f}
-.sub{font-size:10.5px;color:#7f8a9c;margin-top:2px}
-.hbtn{background:#222a38;border:0;color:#c3cede;border-radius:6px;padding:5px 9px;font-size:11.5px;cursor:pointer}
-.tabs{display:flex;margin-top:8px;border-bottom:1px solid #232c3b;overflow-x:auto;scrollbar-width:none}
+body{margin:0;font-family:var(--font);font-size:var(--fs-support);line-height:var(--lh-text);
+ font-weight:var(--w-reg);letter-spacing:var(--ls-none);
+ background:var(--surface);color:var(--text);overscroll-behavior-y:none;-webkit-font-smoothing:antialiased}
+header{position:sticky;top:0;z-index:30;background:var(--raised);border-bottom:1px solid var(--line)}
+.hb{padding:var(--s2) var(--s3) 0}
+h1{margin:0;font-size:var(--fs-support);font-weight:var(--w-med);display:flex;justify-content:space-between;align-items:center;gap:var(--s2)}
+h1 .ttl{display:flex;align-items:center;gap:var(--s2);min-width:0}
+.mode{font-size:var(--fs-meta);font-weight:var(--w-med);letter-spacing:var(--ls-caps);
+ padding:2px var(--s2);border-radius:var(--r3);background:var(--accent-fill);color:var(--accent);
+ border:1px solid var(--accent);cursor:pointer;white-space:nowrap}
+.mode.season{background:var(--positive-fill);color:var(--positive);border-color:var(--positive)}
+.sub{font-size:var(--fs-body);color:var(--muted);margin-top:2px}
+.hbtn{background:var(--raised-hi);border:1px solid var(--line-strong);color:var(--text-dim);
+ border-radius:var(--r2);padding:5px var(--s2);font-size:var(--fs-body);cursor:pointer}
+.tabs{display:flex;margin-top:var(--s2);border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
-.tabs button{flex:1 0 auto;background:0;border:0;border-bottom:2px solid transparent;color:#8a94a6;padding:9px 10px;font-size:12.5px;cursor:pointer;white-space:nowrap}
-.tabs button.on{color:#fff;border-bottom-color:#3b82f6;font-weight:600}
-.ctl{padding:8px 12px}
-input,select,textarea,button{font:inherit;background:#1c232f;color:#e6e9ef;border:1px solid #2c3648;border-radius:6px;padding:7px 9px}
-#q{width:100%;font-size:16px}
-.row{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
-.row select{flex:1 1 auto;min-width:80px;font-size:12.5px;padding:6px 7px}
-.tgl{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
-.tgl button{flex:1 1 auto;font-size:11.5px;padding:7px 5px;cursor:pointer}
-.tgl button.on{background:#1d4ed8;border-color:#2563eb;color:#fff;font-weight:600}
-main{padding:0 12px 80px}
-.warn{background:#332612;border:1px solid #63491a;color:#eecd99;padding:7px 10px;border-radius:6px;font-size:11px;margin:8px 0}
-.info{background:#122436;border:1px solid #1d3a5c;color:#9ecbff;padding:7px 10px;border-radius:6px;font-size:11px;margin:8px 0}
+.tabs button{flex:1 0 auto;background:0;border:0;border-bottom:2px solid transparent;
+ color:var(--muted);padding:9px var(--s2);font-size:var(--fs-body);font-weight:var(--w-med);
+ cursor:pointer;white-space:nowrap}
+.tabs button.on{color:var(--text);border-bottom-color:var(--accent);font-weight:var(--w-bold)}
+.ctl{padding:var(--s2) var(--s3)}
+/* A form control's border must clear 3:1 against BOTH the control and the page
+   (WCAG 1.4.11). --line is only 2.15:1 on --raised-hi, so every control that
+   sits on the raised-hi step takes --line-strong: 3.21:1 on it, 6.09:1 on the
+   page. Measured this session; the design set did not cover control borders. */
+input,select,textarea,button{font-family:var(--font);font-size:var(--fs-body);
+ background:var(--raised-hi);color:var(--text);border:1px solid var(--line-strong);border-radius:var(--r2);padding:7px 9px}
+:focus-visible{outline:2px solid var(--line-strong);outline-offset:2px}
+#q{width:100%;font-size:var(--fs-input)}
+.row{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:7px}
+.row select{flex:1 1 auto;min-width:80px;font-size:var(--fs-body);padding:6px 7px}
+.tgl{display:flex;gap:var(--s2);margin-top:7px;flex-wrap:wrap}
+.tgl button{flex:1 1 auto;font-size:var(--fs-body);padding:7px 5px;cursor:pointer}
+.tgl button.on{background:var(--accent-fill);border-color:var(--accent);color:var(--text);font-weight:var(--w-med)}
+main{padding:0 var(--s3) 80px}
+.warn{background:var(--caution-fill);border:1px solid var(--caution);color:var(--caution);
+ padding:7px var(--s3);border-radius:var(--r2);font-size:var(--fs-body);margin:var(--s2) 0}
+.info{background:var(--accent-fill);border:1px solid var(--accent);color:var(--accent);
+ padding:7px var(--s3);border-radius:var(--r2);font-size:var(--fs-body);margin:var(--s2) 0}
 /* Round headers stick BELOW the header, not behind it. `top:0` put them under
    an 84-205px opaque sticky header, so they were invisible for the entire time
    they were stuck — the one moment a sticky header exists to be visible.
    --hh is written by JS from the real header height, which changes with the
    filter strip and with wrapping. */
-.rh{position:sticky;top:var(--hh,84px);background:#0f131a;padding:11px 0 5px;font-size:11.5px;font-weight:700;letter-spacing:.7px;color:#7fb2f0;text-transform:uppercase;border-bottom:1px solid #232c3b;z-index:5}
-.rh span{color:#8e99ac;font-weight:400;text-transform:none;letter-spacing:0}
-.rh.now{color:#5ce39b}
-.c{background:#161c26;border:1px solid #212a38;border-radius:8px;padding:7px 9px;margin-top:6px;display:flex;gap:8px;align-items:stretch}
-.c.taken{opacity:.3}
-.c.taken .nm{text-decoration:line-through}
-.c.mine{border-color:#2b6b45;background:#13211a}
-.c.wall{border-bottom:2px solid #8a5a1a}
-.acts{flex:0 0 auto;display:flex;flex-direction:column;gap:4px;justify-content:center}
-.tk,.mn{width:36px;height:32px;border-radius:6px;border:1px solid #33405480;background:#1b2330;color:#9aa6b8;font-size:14px;cursor:pointer;padding:0;line-height:1}
-.tk.on{background:#7f1d3a;border-color:#a11d47;color:#fff}
-.mn{color:#5ce39b;border-color:#2b6b4580}
-.mn.on{background:#17663f;border-color:#2b8a57;color:#fff}
+.rh{position:sticky;top:var(--hh,84px);background:var(--surface);padding:11px 0 5px;
+ font-size:var(--fs-meta);font-weight:var(--w-med);letter-spacing:var(--ls-caps);
+ color:var(--accent);text-transform:uppercase;border-bottom:1px solid var(--line);z-index:5}
+.rh span{color:var(--muted);font-weight:var(--w-reg);text-transform:none;letter-spacing:var(--ls-none)}
+.rh.now{color:var(--positive)}
+.c{background:var(--raised);border:1px solid var(--line);border-radius:var(--r2);
+ padding:var(--s2) var(--s3);margin-top:var(--s2);display:flex;gap:var(--s2);align-items:stretch}
+/* Taken players step DOWN a surface rather than fading out. opacity:.3 dropped
+   every text pairing in the card below AA at once — the audit's zero-failure
+   count never saw it because a faded card is still "the same colour" to a
+   contrast checker that reads the declared value. */
+.c.taken{background:var(--surface);border-color:var(--line)}
+.c.taken .nm{text-decoration:line-through;color:var(--muted)}
+.c.taken .meta,.c.taken .adp,.c.taken .adp b,.c.taken .adp i{color:var(--muted)}
+.c.mine{border-color:var(--positive);background:var(--positive-fill)}
+.c.wall{border-bottom:2px solid var(--caution)}
+.acts{flex:0 0 auto;display:flex;flex-direction:column;gap:var(--s1);justify-content:center}
+.tk,.mn{width:36px;height:32px;border-radius:var(--r2);border:1px solid var(--line-strong);
+ background:var(--raised-hi);color:var(--text-dim);font-size:var(--fs-support);cursor:pointer;padding:0;line-height:1}
+.tk.on{background:var(--urgent-fill);border-color:var(--urgent);color:var(--text)}
+.mn{color:var(--positive);border-color:var(--line-strong)}
+.mn.on{background:var(--positive-fill);border-color:var(--positive);color:var(--text)}
 .cc{flex:1;min-width:0;cursor:pointer}
-.ch{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
-.nm{font-weight:600;font-size:14px}
-.meta{font-size:10.5px;color:#7f8a9c;margin-top:2px}
-.adp{font-size:12px;color:#c3cede;text-align:right;white-space:nowrap}
-.adp b{font-size:14.5px;color:#fff;display:block}
-.adp i{font-size:9.5px;font-style:normal;color:#8a94a6}
-.mvu{color:#ff8fa3;font-size:10px;font-weight:700}
-.mvd{color:#5ce39b;font-size:10px;font-weight:700}
-.pill{display:inline-block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:9px;margin:4px 4px 0 0;letter-spacing:.4px}
-.BUY{background:#0d4429;color:#5ce39b}.FADE{background:#4a1620;color:#ff8fa3}
-.NEUTRAL{background:#28303e;color:#a9b6c9}.WATCH{background:#3a3210;color:#ecd07a}
-.rev{background:#45206b;color:#d3a6ff}
-.deep{background:#103647;color:#7fd4f0}
-.REACH{background:#5a2410;color:#ffb08a}
-.WAIT{background:#0e3a3a;color:#7fe3d4}
-.lg{display:block;font-size:9.5px;font-style:normal;color:#c98fd8;margin-top:1px;white-space:nowrap}
-.lg b{display:inline;font-size:11px;color:#e0b6ee}
-.lgna{display:block;font-size:9.5px;font-style:normal;color:#5d6675;margin-top:1px}
-.stale{background:#4a2a10;color:#f0b775}
-.tier{background:#3a2a0a;color:#e0b050}
-.cv{color:#77818f;font-size:10px}
-.snip{font-size:12px;color:#a4afc0;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.ov{display:none;position:fixed;inset:0;background:#0b0e14;z-index:60;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.ch{display:flex;justify-content:space-between;gap:var(--s2);align-items:baseline}
+.nm{font-weight:var(--w-med);font-size:var(--fs-support)}
+.meta{font-size:var(--fs-body);color:var(--muted);margin-top:2px}
+.adp{font-size:var(--fs-body);color:var(--text-dim);text-align:right;white-space:nowrap}
+.adp b{font-size:var(--fs-support);font-weight:var(--w-bold);color:var(--text);display:block}
+.adp i{font-size:var(--fs-meta);font-style:normal;color:var(--muted)}
+/* margin-right: at 9.5px the move arrow ran straight into the round label
+   ("5.4R9") and nobody noticed; at the meta step it is unmissable. */
+.mvu,.mvd{font-size:var(--fs-meta);font-weight:var(--w-med);margin-right:var(--s1)}
+.mvu{color:var(--urgent)}
+.mvd{color:var(--positive)}
+.pill{display:inline-block;font-size:var(--fs-meta);font-weight:var(--w-med);
+ padding:2px 6px;border-radius:var(--r3);margin:var(--s1) var(--s1) 0 0;letter-spacing:var(--ls-caps)}
+.BUY{background:var(--positive-fill);color:var(--positive)}
+.FADE{background:var(--urgent-fill);color:var(--urgent)}
+.NEUTRAL{background:var(--raised-hi);color:var(--text-dim)}
+.WATCH{background:var(--caution-fill);color:var(--caution)}
+.rev{background:var(--accent-fill);color:var(--accent)}
+.deep{background:var(--accent-fill);color:var(--accent)}
+.REACH{background:var(--caution-fill);color:var(--caution)}
+.WAIT{background:var(--accent-fill);color:var(--accent)}
+.lg{display:block;font-size:var(--fs-body);font-style:normal;color:var(--text-dim);margin-top:1px;white-space:nowrap}
+.lg b{display:inline;font-size:var(--fs-body);font-weight:var(--w-med);color:var(--text)}
+.lgna{display:block;font-size:var(--fs-body);font-style:normal;color:var(--muted)}
+.stale{background:var(--caution-fill);color:var(--caution)}
+.tier{background:var(--caution-fill);color:var(--caution)}
+.cv{color:var(--muted);font-size:var(--fs-body)}
+.snip{font-size:var(--fs-body);color:var(--text-dim);margin-top:var(--s1);
+ display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ov{display:none;position:fixed;inset:0;background:var(--surface);z-index:60;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .ov.show{display:block}
-.oh{position:sticky;top:0;background:#151a23;border-bottom:1px solid #232c3b;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;z-index:5}
-.ob{padding:12px 12px 60px}
-.x{background:#28303e;border:0;border-radius:6px;padding:7px 13px;cursor:pointer;font-size:13px;color:#e6e9ef;white-space:nowrap}
-.ev{border-left:2px solid #2a3446;padding:0 0 14px 12px;margin-left:5px;position:relative}
-.ev:before{content:"";position:absolute;left:-5px;top:5px;width:8px;height:8px;border-radius:50%;background:#3b82f6}
-.evd{font-size:10.5px;color:#7f8a9c}
-.evt{font-size:13px;margin-top:4px;color:#d2d9e4}
-.evs{font-size:11.5px;color:#8a9ab2;margin-top:4px;font-style:italic}
-.msv{display:inline-block;background:#1e3a5f;color:#9ecbff;border:1px solid #2b5488;border-radius:4px;padding:1px 5px;font-size:10px;font-style:normal;font-weight:600;margin-left:4px}
-.evn{font-size:11px;color:#eecd99;background:#332612;border:1px solid #63491a;border-radius:5px;padding:5px 7px;margin-top:5px;font-style:normal}
-.src{background:#1b2637;border:1px solid #2a3a52;color:#7fb2f0;border-radius:5px;padding:3px 8px;font-size:10.5px;cursor:pointer;margin-top:6px}
-.sec{font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:#77818f;margin:16px 0 7px;border-bottom:1px solid #212a38;padding-bottom:4px}
-.box{background:#131922;border-radius:6px;padding:9px;font-size:11.5px;color:#8a94a6;margin:9px 0}
-.cn{font-size:12px;color:#b3bdcd;padding:6px 0;border-bottom:1px solid #1b2330}
-.ep{background:#161c26;border:1px solid #212a38;border-radius:8px;padding:9px 11px;margin-top:6px;cursor:pointer}
-.md h1{font-size:17px;margin:0 0 10px}
-.md h2{font-size:13px;text-transform:uppercase;letter-spacing:.7px;color:#7fb2f0;margin:20px 0 7px;border-bottom:1px solid #232c3b;padding-bottom:4px}
-.md h3{font-size:14.5px;margin:16px 0 5px;color:#fff;scroll-margin-top:60px}
-.md h3.hl{background:#1d3a5c;margin-left:-8px;padding:4px 8px;border-radius:5px}
-.md li,.md p{font-size:12.5px;color:#b3bdcd}
+.oh{position:sticky;top:0;background:var(--raised);border-bottom:1px solid var(--line);
+ padding:var(--s3);display:flex;justify-content:space-between;align-items:center;gap:var(--s3);z-index:5}
+.ob{padding:var(--s3) var(--s3) 60px}
+.x{background:var(--raised-hi);border:1px solid var(--line-strong);border-radius:var(--r2);
+ padding:7px 13px;cursor:pointer;font-size:var(--fs-body);color:var(--text);white-space:nowrap}
+.ev{border-left:2px solid var(--line);padding:0 0 var(--s3) var(--s3);margin-left:5px;position:relative}
+.ev:before{content:"";position:absolute;left:-5px;top:5px;width:var(--s2);height:var(--s2);border-radius:50%;background:var(--accent)}
+.evd{font-size:var(--fs-body);color:var(--muted)}
+.evt{font-size:var(--fs-body);margin-top:var(--s1);color:var(--text-dim)}
+.evs{font-size:var(--fs-body);color:var(--muted);margin-top:var(--s1);font-style:italic}
+.msv{display:inline-block;background:var(--accent-fill);color:var(--accent);border:1px solid var(--accent);
+ border-radius:var(--r1);padding:1px 5px;font-size:var(--fs-meta);font-style:normal;font-weight:var(--w-med);margin-left:var(--s1)}
+.evn{font-size:var(--fs-body);color:var(--caution);background:var(--caution-fill);border:1px solid var(--caution);
+ border-radius:var(--r1);padding:5px 7px;margin-top:5px;font-style:normal}
+.src{background:var(--accent-fill);border:1px solid var(--accent);color:var(--accent);
+ border-radius:var(--r1);padding:3px var(--s2);font-size:var(--fs-body);cursor:pointer;margin-top:6px}
+.sec{font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps);font-weight:var(--w-med);
+ color:var(--muted);margin:16px 0 7px;border-bottom:1px solid var(--line);padding-bottom:var(--s1)}
+.box{background:var(--raised);border:1px solid var(--line);border-radius:var(--r2);
+ padding:9px;font-size:var(--fs-body);color:var(--text-dim);margin:9px 0}
+.cn{font-size:var(--fs-body);color:var(--text-dim);padding:6px 0;border-bottom:1px solid var(--line)}
+.ep{background:var(--raised);border:1px solid var(--line);border-radius:var(--r2);padding:9px 11px;margin-top:6px;cursor:pointer}
+.md h1{font-size:var(--fs-answer);font-weight:var(--w-bold);margin:0 0 var(--s3)}
+.md h2{font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps);font-weight:var(--w-med);
+ color:var(--accent);margin:var(--s4) 0 7px;border-bottom:1px solid var(--line);padding-bottom:var(--s1)}
+.md h3{font-size:var(--fs-support);font-weight:var(--w-bold);margin:16px 0 5px;color:var(--text);scroll-margin-top:60px}
+.md h3.hl{background:var(--accent-fill);margin-left:-8px;padding:var(--s1) var(--s2);border-radius:var(--r1)}
+.md li,.md p{font-size:var(--fs-body);color:var(--text-dim)}
 .md li{margin:3px 0}
-.md code{background:#1c232f;padding:1px 4px;border-radius:3px;font-size:11.5px}
-.md strong{color:#dfe6ef}
-.empty{text-align:center;color:#8b95a8;padding:40px 12px;font-size:13px}
-a{color:#68a9f0}
+.md code{background:var(--raised-hi);padding:1px var(--s1);border-radius:var(--r1);font-size:var(--fs-body)}
+.md strong{color:var(--text)}
+.empty{text-align:center;color:var(--muted);padding:40px var(--s3);font-size:var(--fs-body)}
+a{color:var(--accent);text-decoration:none}
+a:hover{color:var(--text)}
 /* roster grid */
-.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:8px}
-.slot{background:#161c26;border:1px dashed #2c3648;border-radius:7px;padding:7px 9px;min-height:52px}
-.slot.filled{border-style:solid;border-color:#2b6b45;background:#13211a}
-.slot .lb{font-size:9.5px;letter-spacing:.7px;color:#98a3b7;text-transform:uppercase}
-.slot .pn{font-size:13px;font-weight:600;margin-top:2px}
-.slot .px{font-size:10px;color:#8a94a6}
-.slot .rm{float:right;background:0;border:0;color:#8e99ac;cursor:pointer;font-size:14px;padding:0 2px}
-.need{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.need div{flex:1 1 auto;background:#131922;border:1px solid #212a38;border-radius:6px;padding:6px 8px;text-align:center;min-width:56px}
-.need b{display:block;font-size:16px;color:#fff}
-.need span{font-size:9.5px;color:#98a3b7;letter-spacing:.5px}
-.need.crit{border-color:#7f1d3a}
-.bar{display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap}
-.bar label{font-size:11px;color:#8a94a6}
-.bar select,.bar input{padding:5px 7px;font-size:12px}
-#load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0f131a;z-index:99;font-size:13px;color:#8a94a6;text-align:center;padding:20px}
-.fab{position:fixed;right:12px;bottom:14px;z-index:40;display:flex;gap:8px}
-.fab button{background:#1d4ed8;border:1px solid #2563eb;color:#fff;border-radius:20px;padding:9px 15px;font-size:12.5px;font-weight:600;box-shadow:0 3px 12px #0008;cursor:pointer}
-.fab button.ghost{background:#222a38;border-color:#2c3648;color:#c3cede}
-.spark{display:inline-block;vertical-align:middle;margin-left:4px}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s2);margin-top:var(--s2)}
+.slot{background:var(--raised);border:1px dashed var(--line);border-radius:var(--r2);padding:7px 9px;min-height:52px}
+.slot.filled{border-style:solid;border-color:var(--positive);background:var(--positive-fill)}
+.slot .lb{font-size:var(--fs-meta);font-weight:var(--w-med);letter-spacing:var(--ls-caps);
+ color:var(--muted);text-transform:uppercase}
+.slot .pn{font-size:var(--fs-support);font-weight:var(--w-med);margin-top:2px}
+.slot .px{font-size:var(--fs-body);color:var(--muted)}
+.slot .rm{float:right;background:0;border:0;color:var(--muted);cursor:pointer;font-size:var(--fs-support);padding:0 2px}
+.need{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s2)}
+/* Stat tile: caption ABOVE the value, so you read down and the number lands
+   last. 62px, one state colour at a time. */
+.need div{flex:1 1 auto;background:var(--raised);border:1px solid var(--line);border-radius:var(--r2);
+ padding:6px var(--s2);text-align:center;min-width:56px}
+.need b{display:block;font-size:var(--fs-answer);font-weight:var(--w-bold);line-height:var(--lh-tight);color:var(--text)}
+.need span{display:block;font-size:var(--fs-meta);font-weight:var(--w-med);color:var(--muted);letter-spacing:var(--ls-caps);text-transform:uppercase}
+/* Was `.need.crit` for as long as this rule has existed, but the markup puts
+   `crit` on the CHILD div inside `.need` — so the critical-need highlight has
+   never once rendered. Descendant selector, found during the token port. */
+.need .crit{border-color:var(--urgent)}
+.need .crit b{color:var(--urgent)}
+.bar{display:flex;gap:var(--s2);align-items:center;margin-top:var(--s2);flex-wrap:wrap}
+.bar label{font-size:var(--fs-body);color:var(--muted)}
+.bar select,.bar input{padding:5px 7px;font-size:var(--fs-body)}
+#load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+ background:var(--surface);z-index:99;font-size:var(--fs-body);color:var(--muted);text-align:center;padding:var(--s4)}
+.fab{position:fixed;right:var(--s3);bottom:14px;z-index:40;display:flex;gap:var(--s2)}
+.fab button{background:var(--accent-fill);border:1px solid var(--accent);color:var(--text);
+ border-radius:var(--r3);padding:9px 15px;font-size:var(--fs-body);font-weight:var(--w-med);
+ box-shadow:var(--shadow-fab);cursor:pointer}
+.fab button.ghost{background:var(--raised-hi);border-color:var(--line-strong);color:var(--text-dim)}
+.spark{display:inline-block;vertical-align:middle;margin-left:var(--s1)}
 /* ---------- draft room ---------- */
-.lvbar{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;background:#131922;border:1px solid #212a38;border-radius:8px;padding:7px 10px;margin-top:8px}
+.lvbar{display:flex;align-items:center;gap:6px var(--s3);flex-wrap:wrap;background:var(--raised);
+ border:1px solid var(--line);border-radius:var(--r2);padding:7px var(--s3);margin-top:var(--s2)}
 .lvtop{display:flex;align-items:center;gap:9px;flex:0 0 auto}
 .lvbar .lvst{flex:1 1 200px}
-.lvbar.onclock{background:#13211a;border-color:#2b6b45}
-.dot{width:9px;height:9px;border-radius:50%;background:#4a5568;flex:0 0 auto}
-.dot.live{background:#5ce39b;animation:pulse 2s infinite}
-.dot.err{background:#ff8fa3}
-.dot.man{background:#ecd07a}
-@keyframes pulse{0%{box-shadow:0 0 0 0 #5ce39b99}70%{box-shadow:0 0 0 7px #5ce39b00}100%{box-shadow:0 0 0 0 #5ce39b00}}
-.lvst{font-size:11.5px;color:#8a94a6;flex:1 1 auto;min-width:0}
-.lvst b{color:#e6e9ef}
-.clock{font-variant-numeric:tabular-nums;font-size:22px;font-weight:700;color:#e6e9ef;letter-spacing:.5px}
-.clock.warn{color:#ecd07a}.clock.crit{color:#ff8fa3}
-.pk{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.pk div{flex:1 1 auto;background:#131922;border:1px solid #212a38;border-radius:6px;padding:7px 9px;text-align:center;min-width:66px}
-.pk b{display:block;font-size:17px;color:#fff;font-variant-numeric:tabular-nums}
-.pk span{font-size:9px;color:#7f8a9c;letter-spacing:.5px;text-transform:uppercase}
+.lvbar.onclock{background:var(--positive-fill);border-color:var(--positive)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--line-strong);flex:0 0 auto}
+.dot.live{background:var(--positive);animation:pulse 2s infinite}
+.dot.err{background:var(--urgent)}
+.dot.man{background:var(--caution)}
+@keyframes pulse{
+ 0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--positive) 60%,transparent)}
+ 70%{box-shadow:0 0 0 7px color-mix(in srgb,var(--positive) 0%,transparent)}
+ 100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--positive) 0%,transparent)}
+}
+.lvst{font-size:var(--fs-body);color:var(--text-dim);flex:1 1 auto;min-width:0}
+.lvst b{color:var(--text)}
+.clock{font-variant-numeric:tabular-nums;font-size:var(--fs-answer);font-weight:var(--w-bold);
+ color:var(--text);letter-spacing:var(--ls-none)}
+.clock.warn{color:var(--caution)}
+.clock.crit{color:var(--urgent)}
+.pk{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s2)}
+.pk div{flex:1 1 auto;background:var(--raised);border:1px solid var(--line);border-radius:var(--r2);
+ padding:7px 9px;text-align:center;min-width:66px}
+.pk b{display:block;font-size:var(--fs-answer);font-weight:var(--w-bold);color:var(--text);font-variant-numeric:tabular-nums}
+.pk span{display:block;font-size:var(--fs-meta);font-weight:var(--w-med);color:var(--muted);
+ letter-spacing:var(--ls-caps);text-transform:uppercase}
 /* ---- the shortlist row -------------------------------------------------
-   Grid, not flex, so the survival pair can drop to its own strip on a narrow
+   Grid, not flex, so the survival number can drop to its own strip on a narrow
    screen without duplicating the markup. Reading order left to right is:
-   rank, VERDICT, who, the numbers, the button. The verdict leads because it is
-   the only token on the row that is an instruction rather than a fact. */
-.rec{background:#161c26;border:1px solid #212a38;border-radius:8px;padding:8px 10px;margin-top:6px;
- display:grid;grid-template-columns:auto minmax(0,1fr) auto;
- grid-template-areas:"n b a" "s s s";gap:5px 9px;align-items:center}
-.rec.n1{border-color:#2b6b45;background:#141d1b}
-.recn{grid-area:n;width:17px;font-size:18px;font-weight:700;color:#98a3b7;line-height:1;text-align:center}
-.rec.n1 .recn{color:#5ce39b}
+   VERDICT + who, the one survival number, the button.
+
+   Three changes land here from the design session, all approved:
+     - the rank digit is GONE. Row order plus row 1 at --fs-hero carries the
+       ranking; five digits at 18px carried nothing the order did not.
+     - ONE survival number, his room at his next pick. National moved behind
+       the tap. Raised against the standing "side by side, not blended"
+       preference and chosen knowingly. The two are still never averaged.
+     - only row 1 gets the hero size, the green left edge and the filled
+       button. Everything else is an outline. */
+.rec{background:var(--raised);border:1px solid var(--line);border-radius:var(--r2);
+ padding:var(--s3);margin-top:var(--s2);
+ display:grid;grid-template-columns:minmax(0,1fr) auto;
+ grid-template-areas:"b a" "s s";gap:var(--s2) var(--s3);align-items:center}
+.rec.n1{border-left:var(--s1) solid var(--positive)}
 .recb{grid-area:b;min-width:0;cursor:pointer}
 .racts{grid-area:a;display:flex;align-items:center}
 /* The verdict chip and the name share a line, chip first. It used to be 9.5px
    and the LAST element in the card — the smallest, lowest-placed thing on the
    screen was the one telling him what to do. */
 .rh1{display:flex;align-items:center;gap:7px;min-width:0;flex-wrap:wrap}
-.rh1 .nm{font-size:14.5px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.vd{display:inline-block;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px;
- letter-spacing:.6px;white-space:nowrap;flex:0 0 auto;border:1px solid transparent}
-.vd.now{background:#5a1020;color:#ffb3c1;border-color:#8d2038}
-.vd.wait{background:#0e3a3a;color:#8fe9db;border-color:#1c5d57}
-.vd.flip{background:#3a3210;color:#f0d68a;border-color:#5f5118}
-/* Both survival numbers are the SAME SIZE and both are labelled. The old card
-   printed national at 17px and the room number at 12.5px underneath, while the
-   verdict was computed off the room number — the eye landed on the figure that
-   was not driving the recommendation. */
-.svpair{grid-area:s;display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;
- border-top:1px solid #1e2836;padding-top:5px;margin-top:1px}
+.rh1 .nm{font-size:var(--fs-answer);font-weight:var(--w-bold);line-height:var(--lh-tight);
+ color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rec.n1 .rh1 .nm{font-size:var(--fs-hero)}
+.vd{display:inline-block;font-size:var(--fs-meta);font-weight:var(--w-med);padding:3px var(--s2);
+ border-radius:var(--r1);letter-spacing:var(--ls-caps);text-transform:uppercase;
+ white-space:nowrap;flex:0 0 auto;border:1px solid transparent}
+.vd.now{background:var(--urgent-fill);color:var(--urgent);border-color:var(--urgent)}
+.vd.wait{background:var(--accent-fill);color:var(--accent);border-color:var(--accent)}
+.vd.flip{background:var(--caution-fill);color:var(--caution);border-color:var(--caution)}
+/* ONE number, labelled with where it applies. Falls back to the national curve
+   — and says so — in a league with no draft history to price against, which is
+   exactly the superflex-8 case. A silently unlabelled fallback would be the
+   blend this project has always refused. */
+.svpair{grid-area:s;display:flex;gap:var(--s3);align-items:baseline;flex-wrap:wrap;
+ border-top:1px solid var(--line);padding-top:5px;margin-top:1px}
 .svone{display:flex;align-items:baseline;gap:5px;white-space:nowrap}
-.sv{font-size:15.5px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
-.sv.hi{color:#5ce39b}.sv.mid{color:#ecd07a}.sv.lo{color:#ff8fa3}
-.svl{font-size:10px;color:#95a1b5;letter-spacing:.3px}
-.svthin{font-size:9.5px;color:#f0c46a;background:#2a2110;border:1px solid #3f3315;border-radius:4px;padding:1px 5px;display:inline-block}
-.why{font-size:11.5px;color:#9db1c9;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.why em{color:#8e99ac;font-style:normal}
-.jjq{color:#b6c6da;font-style:italic}
-.jjl{font-size:9.5px;font-weight:800;letter-spacing:.4px;padding:1px 5px;border-radius:4px;margin-right:2px}
-.jjl.BUY{background:#0d4429;color:#5ce39b}
-.jjl.FADE{background:#4a1620;color:#ff8fa3}
+.sv{font-size:var(--fs-answer);font-weight:var(--w-bold);font-variant-numeric:tabular-nums;line-height:var(--lh-tight)}
+.sv.hi{color:var(--positive)}
+.sv.mid{color:var(--caution)}
+.sv.lo{color:var(--urgent)}
+.svl{font-size:var(--fs-meta);font-weight:var(--w-med);color:var(--muted);
+ letter-spacing:var(--ls-caps);text-transform:uppercase}
+.svthin{font-size:var(--fs-meta);font-weight:var(--w-med);color:var(--caution);background:var(--caution-fill);
+ border:1px solid var(--caution);border-radius:var(--r1);padding:1px 5px;display:inline-block;
+ letter-spacing:var(--ls-caps);text-transform:uppercase}
+.why{font-size:var(--fs-body);color:var(--text-dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.why em{color:var(--muted);font-style:normal}
+.jjq{color:var(--text-dim);font-style:italic}
+.jjl{font-size:var(--fs-meta);font-weight:var(--w-med);letter-spacing:var(--ls-caps);text-transform:uppercase;
+ padding:1px 5px;border-radius:var(--r1);margin-right:2px}
+.jjl.BUY{background:var(--positive-fill);color:var(--positive)}
+.jjl.FADE{background:var(--urgent-fill);color:var(--urgent)}
+/* ADP-vs-this-room as a SIGNED DELTA. Positive = drafted later here = falling
+   = cheaper = "under board". Getting this sign backwards inverts every edge
+   call, and it has happened once already, so the direction is asserted in the
+   suite rather than trusted to this comment. */
+.dlt{font-weight:var(--w-med)}
+.dlt.under{color:var(--positive)}
+.dlt.over{color:var(--caution)}
 /* Need flag. The shortlist stays pure best-available — this marks the rows
    that also plug an open starting slot, so roster need is visible without
    being allowed to reorder anything. */
-.nf{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
- color:#9ecbff;background:#12243a;border:1px solid #24456d;border-radius:4px;
+.nf{font-size:var(--fs-meta);font-weight:var(--w-med);letter-spacing:var(--ls-caps);text-transform:uppercase;
+ color:var(--accent);background:var(--accent-fill);border:1px solid var(--accent);border-radius:var(--r1);
  padding:2px 6px;flex:0 0 auto;white-space:nowrap}
 /* "I drafted him", reachable with a pointer. Before this the only path was
-   Ctrl+Enter in the quick-entry box, which does not exist on a touch device. */
-.dh{background:#17663f;border:1px solid #2b8a57;color:#eafff3;border-radius:7px;
- padding:8px 10px;font-size:11.5px;font-weight:700;line-height:1.15;cursor:pointer;
- min-width:46px;min-height:44px;text-align:center}
-.dh:hover{background:#1d7d4d}
-.dh.sm{min-height:36px;padding:6px 8px;font-size:11px}
+   Ctrl+Enter in the quick-entry box, which does not exist on a touch device.
+   Outline by default; filled ONLY on row 1. */
+.dh{background:var(--raised-hi);border:1px solid var(--line-strong);color:var(--text);border-radius:var(--r2);
+ padding:var(--s2) var(--s3);font-size:var(--fs-support);font-weight:var(--w-med);line-height:var(--lh-tight);
+ cursor:pointer;min-width:46px;min-height:var(--tap);text-align:center}
+.rec.n1 .dh{background:var(--positive-fill);border-color:var(--positive)}
+.dh:hover{border-color:var(--line-strong)}
+.dh.sm{min-height:36px;padding:6px var(--s2);font-size:var(--fs-body)}
 /* ---- gone-before: deliberately NOT a recommendation ----
    These used to reuse .rec verbatim, differing only by a missing rank digit.
    Under a clock a "he is about to be gone" name read as "take him". */
-.gone{display:flex;align-items:baseline;gap:8px;font-size:12px;color:#9aa6b8;
- padding:5px 8px;border-left:2px solid #5a3a1a;background:#14161d;border-radius:0 5px 5px 0;
- margin-top:3px;cursor:pointer}
-.gone .gn{font-weight:600;color:#cdd6e3;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gone .gm{font-size:10.5px;color:#a3aec0;flex:0 0 auto}
-.gone .gs{margin-left:auto;font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;flex:0 0 auto;white-space:nowrap}
-.gs.hi{color:#5ce39b}.gs.mid{color:#ecd07a}.gs.lo{color:#ff8fa3}
-.runbar{display:flex;gap:2px;margin-top:7px;height:9px;border-radius:5px;overflow:hidden;background:#1b2330}
+.gone{display:flex;align-items:baseline;gap:var(--s2);font-size:var(--fs-body);color:var(--text-dim);
+ padding:5px var(--s2);border-left:2px solid var(--caution);background:var(--surface);
+ border-radius:0 var(--r1) var(--r1) 0;margin-top:3px;cursor:pointer}
+.gone .gn{font-weight:var(--w-med);color:var(--text);flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gone .gm{font-size:var(--fs-body);color:var(--muted);flex:0 0 auto}
+.gone .gs{margin-left:auto;font-size:var(--fs-support);font-weight:var(--w-bold);
+ font-variant-numeric:tabular-nums;flex:0 0 auto;white-space:nowrap}
+.gs.hi{color:var(--positive)}
+.gs.mid{color:var(--caution)}
+.gs.lo{color:var(--urgent)}
+.runbar{display:flex;gap:2px;margin-top:7px;height:9px;border-radius:5px;overflow:hidden;background:var(--raised-hi)}
 .runbar i{display:block;height:100%}
-.cRB{background:#5ce39b}.cWR{background:#7fb2f0}.cTE{background:#d3a6ff}.cQB{background:#ecd07a}.cK{background:#8a94a6}.cDEF{background:#69748a}
-.rl{display:flex;gap:9px;flex-wrap:wrap;font-size:11px;color:#8a94a6;margin-top:6px}
-.rl b{color:#e6e9ef;font-variant-numeric:tabular-nums}
-.hot{background:#4a1620;border:1px solid #7f1d3a;color:#ff8fa3;padding:7px 10px;border-radius:6px;font-size:11.5px;margin-top:8px}
-.hot b{color:#ffc0cb}
-.qe{position:relative;margin-top:8px}
-#qei{width:100%;font-size:16px;border-color:#2b6b45}
-.qed{position:absolute;left:0;right:0;top:100%;z-index:20;background:#161c26;border:1px solid #2c3648;border-radius:0 0 7px 7px;max-height:44vh;overflow-y:auto;box-shadow:0 8px 22px #000a}
-.qer{padding:6px 8px;font-size:13px;cursor:pointer;border-bottom:1px solid #1b2330;display:flex;justify-content:space-between;gap:8px;align-items:center}
-.qer.sel{background:#1d3a5c}
-.qer small{color:#7f8a9c;font-size:10.5px;white-space:nowrap}
-.log{font-size:11.5px;color:#a4afc0;padding:4px 0;border-bottom:1px solid #1b2330;display:flex;gap:8px}
-.log b{color:#98a3b7;font-variant-numeric:tabular-nums;flex:0 0 34px}
-.log.me{color:#5ce39b}
-.log.unm{color:#ecd07a}
-.path{background:#131922;border:1px solid #212a38;border-radius:7px;padding:8px 10px;margin-top:6px}
-.path .ph{font-size:11.5px;color:#7fb2f0;font-weight:700}
-.path .pb{font-size:11.5px;color:#a4afc0;margin-top:3px}
-.path .pb em{color:#a3aec0;font-style:normal}
-
-/* ================= contrast repairs =====================================
-   These are the captions that explain the numbers — "national", "on the
-   clock", "conviction". Every one of them was under 3:1 on its own
-   background, at 9-10px, in a room with bad lighting and a clock running. */
-.pk span{color:#95a1b5}
-.cv{color:#95a1b5}
-.lvst{color:#a4b0c2}
-.box{color:#9aa6b8}
-.rl{color:#9aa6b8}
-.meta{color:#95a1b5}
-.sub{color:#95a1b5}
+.cRB{background:var(--pos-rb)}
+.cWR{background:var(--pos-wr)}
+.cTE{background:var(--pos-te)}
+.cQB{background:var(--pos-qb)}
+.cK{background:var(--line-strong)}
+.cDEF{background:var(--text-mute)}
+.rl{display:flex;gap:9px;flex-wrap:wrap;font-size:var(--fs-body);color:var(--text-dim);margin-top:6px}
+.rl b{color:var(--text);font-variant-numeric:tabular-nums}
+.hot{background:var(--urgent-fill);border:1px solid var(--urgent);color:var(--urgent);
+ padding:7px var(--s3);border-radius:var(--r2);font-size:var(--fs-body);margin-top:var(--s2)}
+.hot b{color:var(--text)}
+/* Secondary line inside a .box — the caveat under a number, at the body step
+   in mute. Replaces four one-off inline `margin-top:6px;color:var(--text-mute)` pairs. */
+.hint{margin-top:6px;font-size:var(--fs-body);color:var(--muted)}
+.hint.alert{color:var(--caution)}
+/* A past or spent row steps DOWN a surface instead of fading. opacity:.45 and
+   .55 dropped every text pairing inside them below AA simultaneously, and a
+   contrast checker reading declared values never saw it. */
+/* Containers painted with a FILL token. --muted re-points inside them so no
+   quiet caption sits at 3.2-4.1:1 on a coloured panel. */
+.c.mine,.c.live,.slot.filled,.lvbar.onclock,.qer.sel,.md h3.hl,.warn,.info,.hot,.evn{--muted:var(--text-dim)}
+.c.live{border-color:var(--caution);background:var(--caution-fill)}
+.past{background:var(--surface);border-color:var(--line)}
+.past .nm,.past .meta,.past .snip,.past .adp,.past .adp b,.past .adp i{color:var(--muted)}
+.planrow.past .rh{color:var(--muted)}
+.planrow.past .c{background:var(--surface)}
+.qe{position:relative;margin-top:var(--s2)}
+#qei{width:100%;font-size:var(--fs-input);border-color:var(--positive)}
+.qed{position:absolute;left:0;right:0;top:100%;z-index:20;background:var(--raised);
+ border:1px solid var(--line);border-radius:0 0 var(--r2) var(--r2);max-height:44vh;overflow-y:auto;box-shadow:var(--shadow-pop)}
+.qer{padding:6px var(--s2);font-size:var(--fs-support);cursor:pointer;border-bottom:1px solid var(--line);
+ display:flex;justify-content:space-between;gap:var(--s2);align-items:center}
+.qer.sel{background:var(--accent-fill)}
+.qer small{color:var(--muted);font-size:var(--fs-body);white-space:nowrap}
+.log{font-size:var(--fs-body);color:var(--text-dim);padding:var(--s1) 0;border-bottom:1px solid var(--line);display:flex;gap:var(--s2)}
+.log b{color:var(--muted);font-variant-numeric:tabular-nums;flex:0 0 34px}
+.log.me{color:var(--positive)}
+.log.unm{color:var(--caution)}
+.path{background:var(--raised);border:1px solid var(--line);border-radius:var(--r2);padding:var(--s2) var(--s3);margin-top:6px}
+.path .ph{font-size:var(--fs-meta);color:var(--accent);font-weight:var(--w-med);
+ letter-spacing:var(--ls-caps);text-transform:uppercase}
+.path .pb{font-size:var(--fs-body);color:var(--text-dim);margin-top:3px}
+.path .pb em{color:var(--muted);font-style:normal}
 
 /* ================= collapsible secondary sections =======================
    Everything below the decision is real information that is real ballast in a
    two-minute window. <details> keeps it one click away without keeping it in
-   the scroll path. Open state is remembered per section in S.open. */
-.fold{border:1px solid #212a38;border-radius:8px;background:#131922;margin-top:8px;overflow:hidden}
-.fold>summary{list-style:none;cursor:pointer;padding:9px 11px;font-size:11.5px;
- text-transform:uppercase;letter-spacing:.8px;color:#a4b0c2;font-weight:700;
- display:flex;align-items:center;gap:8px;user-select:none}
+   the scroll path. Open state is remembered per section in S.open.
+
+   Panel header per the design spec: meta caps only, count in a pill, and an
+   alert reads as a coloured LEFT EDGE rather than a filled bar — a filled red
+   header competed with the shortlist for the eye. */
+.fold{border:1px solid var(--line);border-radius:var(--r2);background:var(--raised);margin-top:var(--s2);overflow:hidden}
+.fold>summary{list-style:none;cursor:pointer;padding:9px 11px;font-size:var(--fs-meta);
+ text-transform:uppercase;letter-spacing:var(--ls-caps);color:var(--text-dim);font-weight:var(--w-med);
+ display:flex;align-items:center;gap:var(--s2);user-select:none;background:var(--surface);
+ border-bottom:1px solid var(--line)}
+.fold:not([open])>summary{border-bottom:0}
 .fold>summary::-webkit-details-marker{display:none}
-.fold>summary:before{content:"\25b8";color:#68748a;font-size:11px;transition:transform .12s}
+.fold>summary:before{content:"\25b8";color:var(--muted);font-size:var(--fs-meta);transition:transform .12s}
 .fold[open]>summary:before{transform:rotate(90deg)}
-.fold>summary .cnt{margin-left:auto;font-size:10.5px;font-weight:600;color:#a3aec0;
- background:#1b2330;border-radius:9px;padding:1px 8px;letter-spacing:0;text-transform:none}
-.fold>summary.alert{color:#ffb3c1}
-.fold>summary.alert .cnt{background:#4a1620;color:#ff9fb0}
+.fold>summary .cnt{margin-left:auto;font-size:var(--fs-meta);font-weight:var(--w-med);color:var(--text-dim);
+ background:var(--raised-hi);border-radius:var(--r3);padding:1px var(--s2);letter-spacing:var(--ls-none);text-transform:none}
+.fold.alert{border-left:var(--edge-alert) solid var(--urgent)}
+.fold>summary.alert{color:var(--urgent)}
+.fold>summary.alert .cnt{background:var(--urgent-fill);color:var(--urgent)}
 .foldb{padding:0 11px 11px}
 
 /* ================= the draft room, laid out for a screen =================
@@ -254,48 +461,63 @@ a{color:#68a9f0}
    read was below the fold. */
 .roomgrid{display:grid;grid-template-columns:1fr;gap:0 16px;align-items:start}
 .rcolB,.rcolC{min-width:0}
-.rtiles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
-.rtiles div{background:#131922;border:1px solid #212a38;border-radius:6px;padding:6px 8px;text-align:center}
-.rtiles b{display:block;font-size:17px;color:#fff;font-variant-numeric:tabular-nums;line-height:1.2}
-.rtiles span{font-size:9px;color:#a6b1c4;letter-spacing:.2px;text-transform:uppercase;white-space:nowrap}
+.rtiles{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s2);margin-top:var(--s2)}
+.rtiles div{background:var(--raised);border:1px solid var(--line);border-radius:var(--r2);
+ padding:6px var(--s2);text-align:center;min-height:62px;display:flex;flex-direction:column;
+ justify-content:center;gap:var(--s1)}
+.rtiles b{display:block;font-size:var(--fs-answer);font-weight:var(--w-bold);color:var(--text-dim);
+ font-variant-numeric:tabular-nums;line-height:var(--lh-tight)}
+.rtiles b.key{color:var(--text)}
+.rtiles span{display:block;font-size:var(--fs-meta);font-weight:var(--w-med);color:var(--muted);
+ letter-spacing:var(--ls-caps);text-transform:uppercase;white-space:nowrap}
 
 @media(min-width:560px){
- .rec{grid-template-columns:auto minmax(0,1fr) auto auto;grid-template-areas:"n b s a"}
+ .rec{grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"b s a"}
  .svpair{border-top:0;padding-top:0;margin-top:0;flex-direction:column;gap:3px;
   align-items:flex-end;min-width:104px}
  .svone{gap:6px}
 }
-.planrow{break-inside:avoid;page-break-inside:avoid;margin-bottom:10px}
+.planrow{break-inside:avoid;page-break-inside:avoid;margin-bottom:var(--s3)}
 .planrow .rh{position:static}
 .plansheet{margin-top:2px}
-.plandl{display:grid;grid-template-columns:1fr;gap:8px;margin-top:6px}
+.plandl{display:grid;grid-template-columns:1fr;gap:var(--s2);margin-top:6px}
 @media(min-width:900px){.plandl{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(min-width:1280px){.plandl{grid-template-columns:repeat(4,minmax(0,1fr))}
  .plansheet{column-count:2;column-gap:18px}}
 @media(min-width:1700px){.plansheet{column-count:3}}
+/* The Board is a SCANNING surface — 266 cards. On a laptop the take snippet
+   moves behind the tap: the card is already clickable and the player view
+   carries JJ's FULL opinion history, not a 150-character slice of the newest
+   take. Chosen 2026-08-20 against two measured alternatives; this one takes the
+   board to 14.15 screens, 19% SHORTER than the live build it replaces, without
+   putting data back at the naming step. The phone board keeps the snippet —
+   there is no second column there to lose it to, and the phone is a later pass.
+   Scoped to the Board only: the Players tab is a lookup surface where the
+   snippet is the point of the result row. */
+@media(min-width:900px){body[data-tab="board"] .cards2 .snip{display:none}}
 .plandl .c{margin-top:0}
 @media(min-width:900px){
  main{padding:0 16px 80px}
  /* The filter strip was three stacked full-width rows — search, three selects,
     five toggles — costing ~120px of every Board and Players screen on a
     machine with width to spare. One row. */
- .ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
- .ctl #q{flex:1 1 240px;width:auto;font-size:13.5px;padding:6px 9px}
- .ctl .row{margin-top:0;flex:0 1 auto;gap:6px}
+ .ctl{display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap}
+ .ctl #q{flex:1 1 240px;width:auto;font-size:var(--fs-support);padding:6px 9px}
+ .ctl .row{margin-top:0;flex:0 1 auto;gap:var(--s2)}
  .ctl .row select{min-width:92px;flex:0 0 auto}
  .ctl .tgl{margin-top:0;flex:1 1 auto;justify-content:flex-end}
- .ctl .tgl button{flex:0 0 auto;padding:6px 10px}
+ .ctl .tgl button{flex:0 0 auto;padding:6px var(--s3)}
  /* Same idea for the two explainer banners: real information, but they were
     two full-width paragraphs above every board. */
- .hn{display:flex;gap:8px;flex-wrap:wrap}
- .hn>*{flex:1 1 340px;margin:8px 0}
+ .hn{display:flex;gap:var(--s2);flex-wrap:wrap}
+ .hn>*{flex:1 1 340px;margin:var(--s2) 0}
  .roomgrid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}
  .rcolA{grid-column:1;grid-row:1}
  .rcolB{grid-column:2;grid-row:1}
  .rcolC{grid-column:1 / -1;grid-row:2}
  .rcolC .foldwrap{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
  .rtiles{grid-template-columns:repeat(4,1fr)}
- .sec{margin-top:12px}
+ .sec{margin-top:var(--s3)}
 }
 @media(min-width:1280px){
  main{padding:0 22px 80px;max-width:1700px;margin:0 auto}
@@ -304,9 +526,7 @@ a{color:#68a9f0}
  .rcolB{grid-column:2;grid-row:1}
  .rcolC{grid-column:3;grid-row:1}
  .rcolC .foldwrap{display:block}
- .rec{padding:9px 12px}
- .rh1 .nm{font-size:15.5px}
- .sv{font-size:17px}
+ .rec{padding:var(--s3)}
  /* The board is a list of 256 one-line rows on a 1400px screen. Two columns
     halves the scroll without shrinking anything. */
  .cards2{column-count:2;column-gap:16px}
@@ -1298,7 +1518,7 @@ function movePill(x){
 function card(x){
  const a=x.adp, i=x._i, isMine=MINE.includes(x.g);
  const snip=x.h&&x.h.length?esc((x.h[x.h.length-1].t||'').slice(0,150)):
-   '<span style="color:#8b95a8">No podcast take \u2014 on the ADP board only.</span>';
+   '<span style="color:var(--text-mute)">No podcast take \u2014 on the ADP board only.</span>';
  return '<div class="c'+(TAKEN[x.g]?' taken':'')+(isMine?' mine':'')+(x.tw?' wall':'')+'" id="c'+i+'">'
   +'<div class="acts">'
   +'<button class="tk'+(TAKEN[x.g]&&!isMine?' on':'')+'" onclick="event.stopPropagation();mark('+i+')" title="Someone drafted him">'+(TAKEN[x.g]&&!isMine?'\u2715':'\u25cb')+'</button>'
@@ -1421,7 +1641,7 @@ function viewRoom(){
  const SW={drafting:'live from Sleeper',paused:'paused by the commissioner',
            pre_draft:'not started yet',complete:'complete'};
  const st=LIVE.on
-  ? (LIVE.err?'<b style="color:#ff8fa3">feed error</b> — '+esc(LIVE.err)
+  ? (LIVE.err?'<b style="color:var(--urgent)">feed error</b> — '+esc(LIVE.err)
       +' · retrying, board untouched · type names below and carry on'
      :'<b>'+esc(SW[LIVE.status]||LIVE.status||'connected')+'</b>'
       +(LIVE.unmatched?' · <b>'+LIVE.unmatched+'</b> pick'+(LIVE.unmatched==1?'':'s')+' not on this board':''))
@@ -1441,7 +1661,7 @@ function viewRoom(){
   +'<span class="lvst">'+st+'</span>'
   +'</div>';
 
- if(onClock)h+='<div class="hot" style="background:#13211a;border-color:#2b6b45;color:#5ce39b">'
+ if(onClock)h+='<div class="hot" style="background:var(--positive-fill);border-color:var(--positive);color:var(--positive)">'
    +'<b>You are on the clock — pick #'+cp+'.</b></div>';
 
  if(LIVE.on&&LIVE.fails>=3)h+='<div class="warn"><b>The feed has failed '+LIVE.fails+' times running.</b> '
@@ -1450,17 +1670,19 @@ function viewRoom(){
   +'venue wifi is gone, use the box above and keep drafting — the maths works identically on '
   +'hand-typed picks.</div>';
 
+ /* Caption ABOVE the value: you read down the tile and the number lands
+    last, instead of reading a bare number and then hunting for what it names. */
  h+='<div class="rtiles">'
-  +'<div><b>'+cp+'</b><span>on clock</span></div>'
-  +'<div><b>'+(np||'—')+'</b><span>your pick</span></div>'
-  +'<div><b>'+(np?Math.max(0,np-cp):'—')+'</b><span>picks away</span></div>'
-  +'<div><b>'+(SLOT||'—')+'</b><span>slot'+(LIVE.autoSlot?' ✓':'')+'</span></div></div>';
+  +'<div><span>on clock</span><b>'+cp+'</b></div>'
+  +'<div><span>your pick</span><b class="key">'+(np||'—')+'</b></div>'
+  +'<div><span>picks away</span><b>'+(np?Math.max(0,np-cp):'—')+'</b></div>'
+  +'<div><span>slot'+(LIVE.autoSlot?' ✓':'')+'</span><b>'+(SLOT||'—')+'</b></div></div>';
 
  // The slot control now lives HERE as well as on My Team. The warning used to
  // end "or set it on the My Team tab" — sending him to another screen, mid
  // draft, to fix the one field that switches this one on.
  if(!SLOT){
-  let sel='<select onchange="setSlot(this.value)" style="padding:5px 8px;font-size:12.5px">'
+  let sel='<select onchange="setSlot(this.value)" style="padding:5px 8px;font-size:var(--fs-body)">'
    +'<option value="0">set slot…</option>';
   for(let i=1;i<=META.teams;i++)sel+='<option value="'+i+'">'+i+'</option>';
   sel+='</select>';
@@ -1488,13 +1710,12 @@ function viewRoom(){
  ba.forEach((o,i)=>{
   const p=o.p, s=bsv[i], v=bvd[i];
   h+='<div class="rec'+(i===0?' n1':'')+'">'
-   +'<div class="recn">'+(i+1)+'</div>'
    +'<div class="recb" onclick="openP('+p._i+')">'
    +'<div class="rh1">'+(v?'<span class="vd '+v.k+'">'+v.t+'</span>':'')
      +'<span class="nm">'+esc(p.n)+'</span>'
      +(o.fills?'<span class="nf">fills '+esc(o.fills)+'</span>':'')+'</div>'
    +'<div class="meta">'+esc(p.p)+' · '+esc(p.tm)+' · ADP '+p.adp.toFixed(1)+' R'+rdOf(p.adp)
-     +(p.al!=null?' · this room '+p.al.toFixed(1):'')
+     +deltaChip(p)
      +(p.bye?' · bye '+esc(String(p.bye)):'')+'</div>'
    +whyLine(o.why,p,o.fills)
    +'</div>'
@@ -1572,18 +1793,57 @@ function pct(v){
  if(v>0.995)return '&gt;99%';
  return Math.round(v*100)+'%';
 }
-/* Both numbers, same size, both labelled, never blended.
-   The old block printed national at 17px with the room number at 12.5px
-   underneath — while verdict() defers to the room number whenever one exists.
-   The largest figure on the card was not the one driving the recommendation. */
+/* ONE number on the row: his room, at his next pick.
+   National moved BEHIND THE TAP — see survBox(), rendered by openP(). This was
+   raised against the standing "side by side, not blended" preference and chosen
+   knowingly: the row is read with a two-minute clock running. The two curves are
+   still never averaged, and the LABEL always names the curve the number came
+   from, so a league with no draft history to price against (superflex-8) reads
+   "national" rather than passing the national number off as a room price. */
 function survBlock(s){
  if(!s)return '<div class="svpair"><span class="svl">survival needs your slot</span></div>';
+ const roomed=s.room!=null, v=roomed?s.room:s.nat;
  let h='<div class="svpair">'
-  +'<span class="svone"><b class="sv '+svClass(s.nat)+'">'+pct(s.nat)+'</b><i class="svl">national</i></span>';
- if(s.room!=null)
-  h+='<span class="svone"><b class="sv '+svClass(s.room)+'">'+pct(s.room)+'</b><i class="svl">this room</i></span>';
- else if(LP())h+='<span class="svone"><i class="svl">no room price</i></span>';
+  +'<span class="svone"><b class="sv '+svClass(v)+'">'+pct(v)+'</b>'
+  +'<i class="svl">'+(roomed?'lasts to you':'national')+'</i></span>';
  if(s.thin)h+='<span class="svthin" title="'+esc(s.why)+'">thin</span>';
+ return h+'</div>';
+}
+
+/* ADP vs this room as ONE signed number, so nothing is subtracted on the clock.
+   ls = al - adp. POSITIVE means this room drafts him LATER than the national
+   board: he falls, he is cheaper here, "under board". NEGATIVE means you would
+   have to reach: "over board". Getting this sign backwards inverts every edge
+   call and it has happened once already, so test_artifact.js asserts the
+   direction against a real row rather than trusting this comment. */
+function deltaChip(x){
+ if(!LP()||x.al==null||x.ls==null)return '';
+ const d=Math.round(x.ls);
+ if(d===0)return ' · <span class="dlt" title="this room prices him at the national board">at board</span>';
+ const t=d>0
+  ? 'this room drafts him about '+d+' picks LATER than the national board — he lasts longer here, so he is cheaper'
+  : 'this room drafts him about '+Math.abs(d)+' picks EARLIER than the national board — you would be reaching';
+ return ' · <span class="dlt '+(d>0?'under':'over')+'" title="'+t+'">'
+   +Math.abs(d)+(d>0?' under':' over')+' board</span>';
+}
+
+/* National and this room, SIDE BY SIDE and never averaged — this is where the
+   pair lives now. It is one tap from every shortlist row, every board card and
+   every search result, and it has the room to label both honestly, which a row
+   read under a clock does not. Nothing was deleted by collapsing the row to one
+   number; it moved here. */
+function survBox(x){
+ const s=survivalNext(x), np=nextMyPick();
+ if(!s)return '<div class="box"><b>Survival to your next pick</b> — needs your draft '
+   +'slot. Set it on the Draft Room tab and everything pick-aware switches on.</div>';
+ let h='<div class="box"><b>Survives to your next pick'+(np?' (#'+np+')':'')+'</b><br>'
+  +'National <b>'+pct(s.nat)+'</b>';
+ if(s.room!=null)h+=' &nbsp;·&nbsp; this room <b>'+pct(s.room)+'</b>';
+ else if(LP())h+=' &nbsp;·&nbsp; this room <b>no price for him</b>';
+ else h+=' &nbsp;·&nbsp; this league has no draft history to price against';
+ if(s.thin)h+='<div class="hint alert">Thin: '+esc(s.why)+'</div>';
+ h+='<div class="hint">Two curves, never averaged. The shortlist row shows the room '
+  +'number when there is one and says so in its label; this is the pair.</div>';
  return h+'</div>';
 }
 
@@ -1596,7 +1856,7 @@ function runBlock(){
  let h='<div class="runbar">'+order.filter(k=>r.l12[k]).map(k=>
    '<i class="c'+k+'" style="width:'+(100*r.l12[k]/tot)+'%" title="'+k+' '+r.l12[k]+'"></i>').join('')+'</div>';
  h+='<div class="rl">'+order.filter(k=>r.l12[k]).map(k=>k+' <b>'+r.l12[k]+'</b>').join('')+'</div>';
- h+='<div class="rl" style="color:#7f8a9c">last '+r.last+' picks'
+ h+='<div class="rl" style="color:var(--text-mute)">last '+r.last+' picks'
   +(r.sinceN?' · since your last pick: '+order.filter(k=>r.since[k]).map(k=>r.since[k]+' '+k).join(', '):'')+'</div>';
  r.hot.forEach(k=>{
   h+='<div class="hot"><b>'+k+' run — '+r.l12[k]+' of the last '+r.last+'.</b> '
@@ -1604,7 +1864,7 @@ function runBlock(){
  });
  const walls=['RB','WR','TE','QB'].map(p=>({p,t:tierLeft(p)})).filter(x=>x.t&&x.t.n<=6);
  walls.forEach(w=>{
-  h+='<div class="rl" style="color:#e0b050">▾ <b>'+w.t.n+'</b> '+w.p
+  h+='<div class="rl" style="color:var(--caution)">▾ <b>'+w.t.n+'</b> '+w.p
    +' left before the tier breaks at '+esc(w.t.wall.n)+'</div>';
  });
  return h;
@@ -1616,7 +1876,7 @@ function driftBox(){
    +'board prices; it has '+DRIFT.n+'. Until then the survival numbers run on the pre-draft '
    +'board with no live adjustment.</div>';
  const dir=d=>d>0?'later than':d<0?'earlier than':'exactly at';
- return '<div class="box"><b style="color:#dfe6ef">Live pace</b><br>'
+ return '<div class="box"><b style="color:var(--text)">Live pace</b><br>'
   +'Over the last 24 priced picks this room is drafting <b>'+Math.abs(DRIFT.nat).toFixed(0)
   +'</b> picks '+dir(DRIFT.nat)+' national ADP'
   +(LP()?', and <b>'+Math.abs(DRIFT.room).toFixed(0)+'</b> picks '+dir(DRIFT.room)+' its own two-draft pace price':'')
@@ -1626,7 +1886,7 @@ function driftBox(){
     +(DRIFT.spread>1.15?'This room is messier than the mock-draft field — treat single-pick certainties with suspicion.'
       :DRIFT.spread<0.9?'This room is running tighter to the board than the mock field does.'
       :'This room is tracking the board’s own dispersion closely.'):'')
-  +'<div style="margin-top:6px;color:#69748a">Median, not mean, so one reach cannot move it. '
+  +'<div style="margin-top:6px;color:var(--text-mute)">Median, not mean, so one reach cannot move it. '
   +'Measured only on players who have actually been drafted — it reads this room’s '
   +'aggression, not the whole board, and it is survivorship-biased by construction.</div></div>';
 }
@@ -1636,7 +1896,7 @@ function viewTeam(){
  let h='<div class="bar"><label>Draft slot</label><select id="slotSel" onchange="setSlot(this.value)">'
   +'<option value="0">not set</option>';
  for(let i=1;i<=META.teams;i++)h+='<option value="'+i+'"'+(SLOT==i?' selected':'')+'>'+i+'</option>';
- h+='</select><span style="font-size:11.5px;color:#8a94a6">'
+ h+='</select><span style="font-size:var(--fs-body);color:var(--text-mute)">'
   +(SLOT?('picks '+myPicks().slice(0,6).join(', ')+'\u2026'):'set this to get pick numbers and recommendations')
   +'</span></div>';
  h+='<div class="info">Pick <b>'+currentPick()+'</b> of '+(META.teams*(META.lineup.length+META.bench))
@@ -1649,15 +1909,15 @@ function viewTeam(){
     removed; the roster grid simply follows it. */
  const needKeys=Object.keys(n);
  h+='<div class="sec">Still needed</div><div class="need">';
- if(!needKeys.length)h+='<div><b>\u2713</b><span>LINEUP FULL</span></div>';
- needKeys.forEach(k=>{h+='<div class="'+(k!=='K'&&k!=='DEF'?'crit':'')+'"><b>'+n[k]+'</b><span>'+k+'</span></div>';});
+ if(!needKeys.length)h+='<div><span>LINEUP FULL</span><b>\u2713</b></div>';
+ needKeys.forEach(k=>{h+='<div class="'+(k!=='K'&&k!=='DEF'?'crit':'')+'"><span>'+k+'</span><b>'+n[k]+'</b></div>';});
  h+='</div>';
 
  h+='<div class="sec">Starters</div><div class="slots">';
  slots.forEach(s=>{
   h+='<div class="slot'+(s.p?' filled':'')+'"><div class="lb">'+s.slot+'</div>';
   if(s.p)h+='<button class="rm" onclick="claimById(\''+s.p.g+'\')">\u2715</button><div class="pn">'+esc(s.p.n)+'</div><div class="px">'+esc(s.p.p)+' '+esc(s.p.tm)+' \u00b7 ADP '+(s.p.adp==null?'\u2014':s.p.adp.toFixed(1))+'</div>';
-  else h+='<div class="pn" style="color:#8892a5">empty</div>';
+  else h+='<div class="pn" style="color:var(--text-mute)">empty</div>';
   h+='</div>';});
  h+='</div>';
 
@@ -1668,10 +1928,10 @@ function viewTeam(){
  h+='<div class="sec">Bench ('+benchPool.length+' of '+META.bench+')</div><div class="slots">';
  for(let i=0;i<Math.max(META.bench,benchPool.length);i++){
   const p=benchPool[i], over=i>=META.bench;
-  h+='<div class="slot'+(p?' filled':'')+'"'+(over?' style="border-color:#7f1d3a"':'')+'>'
+  h+='<div class="slot'+(p?' filled':'')+'"'+(over?' style="border-color:var(--urgent)"':'')+'>'
     +'<div class="lb">'+(over?'OVER LIMIT':'BN '+(i+1))+'</div>';
   if(p)h+='<button class="rm" onclick="claimById(\''+p.g+'\')">\u2715</button><div class="pn">'+esc(p.n)+'</div><div class="px">'+esc(p.p)+' '+esc(p.tm)+'</div>';
-  else h+='<div class="pn" style="color:#8892a5">empty</div>';
+  else h+='<div class="pn" style="color:var(--text-mute)">empty</div>';
   h+='</div>';}
  h+='</div>';
  if(benchPool.length>META.bench)h+='<div class="warn"><b>'+(benchPool.length-META.bench)
@@ -1682,10 +1942,10 @@ function viewTeam(){
   const p=irPool[i];
   h+='<div class="slot'+(p?' filled':'')+'"><div class="lb">IR '+(i+1)+'</div>';
   if(p)h+='<button class="rm" onclick="claimById(\''+p.g+'\')">\u2715</button><div class="pn">'+esc(p.n)+'</div><div class="px">'+esc(p.p)+' '+esc(p.tm)+' \u00b7 '+esc(p.st||'')+'</div>';
-  else h+='<div class="pn" style="color:#8892a5">no eligible player</div>';
+  else h+='<div class="pn" style="color:var(--text-mute)">no eligible player</div>';
   h+='</div>';}
  h+='</div>';
- h+='<div class="box"><b style="color:#dfe6ef">IR slots only take Out, IR and PUP.</b> '
+ h+='<div class="box"><b style="color:var(--text)">IR slots only take Out, IR and PUP.</b> '
   +'Doubtful, Suspended and NA do <b>not</b> qualify in this league \u2014 a Doubtful stash occupies a real bench spot. '
   +'Read from the league settings. Eligibility here uses each player\u2019s NFL roster status; the weekly '
   +'Out/Doubtful designation only exists once the season starts, so during camp this reflects '
@@ -1747,7 +2007,7 @@ function viewPlayers(){
  const filtered=!!(S.q||S.p||S.l||S.c||S.deep||S.rev||S.hasTakes||S.lshift);
  if(!filtered&&!S.showAll)
   return headerNote()+'<div class="empty" style="padding:30px 12px">'
-   +'<div style="font-size:15px;color:#c3cede;font-weight:600">Search for a player.</div>'
+   +'<div style="font-size:var(--fs-support);color:var(--text-dim);font-weight:var(--w-med)">Search for a player.</div>'
    +'<div style="margin-top:7px">Type a name above, or use the filters. '
    +PL.length+' players are on this board.</div>'
    +'<div style="margin-top:14px"><button class="hbtn" onclick="S.showAll=1;render()">'
@@ -1783,7 +2043,7 @@ function viewCont(){
 
 function headerNote(){
  let out='';
- if(!STATE_OK)out+='<div class="warn" style="background:#4a1620;border-color:#7f1d3a;color:#ff8fa3">'
+ if(!STATE_OK)out+='<div class="warn" style="background:var(--urgent-fill);border-color:var(--urgent);color:var(--urgent)">'
    +'<b>Picks are NOT being saved.</b> This browser refused to update the address bar, so a reload will lose them. '
    +'Open the saved HTML file in a normal browser tab instead.</div>';
  let bits=[];
@@ -1814,22 +2074,22 @@ function headerNote(){
    not change its mind while you are on the clock. */
 function planAvail(x){
  if(x.p==null)return '';
- const c = x.p>=60?'#5ce39b' : x.p>=35?'#ecd07a' : '#ff8fa3';
+ const c = x.p>=60?'var(--positive)' : x.p>=35?'var(--caution)' : 'var(--urgent)';
  return '<span style="color:'+c+';font-weight:700">'+x.p+'%</span>';
 }
 function planName(x){
  const gone=x.g&&TAKEN[x.g], mine=x.g&&MINE.includes(x.g);
  let n=esc(x.n);
- if(mine)n='<span style="color:#5ce39b">✓ '+n+'</span>';
- else if(gone)n='<span style="text-decoration:line-through;color:#8b95a8">'+n+'</span>';
+ if(mine)n='<span style="color:var(--positive)">✓ '+n+'</span>';
+ else if(gone)n='<span style="text-decoration:line-through;color:var(--text-mute)">'+n+'</span>';
  const bits=[];
  if(x.pr)bits.push(esc(x.pr));
  if(x.tm)bits.push(esc(x.tm));
- if(x.adp!=null)bits.push('adp '+x.adp+(x.lg!=null?' → <b style="color:#e0b6ee">'+x.lg+'</b> here':''));
- return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:3px 0">'
-  +'<div style="min-width:0"><span style="font-weight:600;font-size:13.5px">'+n+'</span>'
+ if(x.adp!=null)bits.push('adp '+x.adp+(x.lg!=null?' → <b style="color:var(--accent)">'+x.lg+'</b> here':''));
+ return '<div style="display:flex;justify-content:space-between;gap:var(--s3);align-items:baseline;padding:3px 0">'
+  +'<div style="min-width:0"><span style="font-weight:var(--w-med);font-size:var(--fs-support)">'+n+'</span>'
   +'<span class="cv" style="margin-left:6px">'+bits.join(' · ')+'</span></div>'
-  +'<div style="white-space:nowrap;font-size:12px">'+(gone&&!mine?'<span style="color:#ff8fa3;font-size:10px;font-weight:700">GONE</span>':planAvail(x))+'</div></div>';
+  +'<div style="white-space:nowrap;font-size:var(--fs-body)">'+(gone&&!mine?'<span style="color:var(--urgent);font-size:var(--fs-meta);font-weight:var(--w-med)">GONE</span>':planAvail(x))+'</div></div>';
 }
 function viewPlan(){
  if(!PLAN) return '<div class="box">No plan has been authored for this league yet. '
@@ -1838,7 +2098,7 @@ function viewPlan(){
  let nowPick=null;
  PLAN.picks.forEach(p=>{ if(nowPick===null && p.pick>=next) nowPick=p.pick; });
 
- let h='<div style="font-size:16px;font-weight:700;margin:10px 0 2px">'
+ let h='<div style="font-size:var(--fs-answer);font-weight:var(--w-bold);margin:10px 0 2px">'
   +esc(PLAN.leagueName||'')+' — drafting from slot '+PLAN.slot+'</div>'
   +'<div class="sub">'+PLAN.teams+' teams · '+PLAN.rounds+' rounds · draft '+esc(PLAN.draftDate||'TBD')
   +' · plan written '+esc(PLAN.generated||'')+'</div>';
@@ -1852,9 +2112,9 @@ function viewPlan(){
   h+='<div class="sec">Deadlines — the picks you cannot get back</div><div class="plandl">';
   PLAN.deadlines.forEach(d=>{
    const live = next<=d.act;
-   h+='<div class="c" style="display:block;'+(live?'border-color:#63491a;background:#1d1710':'opacity:.55')+'">'
+   h+='<div class="c'+(live?' live':' past')+'" style="display:block">'
      +'<div class="ch"><div style="min-width:0"><div class="nm">'+esc(d.pos)+' — '+esc(d.label)+'</div>'
-     +'<div class="meta">act at pick <b style="color:#eecd99">'+d.act+'</b>'
+     +'<div class="meta">act at pick <b style="color:var(--caution)">'+d.act+'</b>'
      +(d.pick!==d.act?' · last usable pick '+d.pick:'')+'</div></div>'
      +'<div class="adp"><b>'+(live?Math.max(0,d.act-next+1):'—')+'</b><i>'+(live?'picks left':'passed')+'</i></div>'
      +'</div><div class="snip" style="-webkit-line-clamp:unset;display:block">'+esc(d.note)+'</div></div>';
@@ -1865,10 +2125,10 @@ function viewPlan(){
  h+='<div class="sec">The sheet</div><div class="plansheet">';
  PLAN.picks.forEach(p=>{
   const past=p.pick<next, now=(p.pick===nowPick);
-  h+='<div class="planrow"'+(past?' style="opacity:.45"':'')+'>';
+  h+='<div class="planrow'+(past?' past':'')+'">';
   h+='<div class="rh'+(now?' now':'')+'">ROUND '+p.r+' · PICK '+p.pick
     +' <span>'+esc(p.target)+(now?' — you are up':'')+'</span></div>';
-  h+='<div class="c" style="display:block'+(now?';border-color:#2b6b45':'')+'">';
+  h+='<div class="c" style="display:block'+(now?';border-color:var(--positive)':'')+'">';
   const prim=(p.primary||[]), fb=(p.fallbacks||[]);
   if(prim.length)h+=prim.map(planName).join('');
   else h+='<div class="cv" style="padding:3px 0">Best available — no pre-committed name.</div>';
@@ -1949,6 +2209,10 @@ function render(){
  // Round headers stick below the real header, whatever height it currently is.
  const hdr=document.querySelector('header');
  if(hdr)document.documentElement.style.setProperty('--hh',hdr.offsetHeight+'px');
+ /* The active tab, on <body>, so the stylesheet can scope a rule to one screen
+    without the JS having to know about presentation. Used by exactly one rule
+    today — the Board's take snippet, which folds behind the tap on a laptop. */
+ document.body.dataset.tab=S.tab;
  document.getElementById('ctl').style.display=(S.tab==='cont'||S.tab==='outlines'||S.tab==='team'||S.tab==='room'||S.tab==='plan')?'none':'block';
  document.getElementById('fab').style.display=(S.tab==='board'||S.tab==='team'||S.tab==='players'||S.tab==='room')?'flex':'none';
  document.getElementById('undoBtn').textContent='Undo'+(HIST.length?' ('+HIST.length+')':'');
@@ -2078,42 +2342,43 @@ function leagueBox(x){
  if(!l)return '';
  if(x.al==null){
   const why=LP_WHY[x.lc]||'not measured in both prior drafts';
-  return '<div class="box"><b style="color:#dfe6ef">League-adjusted price</b> — none. '
+  return '<div class="box"><b style="color:var(--text)">League-adjusted price</b> — none. '
    +esc(why)+'. National ADP is the only price for him.</div>';
  }
  const gap=x.ls, rd=x.lr||rdOf(x.al), natRd=rdOf(x.adp);
  const verdict = gap<=-lpMaterial()
-   ? '<b style="color:#ffb08a">Take him earlier than the board says.</b> He goes about '
+   ? '<b style="color:var(--caution)">Take him earlier than the board says.</b> He goes about '
      +Math.abs(Math.round(gap))+' picks sooner in this room'
      +(rd<natRd?' — round '+rd+' here versus round '+natRd+' nationally.':'.')
    : gap>=lpMaterial()
-   ? '<b style="color:#7fe3d4">He lasts longer here.</b> About '+Math.round(gap)
+   ? '<b style="color:var(--accent)">He lasts longer here.</b> About '+Math.round(gap)
      +' picks of extra patience'+(rd>natRd?' — round '+rd+' here versus round '+natRd+' nationally.':'.')
    : '<b>Trades at market.</b> This room prices him within '+lpMaterial()+' picks of the national board.';
- return '<div class="box"><b style="color:#dfe6ef">League-adjusted price</b><br>'
+ return '<div class="box"><b style="color:var(--text)">League-adjusted price</b><br>'
   +'National ADP <b>'+x.adp.toFixed(1)+'</b> (R'+natRd+') → this league <b>'+x.al.toFixed(1)+'</b> (R'+rd+') '
   +'· shift <b>'+(gap>0?'+':'')+gap.toFixed(1)+'</b><br>'+verdict
-  +'<div style="margin-top:6px;color:#69748a">'+esc(l.caveat)+'</div>'
-  +'<div style="margin-top:4px;color:#69748a">Display only — best-available, tier walls and the '
+  +'<div style="margin-top:6px;color:var(--text-mute)">'+esc(l.caveat)+'</div>'
+  +'<div style="margin-top:4px;color:var(--text-mute)">Display only — best-available, tier walls and the '
   +'round filters all still run on national ADP.</div></div>';
 }
 
 function openP(i){
  const x=PL[i],a=x.adp;
  document.getElementById('on').textContent=x.n+'  \u00b7  '+x.p+' '+x.tm;
- let h='<div class="box"><b style="color:#dfe6ef">ADP</b> '+(a==null
+ let h='<div class="box"><b style="color:var(--text)">ADP</b> '+(a==null
    ? 'not on the 14-team board. Genuinely undrafted at this size \u2014 a FAAB target, not a draft pick.'
    : a.toFixed(1)+' \u2014 '+(x.pr||'')+', round '+rdOf(a)+' of 14'
      +(x.mv?'<br>Moved '+(x.mv>0?'+':'')+x.mv.toFixed(1)+' since '+esc(META.adpPrev)+' \u2192 <b>'+esc(x.es)+'</b>':'<br>Edge status: <b>'+esc(x.es)+'</b>')
      +(x.sd!=null?'<br>stddev '+x.sd.toFixed(1)+' on n='+x.nd+(x.sdok?'':' \u2014 <b>below n=100, do not rank on this</b>'):''))
    +'</div>';
+ h+=survBox(x);
  h+=leagueBox(x);
  if(x.tc)h+='<div class="warn"><b>Team changed since these takes.</b> The outlines have him on '
    +esc(x.tcf)+'; the 2026 roster and the ADP feed both say <b>'+esc(x.tm)+'</b>. '
    +'Any reasoning about his offense, target competition or scheme needs re-checking.</div>';
  if(x.ro===false)h+='<div class="warn"><b>Not on a 2026 NFL roster.</b> The team shown is his last known team, not a current one.</div>';
  const d=DEPTH[x.g];
- if(d)h+='<div class="box"><b style="color:#dfe6ef">Posted depth chart</b> \u2014 '+esc(d.t)+' '+esc(d.s)+', rank '+esc(d.r)+' (as of '+esc(META.depthAsOf)+'). This is the team\u2019s own listing, not the podcast\u2019s inference.</div>';
+ if(d)h+='<div class="box"><b style="color:var(--text)">Posted depth chart</b> \u2014 '+esc(d.t)+' '+esc(d.s)+', rank '+esc(d.r)+' (as of '+esc(META.depthAsOf)+'). This is the team\u2019s own listing, not the podcast\u2019s inference.</div>';
  if(x.tg&&x.tg.length)h+='<div>'+x.tg.map(t=>'<span class="pill NEUTRAL">'+esc(t)+'</span>').join('')+'</div>';
 
  if(!x.h||!x.h.length){h+='<div class="box">No podcast take on this player. He is here because he is on the ADP board.</div>';}
@@ -2127,12 +2392,12 @@ function openP(i){
    +(e.mv&&e.mv!=='n/a'?'<div class="evs">Model vs JJ: '+esc(e.mv)+'</div>':'')
    +(e.nr?'<div class="evn">\u26a0 '+esc(e.nr)+'</div>':'')
    +'<div><button class="src" onclick="openEp(\''+e.f+'\',\''+x.n.replace(/'/g,"\\'")+'\')">Read the outline \u2192</button>'
-   +(e.u?' <a href="'+esc(e.u)+'" target="_blank" rel="noopener" style="font-size:10.5px">episode</a>':'')+'</div></div>').join('');
+   +(e.u?' <a href="'+esc(e.u)+'" target="_blank" rel="noopener" style="font-size:var(--fs-meta)">episode</a>':'')+'</div></div>').join('');
  }
  const rel=CN.filter(c=>c.r.toLowerCase().indexOf(x.n.toLowerCase())>=0);
  h+='<div class="sec">Contingency ('+rel.length+')</div>'+(rel.length
   ?rel.map(c=>'<div class="cn">'+esc(c.r)+'</div>').join('')
-  :'<div class="cn" style="color:#69748a">No contingency relationship logged. The podcast never addressed this situation \u2014 that is an absence of data, not a judgement.</div>');
+  :'<div class="cn" style="color:var(--text-mute)">No contingency relationship logged. The podcast never addressed this situation \u2014 that is an absence of data, not a judgement.</div>');
  document.getElementById('ob').innerHTML=h;
  const ov=document.getElementById('ov');ov.classList.add('show');ov.scrollTop=0;}
 function closeOv(){document.getElementById('ov').classList.remove('show');}
@@ -2196,7 +2461,7 @@ function openSetup(){
   +'<div class="box">Pulls rosters and FAAB balances straight from Sleeper so the waiver list knows who is '
   +'actually free in your league. Needs a network connection.</div>'
   +'<button class="hbtn" style="padding:8px 14px" onclick="syncLeague()">Sync league</button>'
-  +'<div id="syncMsg" style="font-size:11.5px;color:#8a94a6;margin-top:8px"></div>'
+  +'<div id="syncMsg" style="font-size:var(--fs-body);color:var(--text-mute);margin-top:8px"></div>'
   /* headerNote() has always promised "tap Setup to see them" about the
      unresolved take rows. Setup never rendered them — D.unresolved is shipped
      as a full array by payload.py and was read by nothing, so the banner sent
@@ -2234,7 +2499,7 @@ async function syncLeague(){
   const mine=rosters.find(r=>r.owner_id===META.sleeperUserId);
   if(!mine){
    LEAGUE=null;
-   m.innerHTML='<b style="color:#ff8fa3">Could not find your roster.</b> No team in this league is owned by '
+   m.innerHTML='<b style="color:var(--urgent)">Could not find your roster.</b> No team in this league is owned by '
      +'user id '+esc(META.sleeperUserId)+'. FAAB advice would be guesswork, so the waiver view stays off.';
    render();return;
   }
@@ -2245,11 +2510,11 @@ async function syncLeague(){
   LEAGUE={name:META.league,teams:rosters.length,rostered,myFaab,
     maxFaab:rivals.length?rivals[rivals.length-1]:META.faab,   // rivals only, not you
     medFaab:mid};
-  m.innerHTML='<b style="color:#5ce39b">Synced.</b> '+rosters.length+' rosters, '+rostered.length
+  m.innerHTML='<b style="color:var(--positive)">Synced.</b> '+rosters.length+' rosters, '+rostered.length
     +' players rostered. Your FAAB $'+myFaab+', richest rival $'+LEAGUE.maxFaab+'.';
   render();
  }catch(e){
-  m.innerHTML='<b style="color:#ff8fa3">Could not reach Sleeper.</b> '
+  m.innerHTML='<b style="color:var(--urgent)">Could not reach Sleeper.</b> '
    +'This can happen if the artifact sandbox blocks outbound requests \u2014 open the saved HTML file '
    +'in a normal browser tab and try again. The draft board works fully offline either way.';
  }
@@ -2286,8 +2551,8 @@ async function liveProbe(){
  catch(err){
   document.getElementById('load').innerHTML=
     '<div style="max-width:470px;text-align:left;line-height:1.6">'
-   +'<b style="color:#ff8fa3">The data files did not load.</b><br><br>'
-   +'<code style="font-size:11.5px">'+esc(err.message)+'</code><br><br>'
+   +'<b style="color:var(--urgent)">The data files did not load.</b><br><br>'
+   +'<code style="font-size:var(--fs-body)">'+esc(err.message)+'</code><br><br>'
    +'This page deliberately holds no data of its own \u2014 it reads <code>manifest.js</code> and the '
    +'payload files sitting in the same folder. Check that they were copied across together. '
    +'If you need a board right now, <b>tracker-artifact.html</b> is the self-contained build and '
