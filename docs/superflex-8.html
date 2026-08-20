@@ -362,6 +362,12 @@ a:hover{color:var(--text)}
 .nf{font-size:var(--fs-meta);font-weight:var(--w-med);letter-spacing:var(--ls-caps);text-transform:uppercase;
  color:var(--accent);background:var(--accent-fill);border:1px solid var(--accent);border-radius:var(--r1);
  padding:2px 6px;flex:0 0 auto;white-space:nowrap}
+/* Rushing-QB flag (2C). Display only — the elite tier feeds the barbell in the
+   sort; this chip just SAYS a QB runs. Muted (same dim text the reason line uses,
+   which measures AA-clean) so it never competes with the need flag. */
+.qr{font-size:var(--fs-meta);font-weight:var(--w-med);letter-spacing:var(--ls-caps);text-transform:uppercase;
+ color:var(--text-dim);border:1px solid var(--border);border-radius:var(--r1);
+ padding:2px 6px;flex:0 0 auto;white-space:nowrap}
 /* "I drafted him", reachable with a pointer. Before this the only path was
    Ctrl+Enter in the quick-entry box, which does not exist on a touch device.
    Outline by default; filled ONLY on row 1. */
@@ -969,15 +975,116 @@ function stageWeight(cp){
 // an elite QB over cheaper skill players without blowing past a clearly elite RB
 // while QB supply is healthy.
 const QB_ELITE=4, QB_PREM_MAX=3, QB_SCARCITY_GAIN=0.8, QB_PREM_CAP=6;
-// Phase-1 stopgap: distance-scoring long-leg standouts, DISPLAY ONLY, never
-// scored. Phase 2 plumbs the kicker-model output into the payload instead.
-const BIG_LEG=new Set(['Cam Little']);
+// Phase 2C plumbed the big-leg flag into the payload: every kicker with a
+// documented 60+ make (nflverse play-by-play 2023-25) ships p.bl=1 and
+// p.kl=<longest>. The hardcoded Cam-Little stopgap is gone. DISPLAY ONLY, never
+// scored — nothing in bestAvailable sorts on it.
 function qbEliteRanks(){
  // gsis -> 1-based QB rank by national ADP, kept only for the top QB_ELITE.
  return rc('qbrk',()=>{
   const qbs=PL.filter(p=>p.p==='QB'&&p.adp!=null).slice().sort((a,b)=>a.adp-b.adp);
   const m={}; qbs.forEach((p,i)=>{if(i<QB_ELITE)m[p.g]=i+1;}); return m;
  });
+}
+/* ---------- VONA: value over next available (Phase 2A, run #23) ----------
+   The honest value layer the Phase-1 proxies stood in for. For each undrafted
+   player, ask how much better he is than the best player at his position that
+   the survival math expects to still be on the board at Chris's pick AFTER the
+   one this shortlist is for. A cliff there — nobody comparable comes back — is a
+   reason to take him now; if a near-equal player survives, he is not.
+
+   It REUSES the existing logistic survival-to-next-pick math (survivalAt); it
+   does NOT rebuild survival. The lookahead is the exact snake window W: with N
+   teams and slot s, W = 2*(N-s) after an odd round and 2*(s-1) after an even
+   one — which is exactly the gap between two consecutive picks in myPicks(), so
+   it falls out of the snake order without a hardcoded formula (m0 -> vnp below).
+
+   VONA is a SEED adjustment, not a naked sort: eff = adp - lift, lift >= 0 and
+   capped at one round, so it lifts a player toward his true urgency without ever
+   letting a scarce lesser player leapfrog clearly better talent — the exact bug
+   Phase 1 killed. The conviction / slot-fill / tier-wall / QB-barbell nudges
+   still ride on top, stage-scaled, unchanged.
+
+   GATED and BLENDED, never a hard switch. It stays fully OFF until the live feed
+   has calibrated — >=VONA_GATE priced picks AND past round 2 AND the survival
+   SPREAD has stabilised (DRIFT.spreadReady) — then fades in over VONA_BLEND
+   picks. Below the gate, DRIFT.n is 0 and lift is 0, so the board is byte-for-
+   byte the run-22 stage engine. Nothing here reads the league-adjusted price. */
+const VONA_GATE=20, VONA_BLEND=8, VONA_GAIN=0.5, VONA_CAP_RD=1.0, VONA_SURV=0.5;
+function vonaWeight(cp){
+ const rd=Math.ceil(cp/RS());
+ if(rd<=2)return 0;                                   // past round 2, always
+ if(!DRIFT.spreadReady||DRIFT.n<VONA_GATE)return 0;   // feed must have calibrated
+ return Math.max(0,Math.min(1,(DRIFT.n-VONA_GATE)/VONA_BLEND));  // blend in over ~8 picks
+}
+/* Best (lowest-ADP) player at each position expected to survive to pick `k`,
+   given the board as it is now. K/DEF excluded — they are a wait, never a VONA
+   reach. Memoised per render per lookahead pick. */
+function vonaRepl(k,cp){
+ return rc('vrepl:'+k,()=>{
+  const m={};
+  if(!k)return m;
+  PL.forEach(p=>{
+   if(TAKEN[p.g]||p.adp==null||p.p==='K'||p.p==='DEF')return;
+   const s=survivalAt(p,k,cp), v=s.room!=null?s.room:s.nat;
+   if(v<VONA_SURV)return;                     // only players more likely than not to last
+   if(m[p.p]==null||p.adp<m[p.p])m[p.p]=p.adp;
+  });
+  return m;
+ });
+}
+
+/* ======================= PHASE 2B — ZIG WHEN THEY ZAG =======================
+   The descriptive run detector (runStats().hot) becomes a VALUE input on top of
+   VONA. A live run is JOINED when a tier cliff sits inside the window W (the
+   running position's VONA gap is large) and FADED when it is FEAR (near-equal
+   players remain) — then the neglected position's faller wins. Everything is
+   decided by VONA; a run only ever pulls a pick forward WITHIN a tier, never
+   across a value cliff (the guard in bestAvailable). The anti-correlation weight
+   is conservative and STRONGER in fewer-team leagues, where one manager owns
+   more of the room. Inert below the VONA gate (vw>0) or with no run — then the
+   board is byte-for-byte 2A. Never reads the league-adjusted price. */
+const RUN_LAMBDA=6, RUN_CLIFF_RD=0.75, RUN_CAP_RD=0.5;
+function runLambda(){return RUN_LAMBDA*(14/META.teams);}   // one 8-team seat = 12.5% of the room -> stronger anti-correlation
+/* what the room is DOING: share of the last 12 picks at each position */
+function roomShares(rs){
+ const tot=Object.values(rs.l12).reduce((a,b)=>a+b,0)||1, o={};
+ for(const k in rs.l12)o[k]=rs.l12[k]/tot;
+ return o;
+}
+/* what the board is OFFERING: share of the next W undrafted by ADP. A position
+   drafted faster than its supply is HOT; slower is COLD. K/DEF excluded. */
+function baseShares(cp,vnp){
+ const win=Math.max(12,Math.min(40,(vnp||cp)-cp));
+ const up=PL.filter(p=>!TAKEN[p.g]&&p.adp!=null&&p.p!=='K'&&p.p!=='DEF')
+   .sort((a,b)=>a.adp-b.adp).slice(0,win);
+ const o={}, tot=up.length||1;
+ up.forEach(p=>{o[p.p]=(o[p.p]||0)+1;});
+ for(const k in o)o[k]/=tot;
+ return o;
+}
+/* Classify each HOT position: TIER-DROP (a cliff to the next survivor sits in W)
+   vs FEAR (near-equal players remain). Uses the same VONA replacement gap the
+   sort already trusts; tierLeft() supply only colours the wording. */
+function classifyRuns(rs,vrepl,bestAdp){
+ const cliff=RUN_CLIFF_RD*RS(), out={};
+ rs.hot.forEach(pos=>{
+  const r=vrepl?vrepl[pos]:null, b=bestAdp[pos];
+  const posVona=(r!=null&&b!=null)?Math.max(0,r-b):0;
+  const tl=tierLeft(pos);
+  out[pos]={kind:posVona>=cliff?'tier-drop':'fear',posVona:+posVona.toFixed(1),
+            n:rs.l12[pos]||0,wall:tl?tl.n:null};
+ });
+ return out;
+}
+/* Probe/inspection hook — the run classification at a pick, without rendering. */
+function runDebug(cp){
+ const rs=runStats(); if(!rs.hot.length)return {hot:[]};
+ const vw=vonaWeight(cp); if(!vw)return {hot:rs.hot,gate:'closed'};
+ const m0=nextMyPick(), vnp=m0?myPicks().find(p=>p>m0):null;
+ const vr=vonaRepl(vnp,cp), bestAdp={};
+ PL.forEach(p=>{if(TAKEN[p.g]||p.adp==null)return;if(bestAdp[p.p]==null||p.adp<bestAdp[p.p])bestAdp[p.p]=p.adp;});
+ return {hot:rs.hot,vnp,vw:+vw.toFixed(2),lambda:+runLambda().toFixed(1),cls:classifyRuns(rs,vr,bestAdp)};
 }
 function bestAvailable(limit){
  const cp=currentPick(), np=nextMyPick()||cp, n=need();
@@ -991,14 +1098,36 @@ function bestAvailable(limit){
  const mandatoryLeft=LATE_SLOTS.filter(s=>starters.has(s)).length;
  const mustTakeKDef=mandatoryLeft>0 && remaining<=mandatoryLeft+1;
  const w=stageWeight(cp);                 // 0..1 — how much the nudges bite now
- // Superflex QB scarcity: how much of the elite tier is already off the board.
+ // VONA lookahead: m0 is the pick this shortlist is FOR; vnp is my pick AFTER
+ // that (the snake window W). VONA compares each player to the best survivor at
+ // vnp. Computed once here, not per player.
+ const m0=nextMyPick(), vnp=m0?myPicks().find(p=>p>m0):null;
+ const vw=vonaWeight(cp), vrepl=vw>0?vonaRepl(vnp,cp):{};
+ // Superflex QB barbell scarcity, on BOTH tracks (the blend Chris chose for 2C):
+ //   ADP track  — the top QB_ELITE by market price (qbEliteRanks)
+ //   RUSH track — the real rushing-elite (payload rq===2, nflverse 2023-25 rushing)
+ // A QB is lifted if he is on EITHER track; the premium is the larger of the two.
  const qbRank=META.superflex?qbEliteRanks():{};
  let eliteGone=0;
  if(META.superflex)for(const g in qbRank){if(TAKEN[g])eliteGone++;}
+ let rushN=0, rushGone=0;
+ if(META.superflex)PL.forEach(q=>{if(q.p==='QB'&&q.rq===2&&q.adp!=null){rushN++;if(TAKEN[q.g])rushGone++;}});
  const out=[];
  PL.forEach(p=>{
   if(TAKEN[p.g]||p.adp==null)return;
-  let eff=p.adp, why=[];
+  let eff=p.adp, why=[]; let vona=0, vlift=0;
+  // VONA seed adjustment — value over next available, taken off the ADP seed.
+  // Gated+blended (vw), capped at one round so it can never panic-reach across
+  // talent. K/DEF are a wait, never a VONA reach.
+  if(vw>0 && p.p!=='K' && p.p!=='DEF'){
+   const r=vrepl[p.p];
+   vona=(r!=null)?Math.max(0,r-p.adp):0;
+   if(vona>0){
+    vlift=Math.min(RS()*VONA_CAP_RD,VONA_GAIN*vona)*vw;
+    eff-=vlift;
+    why.push('VONA −'+vlift.toFixed(1)+' ('+Math.round(vona)+' to next '+p.p+' @#'+vnp+')');
+   }
+  }
   // Dedicated slot beats a multi-position slot: a QB who fills the only QB
   // slot is worth more than one who merely COULD fill the superflex.
   const MS=multiSlots();
@@ -1019,11 +1148,19 @@ function bestAvailable(limit){
   // Superflex QB barbell — a VALUE term, at full strength regardless of stage
   // (getting the elite QB early is the whole point). Elite tier only; grows as
   // the tier depletes; self-extinguishes once the top QBs are gone.
-  if(META.superflex && qbRank[p.g]){
-   const r=qbRank[p.g];
-   const prem=Math.min(QB_PREM_CAP,
-     QB_PREM_MAX*(1-(r-1)/QB_ELITE)*(1+QB_SCARCITY_GAIN*(eliteGone/QB_ELITE)));
-   if(prem>0){eff-=prem;why.push('superflex QB — elite tier');}
+  // Barbell premium = MAX of the ADP-market premium and the rushing premium, so an
+  // elite RUSHER cheap by ADP (Daniels/Hurts/Dart/Kyler) is lifted AND a top-market
+  // pocket passer (Burrow) keeps a lift too. Rushing scales with real rush pts/game
+  // and grows as the rushing-elite deplete. Superflex only; never reads the price.
+  if(META.superflex && (qbRank[p.g] || p.rq===2)){
+   let adpPrem=0;
+   if(qbRank[p.g]){const r=qbRank[p.g];
+    adpPrem=QB_PREM_MAX*(1-(r-1)/QB_ELITE)*(1+QB_SCARCITY_GAIN*(eliteGone/QB_ELITE));}
+   let rushPrem=0;
+   if(p.rq===2){const strength=Math.max(0.5,Math.min(1.4,(p.rfg||5)/6));
+    rushPrem=QB_PREM_MAX*strength*(1+QB_SCARCITY_GAIN*(rushGone/Math.max(1,rushN)));}
+   const prem=Math.min(QB_PREM_CAP,Math.max(adpPrem,rushPrem));
+   if(prem>0){eff-=prem;why.push(rushPrem>=adpPrem?'superflex QB — elite rusher':'superflex QB — elite (market)');}
   }
   if(p.p==='K'||p.p==='DEF'){
    if(mustTakeKDef){eff-=120;why.push('MANDATORY — only '+remaining+' picks left');}
@@ -1034,10 +1171,59 @@ function bestAvailable(limit){
   // it visually. The shortlist stays pure best-available — this marks the ones
   // that plug a hole rather than reordering anything.
   const fills=dedicated.length?dedicated[0]:(flexible.length?flexible[0]:null);
-  const bigLeg=p.p==='K'&&BIG_LEG.has(p.n);   // display only, never scored
-  if(bigLeg)why.push('big leg — long-FG value in distance scoring');
-  out.push({p,eff,why,fills,bigLeg});
+  const bigLeg=p.p==='K'&&!!p.bl;   // data-derived (payload p.bl): documented 60+ make. Display only, never scored
+  if(bigLeg)why.push('big leg'+(p.kl?' ('+p.kl+'y+)':'')+' — long-FG value in distance scoring');
+  out.push({p,eff,why,fills,bigLeg,vona,vlift});
  });
+ // ---- PHASE 2B: zig-when-they-zag — the run response, on the VONA seed ----
+ // Gated exactly like VONA (vw>0) and only when a run is live. Below the gate,
+ // or with no run, this block is inert and every eff is identical to 2A.
+ const rstat=runStats();
+ if(vw>0 && rstat.hot.length){
+  const bestAdp={};
+  out.forEach(o=>{if(bestAdp[o.p.p]==null||o.p.adp<bestAdp[o.p.p])bestAdp[o.p.p]=o.p.adp;});
+  const cls=classifyRuns(rstat,vrepl,bestAdp);
+  const feared=rstat.hot.filter(h=>cls[h]&&cls[h].kind==='fear');
+  // The anti-correlation FADE/ZAG runs on FEAR only. A tier-drop run is rational
+  // and is JOINED by VONA itself, so we add no λ against it — otherwise lifting
+  // the cold positions would fight the very join we just decided on. With no
+  // fear run live, eff stays == 2A and only the reason line gains a JOIN label.
+  const useLam=feared.length>0;   // FADE/ZAG on fear only; a tier-drop is JOINED by VONA
+  const rShare=roomShares(rstat), bShare=baseShares(cp,vnp);
+  const lam=runLambda(), cap=RS()*RUN_CAP_RD;
+  out.forEach(o=>o.base=o.eff);
+  // Anti-panic anchor: the current best-VALUE pick is never faded by a run, and
+  // every run adj is capped at RUN_CAP_RD (0.5 round) < RUN_CLIFF_RD (0.75), so
+  // no other player can be lifted across a value cliff to displace it. Together
+  // a run reorders WITHIN a tier and can never pull a pick across a value cliff.
+  let minBase=Infinity, leader=null;
+  out.forEach(o=>{if(o.base<minBase){minBase=o.base;leader=o;}});
+  out.forEach(o=>{
+   const pos=o.p.p, me=cls[pos];
+   let adj=0;
+   if(useLam && pos!=='K' && pos!=='DEF'){
+    let gap=(bShare[pos]||0)-(rShare[pos]||0);            // + cold (lift), - hot (damp)
+    if(me&&me.kind==='tier-drop')gap=Math.max(gap,0);     // JOIN: never fade a tier-drop runner
+    adj=Math.max(-cap,Math.min(cap,lam*gap*w));           // + promotes (lowers eff)
+    if(o===leader)adj=Math.max(0,adj);                    // the anchor: best value is never faded
+    o.eff=o.base-adj;
+   }
+   o.runAdj=+adj.toFixed(2);
+   o.runLeader=(o===leader)?1:0;
+   if(me&&me.kind==='tier-drop'){
+    o.why.unshift('RUN join '+pos+' — tier cliff inside your window');
+    o.run={call:'JOIN',pos};
+   }else if(me&&me.kind==='fear'){
+    o.why.unshift('RUN '+pos+' run is fear — value elsewhere');
+    o.run={call:'FADE',pos};
+   }else if(useLam && (adj>0.3 || o===leader)){
+    // the recommended pick (the anchor) always carries the run story, even when
+    // its own lift is small — on the clock, "why the top name" is the decision.
+    o.why.unshift('RUN zag — '+pos+' value while they chase '+feared.join('/'));
+    o.run={call:'ZAG',pos,src:feared.join('/')};
+   }
+  });
+ }
  out.sort((a,b)=>a.eff-b.eff);
  return out.slice(0,limit||25);
 }
@@ -1639,7 +1825,7 @@ function viewBoard(){
    order it arrives in has nothing to do with which one matters.
    Rank them, lead with the strongest, and put a count on the rest — the full
    list is one tap away in the player overlay. */
-const WHY_PRI=[[/^MANDATORY/,0],[/^last of tier/,1],[/^BUY conv/,2],[/^FADE conv/,2],
+const WHY_PRI=[[/^RUN /,-1],[/^MANDATORY/,0],[/^last of tier/,1],[/^BUY conv/,2],[/^FADE conv/,2],
                [/^fills /,3],[/^likely still there/,4],[/^K\/DEF can wait/,5],
                [/^no open /,6],[/^lineup full/,7]];
 function whyPri(s){for(let i=0;i<WHY_PRI.length;i++)if(WHY_PRI[i][0].test(s))return WHY_PRI[i][1];return 9;}
@@ -1673,8 +1859,11 @@ function jjLine(p){
    reason line is free to carry the NEXT strongest clause instead of echoing
    the chip. */
 function whyLine(why,p,fills){
+ // A live run owns the reason line: its RUN clause leads (WHY_PRI -1) and
+ // overrides JJ's quote, because on the clock the join/fade call is the decision.
+ const runLive=(why||[]).some(x=>/^RUN /.test(x));
  const w=whyTop(fills?(why||[]).filter(x=>x!=='fills '+fills):why);
- const q=p?jjLine(p):null;
+ const q=(!runLive&&p)?jjLine(p):null;
  if(q)return '<div class="why" title="'+esc(w.all.join(' · '))+'">'
    +'<b class="jjl '+esc(p.lean)+'">'+esc(p.lean)+' '+(p.cv||'')+'</b> '
    +'<span class="jjq">“'+esc(q)+'”</span></div>';
@@ -1782,7 +1971,9 @@ function viewRoom(){
    +'<div class="recb" onclick="openP('+p._i+')">'
    +'<div class="rh1">'+(v?'<span class="vd '+v.k+'">'+v.t+'</span>':'')
      +'<span class="nm">'+esc(p.n)+'</span>'
-     +(o.fills?'<span class="nf">fills '+esc(o.fills)+'</span>':'')+'</div>'
+     +(o.fills?'<span class="nf">fills '+esc(o.fills)+'</span>':'')
+     +(p.rq?'<span class="qr" title="rushing QB — '+(p.rfg||'')+' rush pts/game 2023-25'+(p.rq===2?' (elite: feeds the superflex barbell)':'')+'">runs</span>':'')
+     +'</div>'
    +'<div class="meta">'+esc(p.p)+' · '+esc(p.tm)+' · ADP '+p.adp.toFixed(1)+' R'+rdOf(p.adp)
      +deltaChip(p)
      +(p.bye?' · bye '+esc(String(p.bye)):'')+'</div>'
@@ -2663,7 +2854,12 @@ async function liveProbe(){
     // property of the BOARD, so it has to ride along here too — omitting it
     // would leave the second price visible only on the ~1 in 3 players JJ
     // happened to mention.
-    al:b.al,ls:b.ls,lf:b.lf,lr:b.lr,lc:b.lc});
+    al:b.al,ls:b.ls,lf:b.lf,lr:b.lr,lc:b.lc,
+    // 2C rushing-QB tier (rq/rfg) and big-leg kicker flag (bl/kl) are BOARD
+    // properties. Kickers and take-less QBs are rebuilt here, so — exactly like
+    // tr/tw/st above — the flags must ride along or they vanish for every player
+    // JJ never discussed (which is all of them, for kickers).
+    rq:b.rq,rfg:b.rfg,bl:b.bl,kl:b.kl});
  });
  Object.values(withTakes).forEach(p=>PL.push(p));   // discussed but undrafted
  // Tie-break on the snapshot rank (bi), not the name: FFC shows ADP to a tenth
