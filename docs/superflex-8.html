@@ -931,6 +931,54 @@ function need(){
    confidently recommended the 179th player at pick 23. Base is now -adp, and
    every adjustment is bounded, so talent leads and the adjustments move a
    player by at most a round or two. */
+/* ---------- the stage-aware value layer (run #22) ----------
+   THE PROBLEM: the shortlist ranks sensibly LATE — its whole purpose — but
+   produced nonsense EARLY, because flat conviction/slot-fill nudges (a BUY-3 was
+   a flat -15 ADP spots at EVERY stage) overwhelmed real ADP gaps. After Gibbs
+   went 1.1, pick 1.2 put Amon-Ra (WR, ADP 15.8, BUY-3) ahead of Bijan (RB, 2.6)
+   and Lamar (QB, 7.5) — a mid-round conviction call leapfrogging top-5 talent.
+
+   THE FIX is a value-anchored, stage-aware layer in FRONT of the existing engine,
+   not a rewrite. Early: national ADP is the value anchor and the conviction /
+   slot-fill / tier-wall nudges are scaled to near-zero tints (stageWeight) that
+   cannot flip a large value gap. Late (deepRound+): the nudges reach full
+   strength, so the conviction/edge/survival engine that is the reason this tool
+   exists is preserved untouched. The blend is by draft stage (round).
+
+   Separately QBs get a SUPERFLEX BARBELL: the elite/rushing tier is lifted so an
+   elite QB clears cheaper skill players (and can lead), the lift GROWS as that
+   tier depletes (the "count QBs out loud" rule made numeric), and the mid-tier
+   "dead zone" QBs get nothing — so nothing manufactures urgency for a mediocre
+   QB2. OFF in 1QB leagues, where waiting on QB is correct. This supersedes
+   draft-rules-8team.md §3's "two startable QBs by round 5" rule (Chris,
+   2026-08-20).
+
+   NOTHING here reads the league-adjusted price (al/ls/lf); the six tests that
+   assert bestAvailable ignores it stay green. */
+const STAGE_FLOOR=0.12;   // how much a nudge still bites in the value-anchored zone
+const STAGE_EARLY=3;      // rounds 1..EARLY are pure value + the QB curve
+function stageWeight(cp){
+ const rd=Math.ceil(cp/RS()), deep=META.deepRound||9;
+ if(rd<=STAGE_EARLY)return STAGE_FLOOR;
+ if(rd>=deep)return 1;
+ return STAGE_FLOOR+(1-STAGE_FLOOR)*(rd-STAGE_EARLY)/(deep-STAGE_EARLY);
+}
+// Superflex QB barbell knobs. The "elite/rushing tier" proxy is positional rank
+// by ADP (top QB_ELITE); a true rushing-QB flag is a Phase-2 data add. The
+// premium decays with rank and grows as the tier depletes, bounded so it lifts
+// an elite QB over cheaper skill players without blowing past a clearly elite RB
+// while QB supply is healthy.
+const QB_ELITE=4, QB_PREM_MAX=3, QB_SCARCITY_GAIN=0.8, QB_PREM_CAP=6;
+// Phase-1 stopgap: distance-scoring long-leg standouts, DISPLAY ONLY, never
+// scored. Phase 2 plumbs the kicker-model output into the payload instead.
+const BIG_LEG=new Set(['Cam Little']);
+function qbEliteRanks(){
+ // gsis -> 1-based QB rank by national ADP, kept only for the top QB_ELITE.
+ return rc('qbrk',()=>{
+  const qbs=PL.filter(p=>p.p==='QB'&&p.adp!=null).slice().sort((a,b)=>a.adp-b.adp);
+  const m={}; qbs.forEach((p,i)=>{if(i<QB_ELITE)m[p.g]=i+1;}); return m;
+ });
+}
 function bestAvailable(limit){
  const cp=currentPick(), np=nextMyPick()||cp, n=need();
  const starters=new Set(Object.keys(n));
@@ -942,6 +990,11 @@ function bestAvailable(limit){
  const LATE_SLOTS=['K','DEF'].filter(s=>META.lineup.indexOf(s)>=0);
  const mandatoryLeft=LATE_SLOTS.filter(s=>starters.has(s)).length;
  const mustTakeKDef=mandatoryLeft>0 && remaining<=mandatoryLeft+1;
+ const w=stageWeight(cp);                 // 0..1 — how much the nudges bite now
+ // Superflex QB scarcity: how much of the elite tier is already off the board.
+ const qbRank=META.superflex?qbEliteRanks():{};
+ let eliteGone=0;
+ if(META.superflex)for(const g in qbRank){if(TAKEN[g])eliteGone++;}
  const out=[];
  PL.forEach(p=>{
   if(TAKEN[p.g]||p.adp==null)return;
@@ -951,13 +1004,27 @@ function bestAvailable(limit){
   const MS=multiSlots();
   const dedicated=[...starters].filter(s=>MS.indexOf(s)<0&&slotTakes(s,p.p));
   const flexible=[...starters].filter(s=>MS.indexOf(s)>=0&&slotTakes(s,p.p));
-  if(dedicated.length){eff-=20;why.push('fills '+dedicated[0]);}
-  else if(flexible.length){eff-=10;why.push('fills '+flexible[0]);}
+  // Slot-fill is a bounded tint early (w≈floor), full weight late. On an empty
+  // roster early this is uniform across positions and cancels in the sort; it
+  // earns its keep mid-draft, when a filled slot should push its position down.
+  if(dedicated.length){eff-=20*w;why.push('fills '+dedicated[0]);}
+  else if(flexible.length){eff-=10*w;why.push('fills '+flexible[0]);}
   else if(!starters.size){why.push('lineup full — best available');}
-  else {eff+=10;why.push('no open '+p.p+' slot');}
-  if(p.lean==='BUY'){eff-=5*(p.cv||1);why.push('BUY conv '+p.cv);}
-  if(p.lean==='FADE'){eff+=8*(p.cv||1);why.push('FADE conv '+p.cv);}
-  if(p.tw){eff-=8;why.push('last of tier '+p.tr);}
+  else {eff+=10*w;why.push('no open '+p.p+' slot');}
+  // Podcast conviction: near-zero early, full late. THIS is the change that
+  // kills the Amon-Ra bug — a BUY-3 can no longer flip a top-10 ADP gap.
+  if(p.lean==='BUY'){eff-=5*(p.cv||1)*w;why.push('BUY conv '+p.cv);}
+  if(p.lean==='FADE'){eff+=8*(p.cv||1)*w;why.push('FADE conv '+p.cv);}
+  if(p.tw){eff-=8*w;why.push('last of tier '+p.tr);}
+  // Superflex QB barbell — a VALUE term, at full strength regardless of stage
+  // (getting the elite QB early is the whole point). Elite tier only; grows as
+  // the tier depletes; self-extinguishes once the top QBs are gone.
+  if(META.superflex && qbRank[p.g]){
+   const r=qbRank[p.g];
+   const prem=Math.min(QB_PREM_CAP,
+     QB_PREM_MAX*(1-(r-1)/QB_ELITE)*(1+QB_SCARCITY_GAIN*(eliteGone/QB_ELITE)));
+   if(prem>0){eff-=prem;why.push('superflex QB — elite tier');}
+  }
   if(p.p==='K'||p.p==='DEF'){
    if(mustTakeKDef){eff-=120;why.push('MANDATORY — only '+remaining+' picks left');}
    else{eff+=90;why.push('K/DEF can wait');}
@@ -967,7 +1034,9 @@ function bestAvailable(limit){
   // it visually. The shortlist stays pure best-available — this marks the ones
   // that plug a hole rather than reordering anything.
   const fills=dedicated.length?dedicated[0]:(flexible.length?flexible[0]:null);
-  out.push({p,eff,why,fills});
+  const bigLeg=p.p==='K'&&BIG_LEG.has(p.n);   // display only, never scored
+  if(bigLeg)why.push('big leg — long-FG value in distance scoring');
+  out.push({p,eff,why,fills,bigLeg});
  });
  out.sort((a,b)=>a.eff-b.eff);
  return out.slice(0,limit||25);
