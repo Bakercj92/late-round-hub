@@ -122,6 +122,15 @@ h1 .ttl{display:flex;align-items:center;gap:var(--s2);min-width:0}
  color:var(--muted);padding:9px var(--s2);font-size:var(--fs-body);font-weight:var(--w-med);
  cursor:pointer;white-space:nowrap}
 .tabs button.on{color:var(--text);border-bottom-color:var(--accent);font-weight:var(--w-bold)}
+/* Phone: wrap the tab bar onto as many rows as it needs, rather than hiding
+   tabs in a scrollbar-less overflow with no affordance. At <=559px the tabs no
+   longer fit one row, and the hidden scrollbar left Contingency (and half of
+   Intel) off-screen with nothing to say they scrolled. Every tab is reachable
+   at 390px; the merge to 6 tabs shortens this again. */
+@media(max-width:559px){
+ .tabs{flex-wrap:wrap;overflow-x:visible}
+ .tabs button{flex:1 1 auto;font-size:var(--fs-meta);padding:8px 6px}
+}
 .ctl{padding:var(--s2) var(--s3)}
 /* A form control's border must clear 3:1 against BOTH the control and the page
    (WCAG 1.4.11). --line is only 2.15:1 on --raised-hi, so every control that
@@ -459,6 +468,12 @@ a:hover{color:var(--text)}
 .fold>summary.alert{color:var(--urgent)}
 .fold>summary.alert .cnt{background:var(--urgent-fill);color:var(--urgent)}
 .foldb{padding:0 11px 11px}
+/* The two reference banners (ADP basis + league price) now live inside a
+   tap-to-open disclosure at the top of the board/search views — reference, not
+   decision, so they no longer cost ~1.5 screens above every list. */
+.hnfold{margin-top:var(--s2)}
+.hnfold .foldb>*:first-child{margin-top:0}
+.hnfold .foldb>*:last-child{margin-bottom:0}
 
 /* ================= the draft room, laid out for a screen =================
    There were ZERO media queries in this file. On a laptop the phone column
@@ -500,7 +515,7 @@ a:hover{color:var(--text)}
    there is no second column there to lose it to, and the phone is a later pass.
    Scoped to the Board only: the Players tab is a lookup surface where the
    snippet is the point of the result row. */
-@media(min-width:900px){body[data-tab="board"] .cards2 .snip{display:none}}
+@media(min-width:900px){body[data-tab="board"][data-boardview="browse"] .cards2 .snip{display:none}}
 .plandl .c{margin-top:0}
 @media(min-width:900px){
  main{padding:0 16px 80px}
@@ -541,6 +556,20 @@ a:hover{color:var(--text)}
 }
 @media(min-width:1700px){
  .cards2{column-count:3}
+}
+/* ============ phone density pass (run #28) ================================
+   Board (browse + search) and Contingency are the long tabs. Tighten the row
+   chrome at <=559px WITHOUT touching type sizes or colours, so the 0-WCAG-
+   failure count is untouched: smaller card padding and inter-card gap, a
+   one-line take snippet on the cards (the full take is one tap into the player
+   view), shorter sticky round headers, and slightly tighter contingency rows.
+   Tap targets (the .dh draft button = 44px) are left alone. */
+@media(max-width:559px){
+ .c{padding:6px 10px;gap:var(--s2);margin-top:var(--s1)}
+ .acts{gap:var(--s1)}
+ .rh{padding:7px 0 4px}
+ .cards2 .snip{-webkit-line-clamp:1}
+ .cn{padding:5px 0}
 }
 </style></head><body>
 <div id="load">Unpacking the tracker&hellip;</div>
@@ -1798,11 +1827,32 @@ function card(x){
 }
 
 /* ---------- views ---------- */
+/* ---------- Board & Players: one tab, browse or search ----------
+   Two tabs became one. They always shared the dataset, the #ctl filter chrome
+   and the card; all that differed was the presentation. A toggle picks it now:
+   Browse is round-grouped and is the default (the scanning surface at the
+   table, and it seeks to your current round); Search is the flat, search-first
+   lookup. Both honour the same filters. Season mode still calls boardSearch()
+   directly for its Players tab. */
+function boardView(){return S.boardView==='search'?'search':'browse';}
+function setBoardView(v){S.boardView=v;S.showAll=0;render();if(v==='browse')seekNow();}
+function bpToggle(){
+ const v=boardView();
+ return '<div class="tgl bptgl">'
+  +'<button'+(v==='browse'?' class="on"':'')+' onclick="setBoardView(\'browse\')">Browse the board</button>'
+  +'<button'+(v==='search'?' class="on"':'')+' onclick="setBoardView(\'search\')">Search players</button>'
+  +'</div>';
+}
+/* draft mode: the merged tab */
 function viewBoard(){
+ return headerNote()+bpToggle()+(boardView()==='search'?boardSearch():boardBrowse());
+}
+/* round-grouped browse, the scanning surface (the old Board body) */
+function boardBrowse(){
  const r=PL.filter(pass), by={};
  r.forEach(x=>{const a=x.adp;const k=a==null?99:Math.min(rdOf(a),15);(by[k]=by[k]||[]).push(x);});
  const np=nextMyPick();
- let h=headerNote();
+ let h='';
  for(let i=1;i<=15;i++){ if(!by[i])continue;
   const lo=(i-1)*RS()+1, hi=i*RS();
   const isNow=np&&np>=lo&&np<=hi;
@@ -2259,22 +2309,28 @@ function faabBid(p){
  return {pct,dollars:Math.max(1,Math.round(my*pct/100))};
 }
 
-function viewPlayers(){
+/* flat, search-first lookup (the old Players body) */
+function boardSearch(){
  /* 24 screens of cards nobody asked for. Measured 2026-08-20: 543 words and
     214 elements above the fold, 190 of them clickable — and one search collapses
     the whole tab to 900px, 131 words, 33 elements. Nothing is deleted: "Show all"
     is one tap, and every filter still works. */
  const filtered=!!(S.q||S.p||S.l||S.c||S.deep||S.rev||S.hasTakes||S.lshift);
  if(!filtered&&!S.showAll)
-  return headerNote()+'<div class="empty" style="padding:30px 12px">'
+  return '<div class="empty" style="padding:30px 12px">'
    +'<div style="font-size:var(--fs-support);color:var(--text-dim);font-weight:var(--w-med)">Search for a player.</div>'
    +'<div style="margin-top:7px">Type a name above, or use the filters. '
    +PL.length+' players are on this board.</div>'
    +'<div style="margin-top:14px"><button class="hbtn" onclick="S.showAll=1;render()">'
    +'Show all '+PL.length+'</button></div></div>';
  const r=PL.filter(pass);
- return headerNote()+'<div class="rh">'+r.length+' player'+(r.length==1?'':'s')+'</div>'
+ return '<div class="rh">'+r.length+' player'+(r.length==1?'':'s')+'</div>'
   +(r.length?'<div class="cards2">'+r.map(card).join('')+'</div>':'<div class="empty">Nothing matches.</div>');
+}
+
+/* season mode: search-only lookup (a round view of a finished draft is moot) */
+function viewPlayers(){
+ return headerNote()+boardSearch();
 }
 
 function viewOutlines(){
@@ -2310,14 +2366,22 @@ function headerNote(){
  bits.push('ADP basis <b>'+esc(META.adpBasis)+'</b>'+(META.adpPrev?' vs '+esc(META.adpPrev):''));
  if(META.conflictRows)bits.push('<b>'+META.conflictRows+'</b> takes reference a player who has since changed teams \u2014 tagged TEAM CHANGED');
  if(META.unresolved)bits.push('<b>'+META.unresolved+'</b> take rows named someone who could not be matched to a 2026 NFL player \u2014 tap Setup to see them');
- out+='<div class="hn"><div class="warn">'+bits.join(' \u00b7 ')+'</div>';
+ let body='<div class="warn">'+bits.join(' \u00b7 ')+'</div>';
  const l=LP();
- if(l)out+='<div class="info"><b>\u2192 second number is this league\u2019s own price.</b> '
+ if(l)body+='<div class="info"><b>\u2192 second number is this league\u2019s own price.</b> '
    +'Measured over your '+l.seasons.join(' and ')+' drafts ('+l.priced+' of the board priced); '
    +'<span class="pill REACH">REACH</span> means it goes earlier here, '
    +'<span class="pill WAIT">WAIT</span> means it lasts longer. '
    +'Display only \u2014 nothing is ranked or filtered on it.</div>';
- return out+'</div>';
+ /* The two reference banners \u2014 the data basis and how the league price reads \u2014
+    used to sit open above every board and every search, ~1.5 screens of
+    standing text on a phone. They are reference, not decision, so they fold
+    behind one tap; open state persists in S.open.hn like every other fold. */
+ out+='<details class="fold hnfold"'+(S.open.hn?' open':'')
+   +' ontoggle="S.open[\'hn\']=this.open?1:0">'
+   +'<summary>How to read this board<span class="cnt">\u24d8</span></summary>'
+   +'<div class="foldb">'+body+'</div></details>';
+ return out;
 }
 
 /* ---------- the Plan tab ----------
@@ -2412,7 +2476,12 @@ function viewPlan(){
  return h;
 }
 
-const TABS={draft:[['room','Draft Room'],['plan','Plan'],['board','Board'],['team','My Team'],['players','Players'],['outlines','Intel'],['cont','Contingency']],
+/* Board and Players were two tabs on the same 378-player dataset, the same
+   filter chrome and the same card — round-grouped browse vs search-first lookup.
+   They are ONE tab now (a browse/search toggle inside it), which frees a nav
+   slot and un-crowds the phone bar: draft mode goes 7 tabs -> 6. Season mode
+   never had a board, so its search-only Players tab stays. */
+const TABS={draft:[['room','Draft Room'],['plan','Plan'],['board','Board & Players'],['team','My Team'],['outlines','Intel'],['cont','Contingency']],
             season:[['waivers','Waivers'],['team','My Team'],['players','Players'],['outlines','Intel'],['cont','Contingency']]};
 
 /* ---------- land where you are ----------
@@ -2466,15 +2535,24 @@ function render(){
  rcBust();
  LASTSIG=roomSig();
  const v=document.getElementById('view');
- // Round headers stick below the real header, whatever height it currently is.
- const hdr=document.querySelector('header');
- if(hdr)document.documentElement.style.setProperty('--hh',hdr.offsetHeight+'px');
  /* The active tab, on <body>, so the stylesheet can scope a rule to one screen
     without the JS having to know about presentation. Used by exactly one rule
     today — the Board's take snippet, which folds behind the tap on a laptop. */
  document.body.dataset.tab=S.tab;
+ // Board&Players sub-mode, so the stylesheet can keep the take snippet folded on
+ // a laptop while BROWSING (a scanning surface) but show it while SEARCHING (a
+ // lookup, where the snippet is the point of the result row).
+ document.body.dataset.boardview=boardView();
  document.getElementById('ctl').style.display=(S.tab==='cont'||S.tab==='outlines'||S.tab==='team'||S.tab==='room'||S.tab==='plan')?'none':'block';
  document.getElementById('fab').style.display=(S.tab==='board'||S.tab==='team'||S.tab==='players'||S.tab==='room')?'flex':'none';
+ /* Round headers stick below the real header, whatever height it currently is.
+    Measured AFTER the #ctl show/hide above, because #ctl lives inside <header>:
+    a tab that hides it (Intel, Plan, My Team, Contingency) has a SHORTER header,
+    and reading --hh before the toggle kept the previous tab's taller height —
+    which left the sticky "N EPISODES"/round header floating mid-screen with the
+    cards overlapping it. */
+ const hdr=document.querySelector('header');
+ if(hdr)document.documentElement.style.setProperty('--hh',hdr.offsetHeight+'px');
  document.getElementById('undoBtn').textContent='Undo'+(HIST.length?' ('+HIST.length+')':'');
  if(S.tab==='room'){
    // Snapshot the LIVE input before the swap — see the QE_SWAP note above.
