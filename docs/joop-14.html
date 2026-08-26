@@ -122,6 +122,21 @@ h1 .ttl{display:flex;align-items:center;gap:var(--s2);min-width:0}
  color:var(--muted);padding:9px var(--s2);font-size:var(--fs-body);font-weight:var(--w-med);
  cursor:pointer;white-space:nowrap}
 .tabs button.on{color:var(--text);border-bottom-color:var(--accent);font-weight:var(--w-bold)}
+/* "More" overflow — Intel + Contingency demoted here 2026-08-26. Hidden until
+   tapped; a fixed-position menu anchored under the button so the tab row's
+   horizontal-scroll clip cannot hide it. */
+.tabs button.moretab{flex:0 0 auto;color:var(--muted)}
+.tabs button.moretab.on{color:var(--text);border-bottom-color:var(--accent);font-weight:var(--w-bold)}
+.moremenu{display:none;position:fixed;z-index:40;min-width:160px;flex-direction:column;
+ background:var(--raised);border:1px solid var(--line);border-radius:8px;
+ box-shadow:0 8px 22px rgba(0,0,0,.45);overflow:hidden}
+.moremenu.open{display:flex}
+.moremenu button{flex:0 0 auto;width:100%;text-align:left;background:0;border:0;
+ border-bottom:1px solid var(--line);color:var(--muted);padding:11px 14px;
+ font-size:var(--fs-body);font-weight:var(--w-med);cursor:pointer;white-space:nowrap}
+.moremenu button:last-child{border-bottom:0}
+.moremenu button.on{color:var(--text);font-weight:var(--w-bold)}
+.moremenu button:hover{background:var(--raised-hi);color:var(--text)}
 /* Phone: wrap the tab bar onto as many rows as it needs, rather than hiding
    tabs in a scrollbar-less overflow with no affordance. At <=559px the tabs no
    longer fit one row, and the hidden scrollbar left Contingency (and half of
@@ -2481,8 +2496,14 @@ function viewPlan(){
    They are ONE tab now (a browse/search toggle inside it), which frees a nav
    slot and un-crowds the phone bar: draft mode goes 7 tabs -> 6. Season mode
    never had a board, so its search-only Players tab stays. */
-const TABS={draft:[['room','Draft Room'],['plan','Plan'],['board','Board & Players'],['team','My Team'],['outlines','Intel'],['cont','Contingency']],
-            season:[['waivers','Waivers'],['team','My Team'],['players','Players'],['outlines','Intel'],['cont','Contingency']]};
+const TABS={draft:[['room','Draft Room'],['plan','Plan'],['board','Board & Players'],['team','My Team']],
+            season:[['waivers','Waivers'],['team','My Team'],['players','Players']]};
+/* Intel + Contingency demoted out of the main tab row (2026-08-26) — reference
+   surfaces, not draft-clock surfaces. They live in the "More" overflow, still
+   one tap; their views and all their logic are unchanged. */
+const MORE={draft:[['outlines','Intel'],['cont','Contingency']],
+            season:[['outlines','Intel'],['cont','Contingency']]};
+let MOREOPEN=false;
 
 /* ---------- land where you are ----------
    The Board and the Plan are both ordered by round from round 1, so mid-draft
@@ -2499,14 +2520,32 @@ function seekNow(){
 }
 
 function renderTabs(){
- const t=TABS[MODE];
- if(!t.find(x=>x[0]===S.tab))S.tab=t[0][0];
- document.getElementById('tabs').innerHTML=t.map(([k,l])=>
-  '<button data-t="'+k+'"'+(S.tab===k?' class="on"':'')+'>'+l+'</button>').join('');
- document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
-  S.tab=b.dataset.t;S.q='';S.showAll=0;
+ const t=TABS[MODE], m=MORE[MODE]||[];
+ // Guard now considers the overflow items too, so a demoted tab (Intel /
+ // Contingency) is a legal current tab and is NOT bounced to the first one.
+ if(!t.concat(m).find(x=>x[0]===S.tab))S.tab=t[0][0];
+ const inMore=m.some(x=>x[0]===S.tab);
+ const el=document.getElementById('tabs');
+ el.innerHTML=t.map(([k,l])=>
+  '<button data-t="'+k+'"'+(S.tab===k?' class="on"':'')+'>'+l+'</button>').join('')
+  +(m.length?('<button class="moretab'+(inMore?' on':'')+'" data-more="1" aria-haspopup="true" aria-expanded="'+(MOREOPEN?'true':'false')+'">More ▾</button>'
+   +'<div class="moremenu'+(MOREOPEN?' open':'')+'" id="moremenu" role="menu">'
+   +m.map(([k,l])=>'<button data-t="'+k+'" role="menuitem"'+(S.tab===k?' class="on"':'')+'>'+l+'</button>').join('')
+   +'</div>'):'');
+ el.querySelectorAll('button[data-t]').forEach(b=>b.onclick=()=>{
+  S.tab=b.dataset.t;S.q='';S.showAll=0;MOREOPEN=false;
   const qq=document.getElementById('q');if(qq)qq.value='';
   renderTabs();render();window.scrollTo(0,0);seekNow();});
+ const mb=el.querySelector('button[data-more]');
+ if(mb)mb.onclick=e=>{e.stopPropagation();MOREOPEN=!MOREOPEN;renderTabs();};
+ if(!renderTabs._dismiss){renderTabs._dismiss=1;
+  document.addEventListener('click',ev=>{if(MOREOPEN&&!ev.target.closest('#tabs')){MOREOPEN=false;renderTabs();}});}
+ if(MOREOPEN)positionMoreMenu();
+}
+function positionMoreMenu(){
+ const b=document.querySelector('#tabs button[data-more]'), mm=document.getElementById('moremenu');
+ if(b&&mm){const r=b.getBoundingClientRect();
+  mm.style.top=r.bottom+'px'; mm.style.right=Math.max(6,window.innerWidth-r.right)+'px';}
 }
 
 /* A cheap fingerprint of everything the Draft Room draws from. livePoll() used
