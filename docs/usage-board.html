@@ -96,6 +96,7 @@ td.best{color:var(--tar);font-weight:700}
 .verdict b{font-size:15px}
 /* ---- RB compare additions (2026-08-26) ---- */
 table.h2h tr.subhdr td{text-align:left;color:var(--mut);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--card2)}
+table.h2h td .tkbx{display:block;max-width:210px;white-space:normal;word-break:break-word;text-align:left;font-size:11px;line-height:1.45;color:var(--mut)}
 .bfmap{margin-top:10px;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .bfmap summary{cursor:pointer;padding:10px 14px;color:var(--mut);font-weight:600;font-size:13px;user-select:none}
 .bfmap[open] summary{border-bottom:1px solid var(--line);color:var(--ink)}
@@ -392,7 +393,7 @@ function runTendency(p){
 }
 function hcTakeCell(p){
   if(!p.hc_take) return null;
-  return p.hc_url ? '<a href="'+p.hc_url+'" target="_blank" rel="noopener">'+p.hc_take+'</a>' : p.hc_take;
+  return '<div class="tkbx">' + (p.hc_url ? '<a href="'+p.hc_url+'" target="_blank" rel="noopener">'+p.hc_take+'</a>' : p.hc_take) + '</div>';
 }
 function rbRows(ps){
   const allRB = ps.every(p=>p.pos==='RB');
