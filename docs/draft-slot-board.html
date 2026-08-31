@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Draft Slot Board — Late-Round Hub</title>
+<!--
+  draft-slot-board.html — Phase 2 seat explorer for the Joop Squad draft-slot study.
+  Self-contained: no fetch, no CDN, works from file://.
+  DATA SOURCES (embedded below, override-ready):
+    SIM   — numbers, spliced verbatim from draft-slot-analysis/slot_results.json
+            (phase 1.5 per-manager engine, N=400/seat, generated 2026-08-31, audited PASS).
+    BOARD — editorial layer: tiers, verdicts, seat plans, neighbor framing.
+            Framing follows draft-slot-analysis/phase1.5-findings.md — keep it honest:
+            the seat ORDER is robust; the MAGNITUDE is a range (floor ~6%, ceiling ~12%).
+  To update after an ADP refresh: re-run slot_report.py, re-splice SIM (or paste new values).
+-->
+<style>
+:root{--bg:#0f1720;--card:#18222e;--card2:#1e2a38;--ink:#eaf0f6;--mut:#9fb2c4;--line:#2a3947;
+--qb:#7c5cff;--rb:#22b07d;--wr:#3a95e6;--te:#e6893a;--gold:#e9c46a;--tar:#22b07d;--fade:#e05a5a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:40px}
+header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 16px}
+h1{font-size:19px;margin-bottom:2px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+a.back{color:var(--mut);font-size:12px;text-decoration:none;font-weight:400}
+a.back:hover{color:var(--ink)}
+.sub{color:var(--mut);font-size:12px;margin-bottom:8px}
+.claim{margin:0 0 8px;padding:7px 11px;background:var(--card);border-left:3px solid var(--gold);border-radius:0 6px 6px 0;font-size:12.5px;color:var(--mut)}
+.claim b{color:var(--ink)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;color:var(--mut);border:0;padding:7px 12px;cursor:pointer;font-size:13px}
+.seg button.on{background:var(--card2);color:var(--ink);font-weight:600}
+#modenote{color:var(--mut);font-size:11.5px}
+main{max-width:980px;margin:0 auto;padding:14px 16px}
+.wrap{display:grid;grid-template-columns:1fr;gap:4px}
+@media(min-width:880px){.wrap{grid-template-columns:minmax(0,10fr) minmax(0,11fr);gap:16px}}
+.subline{color:var(--mut);font-size:11.5px;margin:0 0 8px}
+/* ---- seat rows ---- */
+.srow{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:6px;cursor:pointer;outline:none}
+.srow:hover,.srow:focus-visible{background:var(--card2)}
+.srow.sel{border-color:var(--tar);box-shadow:0 0 0 1px var(--tar) inset}
+.srm{display:grid;grid-template-columns:30px 52px minmax(0,1fr) 84px 74px;grid-template-areas:"sn tb mini bar vor";gap:8px;align-items:center;padding:10px 12px}
+.sn{grid-area:sn;font-size:16px;font-weight:800;text-align:right}
+.tb{grid-area:tb;font-size:9px;font-weight:700;border-radius:4px;padding:2px 0;text-align:center;color:#0f1720;letter-spacing:.4px}
+.tb.prime{background:var(--gold)}.tb.strong{background:var(--tar)}.tb.solid{background:var(--wr)}
+.tb.late{background:transparent;color:var(--mut);border:1px solid var(--line)}
+.mini{grid-area:mini;font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini b{color:var(--ink);font-weight:600}
+.edge{grid-area:bar}
+.bar{height:6px;border-radius:3px;background:var(--line);position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--tar);transition:width .25s}
+body.opt .bar i{background:var(--gold)}
+.vor{grid-area:vor;text-align:right;font-weight:800;font-size:15px;line-height:1.15}
+.vor small{display:block;font-weight:600;font-size:10px;color:var(--tar)}
+body.opt .vor small{color:var(--gold)}
+@media(max-width:620px){
+.srm{grid-template-columns:26px 48px minmax(0,1fr) 72px;grid-template-areas:"sn tb bar vor" "mini mini mini mini";row-gap:5px}
+}
+/* ---- detail panel ---- */
+#detailcol{align-self:start}
+@media(min-width:880px){#detailcol{position:sticky}}
+#detail{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:6px 0 14px}
+@media(min-width:880px){#detail{margin-top:0}}
+#detail h3{display:flex;align-items:center;gap:9px;font-size:17px}
+#detail h3 .tb{padding:2px 8px;font-size:9.5px}
+.vline{color:var(--mut);font-size:13px;margin:6px 0 12px}
+.vline b{color:var(--ink)}
+.nums{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:430px){.nums{grid-template-columns:1fr}}
+.ncard{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+.ncard.on{border-color:var(--tar)}
+body.opt .ncard.on{border-color:var(--gold)}
+.ncard h5{font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--mut);margin-bottom:3px;font-weight:700}
+.ncard .big{font-size:19px;font-weight:800}
+.ncard .big small{font-size:11px;font-weight:700;margin-left:5px}
+.ncard.chris .big small{color:var(--tar)}
+.ncard.optc .big small{color:var(--gold)}
+.ncard .sm{font-size:11px;color:var(--mut);margin-top:2px}
+h4.sec{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;margin:15px 0 7px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:620px){.dgrid{grid-template-columns:1fr}}
+.rcol .ttl{font-size:11px;font-weight:700;margin-bottom:6px}
+.rcol.chris .ttl{color:var(--tar)}
+.rcol.optc .ttl{color:var(--gold)}
+.rdrow{font-size:12px;margin-bottom:6px;line-height:1.7}
+.rdrow b{color:var(--mut);font-weight:700;font-size:10px;margin-right:2px}
+.pchip{display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1px 7px;margin:1px 3px 1px 0;font-size:11px;white-space:nowrap}
+.pchip small{color:var(--mut);margin-left:3px}
+.nbc{display:flex;gap:8px;align-items:baseline;margin-bottom:4px;font-size:12.5px;flex-wrap:wrap}
+.nbc .d{font-weight:800;min-width:38px;text-align:right}
+.nbc .d.up{color:var(--tar)}.nbc .d.dn{color:var(--fade)}
+.nbc .sig{font-size:10px;color:var(--mut)}
+.tg{font-size:12.5px;line-height:1.55}
+.tg .build{color:var(--mut);margin-bottom:8px}
+.tg .build b{color:var(--ink)}
+.ti{margin-bottom:4px}
+.ti .nm2{font-weight:700}
+.ti.lean .nm2{color:var(--tar)}
+.ti.avoid .nm2{color:var(--fade)}
+.ti .why{color:var(--mut)}
+.note{margin-top:12px;padding:9px 11px;border-left:3px solid var(--line);color:var(--mut);font-size:12px;border-radius:0 6px 6px 0;background:var(--card2)}
+.note b{color:var(--ink)}
+footer{max-width:980px;margin:26px auto 10px;padding:0 16px;color:var(--mut);font-size:11.5px}
+footer h4{font-size:12px;color:var(--ink);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+footer li{margin-bottom:5px;margin-left:16px}
+footer b{color:var(--ink)}
+</style></head><body>
+<header>
+  <h1>Draft Slot Board — Joop Squad <a class="back" href="./index.html">&larr; hub</a></h1>
+  <div class="sub">14-team full PPR &middot; expected starting-lineup VOR, 400 simulated drafts per seat vs 13 modeled managers &middot; ADP basis FFC 2026-08-25</div>
+  <div class="claim">Claim order: <b>1 &rsaquo; 2 &rsaquo; 3 &rsaquo; 4 &asymp; 5</b> &rsaquo; then a gentle, steady slope. Grab the earliest seat still open &mdash; <b>every seat is playable; no dead seat in the back half.</b></div>
+  <div class="controls">
+    <div class="seg" id="modeseg">
+      <button data-m="chris" class="on">Your script &middot; realistic</button>
+      <button data-m="opt">Optimizer &middot; ceiling</button>
+    </div>
+    <span id="modenote"></span>
+  </div>
+</header>
+<main>
+  <div class="wrap">
+    <div id="listcol">
+      <div class="subline">Tap a seat. Bar = edge over seat 14 (this view). Tiers are soft labels &mdash; the slope is gentle.</div>
+      <div id="list"></div>
+    </div>
+    <div id="detailcol"><div id="detail"></div></div>
+  </div>
+</main>
+<footer>
+  <h4>How to read this</h4>
+  <ul>
+    <li><b>The order is the robust result.</b> Seats rank 1&rarr;14 monotonically &mdash; no plateau &mdash; and the ranking survives every sensitivity variant (no-usage, flat/steep value curve, your real script: spearman +1.00). Seat 1 is best and seat 14 worst in all of them.</li>
+    <li><b>The size of the edge is a range, not a number.</b> Seat 1 over seat 14 &asymp; <b>+6.2% (37 VOR)</b> drafting the way you actually drafted '24&ndash;'25 (the floor) up to <b>+11.7% (72 VOR)</b> drafting best-available perfectly every pick (the ceiling). Reality sits between, likely nearer the floor.</li>
+    <li><b>Why it slopes:</b> this year's top-heavy talent under a competent drafter &mdash; not the per-manager opponent modeling. The manager models reproduce the real 2025 draft within ~5 picks at every position/round, supply the neighbor effects, and confirm the ranking holds against real opponents; they don't create the gradient.</li>
+    <li><b>Luck range (p25&ndash;p75) is draft-luck only</b> &mdash; who falls to you across 400 sims. Season/player variance is not modeled, and it dwarfs seat choice.</li>
+    <li><b>Neighbor effects are second-order and directional</b> (&plusmn;4&ndash;7 VOR &asymp; 1%): a manager who shares your lean sitting just ahead hurts; a QB-hoarder ahead helps. Only 2 of 26 measured estimates are strongly resolved (rrishi45 ahead of seat 3, mountaindew11 ahead of seat 9) &mdash; use as a tiebreaker, not a driver.</li>
+    <li><b>Numbers:</b> slot_results.json, phase 1.5 per-manager engine, N=400/seat (SE &asymp; 1.2&ndash;1.9 VOR), generated 2026-08-31, Reviewer-Auditor PASS. ADP basis FFC 2026-08-25 &mdash; <b>refresh on draft eve (Sept 4&ndash;5) and re-run.</b></li>
+  </ul>
+</footer>
+<script>
+/* ==== numbers (spliced from slot_results.json — override here after a re-run) ==== */
+const SIM = {"meta":{"generated":"2026-08-31","sims":400,"engine":"phase1.5 per-manager + CRN seating","adp":"FFC 2026-08-25"},"opt":[{"seat":1,"mean":691.0,"se":1.17,"p25":674.0,"p75":706.5},{"seat":2,"mean":681.5,"se":1.36,"p25":662.3,"p75":700.2},{"seat":3,"mean":675.7,"se":1.35,"p25":657.1,"p75":694.6},{"seat":4,"mean":669.9,"se":1.34,"p25":652.5,"p75":686.4},{"seat":5,"mean":665.9,"se":1.5,"p25":646.5,"p75":687.1},{"seat":6,"mean":659.8,"se":1.56,"p25":636.8,"p75":681.1},{"seat":7,"mean":650.5,"se":1.62,"p25":628.3,"p75":670.3},{"seat":8,"mean":647.5,"se":1.54,"p25":626.8,"p75":668.2},{"seat":9,"mean":640.0,"se":1.64,"p25":616.3,"p75":661.2},{"seat":10,"mean":636.9,"se":1.52,"p25":615.5,"p75":656.0},{"seat":11,"mean":633.0,"se":1.53,"p25":611.2,"p75":648.6},{"seat":12,"mean":628.5,"se":1.61,"p25":607.2,"p75":645.5},{"seat":13,"mean":624.6,"se":1.63,"p25":603.3,"p75":641.5},{"seat":14,"mean":618.5,"se":1.57,"p25":597.8,"p75":634.0}],"chris":[{"seat":1,"mean":633.2,"se":1.04,"p25":618.9,"p75":647.0},{"seat":2,"mean":626.1,"se":1.26,"p25":610.6,"p75":641.9},{"seat":3,"mean":624.2,"se":1.28,"p25":607.0,"p75":641.9},{"seat":4,"mean":619.2,"se":1.39,"p25":602.3,"p75":636.4},{"seat":5,"mean":618.5,"se":1.51,"p25":597.7,"p75":637.8},{"seat":6,"mean":614.8,"se":1.73,"p25":593.2,"p75":638.8},{"seat":7,"mean":611.4,"se":1.78,"p25":584.5,"p75":636.6},{"seat":8,"mean":608.5,"se":1.78,"p25":582.3,"p75":634.5},{"seat":9,"mean":606.4,"se":1.85,"p25":582.1,"p75":628.4},{"seat":10,"mean":604.6,"se":1.84,"p25":580.8,"p75":629.4},{"seat":11,"mean":602.8,"se":1.7,"p25":581.0,"p75":622.2},{"seat":12,"mean":603.0,"se":1.74,"p25":582.3,"p75":621.4},{"seat":13,"mean":598.9,"se":1.87,"p25":578.1,"p75":619.9},{"seat":14,"mean":596.1,"se":1.75,"p25":577.1,"p75":615.6}],"r123":{"opt":{"1":{"1":[["Jahmyr Gibbs",400]],"2":[["Brock Bowers",164],["Trey McBride",64],["Omarion Hampton",46],["Saquon Barkley",27],["A.J. Brown",18],["Drake Maye",18]],"3":[["Omarion Hampton",84],["Nico Collins",79],["Chris Olave",65],["Brock Bowers",51],["Saquon Barkley",39],["Lamar Jackson",24]]},"2":{"1":[["Jahmyr Gibbs",247],["Bijan Robinson",153]],"2":[["Brock Bowers",168],["Trey McBride",64],["Omarion Hampton",31],["Saquon Barkley",29],["A.J. Brown",22],["Drake Maye",21]],"3":[["Nico Collins",106],["Omarion Hampton",89],["Chris Olave",50],["Brock Bowers",42],["Saquon Barkley",34],["Lamar Jackson",20]]},"3":{"1":[["Bijan Robinson",200],["Jahmyr Gibbs",159],["Puka Nacua",41]],"2":[["Brock Bowers",163],["Trey McBride",67],["Saquon Barkley",36],["Ashton Jeanty",31],["A.J. Brown",25],["Omarion Hampton",20]],"3":[["Nico Collins",103],["Omarion Hampton",79],["Brock Bowers",59],["Chris Olave",50],["Colston Loveland",36],["Lamar Jackson",21]]},"4":{"1":[["Bijan Robinson",216],["Jahmyr Gibbs",98],["Puka Nacua",47],["Christian McCaffrey",39]],"2":[["Brock Bowers",161],["Trey McBride",83],["Ashton Jeanty",37],["A.J. Brown",27],["Saquon Barkley",23],["Justin Jefferson",16]],"3":[["Nico Collins",101],["Colston Loveland",69],["Omarion Hampton",66],["Brock Bowers",53],["Lamar Jackson",31],["Chris Olave",29]]},"5":{"1":[["Bijan Robinson",190],["Christian McCaffrey",76],["Jahmyr Gibbs",62],["Ja'Marr Chase",39],["Puka Nacua",33]],"2":[["Brock Bowers",120],["Trey McBride",105],["Ashton Jeanty",55],["A.J. Brown",26],["Justin Jefferson",25],["Chase Brown",19]],"3":[["Colston Loveland",86],["Nico Collins",85],["Brock Bowers",75],["Omarion Hampton",45],["Chris Olave",25],["Lamar Jackson",21]]},"6":{"1":[["Bijan Robinson",138],["Christian McCaffrey",106],["Ja'Marr Chase",51],["Jaxon Smith-Njigba",42],["Jahmyr Gibbs",42],["Puka Nacua",21]],"2":[["Trey McBride",109],["Brock Bowers",106],["Ashton Jeanty",58],["Chase Brown",39],["Justin Jefferson",33],["Drake Maye",15]],"3":[["Colston Loveland",112],["Nico Collins",75],["Brock Bowers",66],["Omarion Hampton",44],["Lamar Jackson",21],["Chris Olave",15]]},"7":{"1":[["Bijan Robinson",107],["Christian McCaffrey",99],["Jaxon Smith-Njigba",67],["Ja'Marr Chase",50],["Jonathan Taylor",40],["Jahmyr Gibbs",25]],"2":[["Trey McBride",130],["Brock Bowers",90],["Ashton Jeanty",55],["Chase Brown",54],["Justin Jefferson",27],["Drake London",14]],"3":[["Colston Loveland",139],["Brock Bowers",60],["Nico Collins",53],["Joe Burrow",25],["Omarion Hampton",23],["Lamar Jackson",22]]},"8":{"1":[["Christian McCaffrey",95],["Bijan Robinson",83],["Jonathan Taylor",78],["Jaxon Smith-Njigba",73],["Ja'Marr Chase",37],["Jahmyr Gibbs",14]],"2":[["Trey McBride",148],["Chase Brown",53],["Brock Bowers",53],["Ashton Jeanty",49],["Justin Jefferson",35],["Drake London",20]],"3":[["Colston Loveland",161],["Brock Bowers",49],["Nico Collins",42],["Joe Burrow",37],["Garrett Wilson",16],["Zay Flowers",16]]},"9":{"1":[["Jonathan Taylor",122],["Christian McCaffrey",85],["Bijan Robinson",55],["Jaxon Smith-Njigba",54],["De'Von Achane",38],["Ja'Marr Chase",28]],"2":[["Trey McBride",170],["Chase Brown",56],["Ashton Jeanty",41],["Justin Jefferson",38],["Brock Bowers",33],["Drake London",20]],"3":[["Colston Loveland",149],["Brock Bowers",50],["Joe Burrow",48],["Zay Flowers",35],["Nico Collins",32],["Jeremiyah Love",15]]},"10":{"1":[["Jonathan Taylor",146],["De'Von Achane",67],["Christian McCaffrey",56],["Jaxon Smith-Njigba",44],["Bijan Robinson",43],["Amon-Ra St. Brown",15]],"2":[["Trey McBride",173],["Chase Brown",63],["Justin Jefferson",43],["Drake London",33],["Ashton Jeanty",29],["De'Von Achane",20]],"3":[["Colston Loveland",156],["Brock Bowers",52],["Joe Burrow",47],["Nico Collins",27],["Zay Flowers",26],["Tyler Warren",24]]},"11":{"1":[["Jonathan Taylor",162],["De'Von Achane",81],["Christian McCaffrey",34],["Bijan Robinson",30],["Jaxon Smith-Njigba",29],["Drake London",25]],"2":[["Trey McBride",166],["Chase Brown",68],["Drake London",47],["Justin Jefferson",40],["De'Von Achane",22],["Josh Allen",18]],"3":[["Colston Loveland",172],["Brock Bowers",45],["Joe Burrow",41],["Tyler Warren",34],["Zay Flowers",31],["Nico Collins",27]]},"12":{"1":[["Jonathan Taylor",139],["De'Von Achane",99],["Drake London",51],["Amon-Ra St. Brown",25],["Christian McCaffrey",22],["Bijan Robinson",16]],"2":[["Trey McBride",170],["Chase Brown",76],["Drake London",43],["De'Von Achane",34],["Justin Jefferson",30],["Josh Allen",17]],"3":[["Colston Loveland",156],["Tyler Warren",70],["Brock Bowers",37],["Joe Burrow",35],["Zay Flowers",31],["Malik Nabers",22]]},"13":{"1":[["Jonathan Taylor",105],["De'Von Achane",101],["Drake London",67],["Trey McBride",31],["Amon-Ra St. Brown",26],["Josh Allen",20]],"2":[["Trey McBride",157],["Chase Brown",89],["Drake London",58],["De'Von Achane",41],["Jonathan Taylor",13],["Justin Jefferson",13]],"3":[["Colston Loveland",149],["Tyler Warren",77],["Joe Burrow",41],["Brock Bowers",30],["Malik Nabers",30],["Zay Flowers",28]]},"14":{"1":[["De'Von Achane",90],["Jonathan Taylor",87],["Drake London",84],["Trey McBride",58],["Josh Allen",21],["Amon-Ra St. Brown",19]],"2":[["Trey McBride",137],["Chase Brown",98],["De'Von Achane",55],["Drake London",47],["Jonathan Taylor",14],["Justin Jefferson",12]],"3":[["Colston Loveland",140],["Tyler Warren",116],["Joe Burrow",43],["Brock Bowers",26],["Zay Flowers",22],["Malik Nabers",21]]}},"chris":{"1":{"1":[["Jahmyr Gibbs",400]],"2":[["Omarion Hampton",136],["Saquon Barkley",69],["Jeremiyah Love",68],["A.J. Brown",32],["Chris Olave",28],["Breece Hall",22]],"3":[["Nico Collins",175],["Chris Olave",85],["Omarion Hampton",51],["Jeremiyah Love",35],["George Pickens",21],["A.J. Brown",9]]},"2":{"1":[["Jahmyr Gibbs",247],["Bijan Robinson",153]],"2":[["Omarion Hampton",136],["Saquon Barkley",89],["Jeremiyah Love",63],["A.J. Brown",33],["Ashton Jeanty",15],["Chris Olave",15]],"3":[["Nico Collins",179],["Chris Olave",63],["Omarion Hampton",51],["Jeremiyah Love",43],["George Pickens",22],["Garrett Wilson",15]]},"3":{"1":[["Bijan Robinson",200],["Jahmyr Gibbs",159],["Puka Nacua",41]],"2":[["Omarion Hampton",136],["Saquon Barkley",108],["Jeremiyah Love",42],["Ashton Jeanty",33],["A.J. Brown",33],["Rashee Rice",13]],"3":[["Nico Collins",153],["Omarion Hampton",60],["Chris Olave",54],["Jeremiyah Love",43],["Garrett Wilson",35],["George Pickens",28]]},"4":{"1":[["Bijan Robinson",216],["Jahmyr Gibbs",98],["Puka Nacua",47],["Christian McCaffrey",39]],"2":[["Omarion Hampton",132],["Saquon Barkley",125],["Ashton Jeanty",42],["A.J. Brown",33],["Jeremiyah Love",25],["Justin Jefferson",18]],"3":[["Nico Collins",116],["Jeremiyah Love",59],["Garrett Wilson",54],["Omarion Hampton",48],["Chris Olave",37],["Zay Flowers",32]]},"5":{"1":[["Bijan Robinson",190],["Christian McCaffrey",76],["Jahmyr Gibbs",62],["Ja'Marr Chase",39],["Puka Nacua",33]],"2":[["Omarion Hampton",122],["Saquon Barkley",107],["Ashton Jeanty",65],["Justin Jefferson",29],["Chase Brown",25],["A.J. Brown",24]],"3":[["Nico Collins",102],["Garrett Wilson",71],["Jeremiyah Love",58],["Zay Flowers",52],["Omarion Hampton",42],["George Pickens",23]]},"6":{"1":[["Bijan Robinson",138],["Christian McCaffrey",106],["Ja'Marr Chase",51],["Jonathan Taylor",42],["Jahmyr Gibbs",42],["Puka Nacua",21]],"2":[["Saquon Barkley",114],["Omarion Hampton",91],["Ashton Jeanty",73],["Chase Brown",47],["Justin Jefferson",42],["A.J. Brown",12]],"3":[["Nico Collins",104],["Zay Flowers",87],["Garrett Wilson",65],["Jeremiyah Love",49],["Omarion Hampton",33],["Malik Nabers",18]]},"7":{"1":[["Bijan Robinson",107],["Christian McCaffrey",99],["Jonathan Taylor",97],["Ja'Marr Chase",50],["Jahmyr Gibbs",25],["Puka Nacua",12]],"2":[["Saquon Barkley",111],["Chase Brown",77],["Ashton Jeanty",75],["Omarion Hampton",64],["Justin Jefferson",43],["Drake London",14]],"3":[["Zay Flowers",89],["Nico Collins",85],["Garrett Wilson",74],["Malik Nabers",38],["DeVonta Smith",35],["Jeremiyah Love",31]]},"8":{"1":[["Jonathan Taylor",124],["Christian McCaffrey",95],["Bijan Robinson",83],["Ja'Marr Chase",37],["De'Von Achane",35],["Jahmyr Gibbs",14]],"2":[["Saquon Barkley",98],["Chase Brown",86],["Ashton Jeanty",76],["Justin Jefferson",59],["Omarion Hampton",40],["Drake London",21]],"3":[["Zay Flowers",106],["Garrett Wilson",60],["Nico Collins",59],["DeVonta Smith",51],["Malik Nabers",45],["Jeremiyah Love",31]]},"9":{"1":[["Jonathan Taylor",151],["Christian McCaffrey",85],["Bijan Robinson",55],["De'Von Achane",52],["Ja'Marr Chase",28],["Jaxon Smith-Njigba",11]],"2":[["Saquon Barkley",97],["Chase Brown",95],["Ashton Jeanty",84],["Justin Jefferson",59],["Drake London",21],["Omarion Hampton",16]],"3":[["Zay Flowers",112],["DeVonta Smith",79],["Malik Nabers",53],["Garrett Wilson",53],["Nico Collins",37],["Jeremiyah Love",22]]},"10":{"1":[["Jonathan Taylor",165],["De'Von Achane",78],["Christian McCaffrey",56],["Bijan Robinson",43],["Chase Brown",22],["Ja'Marr Chase",14]],"2":[["Chase Brown",120],["Ashton Jeanty",98],["Saquon Barkley",59],["Justin Jefferson",54],["Drake London",28],["De'Von Achane",21]],"3":[["Zay Flowers",93],["DeVonta Smith",86],["Malik Nabers",60],["Garrett Wilson",44],["Breece Hall",41],["Nico Collins",28]]},"11":{"1":[["Jonathan Taylor",166],["De'Von Achane",88],["Chase Brown",49],["Christian McCaffrey",34],["Bijan Robinson",30],["Jaxon Smith-Njigba",18]],"2":[["Chase Brown",128],["Ashton Jeanty",103],["Justin Jefferson",56],["Saquon Barkley",35],["Drake London",28],["De'Von Achane",22]],"3":[["DeVonta Smith",116],["Zay Flowers",75],["Malik Nabers",60],["Breece Hall",45],["Garrett Wilson",32],["Nico Collins",28]]},"12":{"1":[["Jonathan Taylor",139],["De'Von Achane",99],["Chase Brown",85],["Christian McCaffrey",22],["Bijan Robinson",16],["Jaxon Smith-Njigba",15]],"2":[["Chase Brown",139],["Ashton Jeanty",114],["De'Von Achane",34],["Drake London",33],["Justin Jefferson",24],["Saquon Barkley",22]],"3":[["DeVonta Smith",126],["Zay Flowers",87],["Malik Nabers",43],["Breece Hall",40],["Garrett Wilson",30],["Tetairoa McMillan",24]]},"13":{"1":[["Chase Brown",116],["Jonathan Taylor",106],["De'Von Achane",101],["Christian McCaffrey",18],["Amon-Ra St. Brown",16],["Jaxon Smith-Njigba",15]],"2":[["Chase Brown",144],["Ashton Jeanty",102],["De'Von Achane",42],["Drake London",33],["James Cook III",28],["Justin Jefferson",18]],"3":[["DeVonta Smith",114],["Zay Flowers",76],["Breece Hall",66],["Malik Nabers",43],["Tetairoa McMillan",35],["Garrett Wilson",18]]},"14":{"1":[["Chase Brown",138],["De'Von Achane",90],["Jonathan Taylor",87],["Ashton Jeanty",31],["Christian McCaffrey",13],["Amon-Ra St. Brown",13]],"2":[["Chase Brown",119],["Ashton Jeanty",82],["James Cook III",60],["De'Von Achane",55],["Drake London",36],["Jonathan Taylor",14]],"3":[["DeVonta Smith",144],["Zay Flowers",53],["Tetairoa McMillan",49],["Breece Hall",46],["Malik Nabers",38],["Cam Skattebo",22]]}}}};
+
+/* ==== editorial layer (tiers, verdicts, plans — Builder judgment, auditable) ==== */
+const BOARD = {
+  tiers:{1:"prime",2:"prime",3:"strong",4:"strong",5:"strong",6:"solid",7:"solid",8:"solid",9:"solid",10:"late",11:"late",12:"late",13:"late",14:"late"},
+  tierLabel:{prime:"PRIME",strong:"STRONG",solid:"SOLID",late:"LATE"},
+  verdicts:{
+    1:"The clear best seat — Gibbs in 100% of sims and a real gap (≈9 VOR) back to seat 2. Win the claim race, end it here.",
+    2:"Right behind 1 — Gibbs or Bijan is waiting either way, and you're clearly ahead of everything from 3 back.",
+    3:"Best of the rest — Bijan in half your sims, an elite RB near-locked. The one early seat where who sits ahead is measured to matter (below).",
+    4:"Strong — Bijan still falls to you over half the time; Hampton or Barkley meets you in round 2.",
+    5:"Strong — the back end of the front-five pocket; realistically within about 1 VOR of seat 4.",
+    6:"Solid — the elite-RB near-lock ends here; you pivot to McCaffrey / Chase / JSN with a deep round 2 behind it.",
+    7:"Solid — nothing cliffs; about +2.6% over the floor as you draft, +5% at the ceiling.",
+    8:"Solid — the Taylor zone begins: he's the most common card at your pick, and the usage brief fades him (see the plan).",
+    9:"Solid — the measured mid seat: a QB-hoarder just ahead is worth about +6, a WR-first manager ahead about −5.",
+    10:"Back half opens — Taylor or Achane at the pick, and your real value shifts to the rounds-4–8 WR pool.",
+    11:"Statistical dead heat with seat 12 as you draft (602.8 vs 603.0) — the turn matters more than the seat number.",
+    12:"Ties seat 11 realistically — one step nearer the wheel, where double-tap builds start paying.",
+    13:"Near-turn — back-to-back picks: Chase Brown plus the WR wave, with elite TE value at the 2/3.",
+    14:"The floor — but only ~6% below seat 1 as you actually draft. Wheel pairs (Brown/Achane + McBride) keep it live."
+  },
+  bands:[
+    {seats:[1,2],
+     build:"Anchor the locked elite RB (<b>Gibbs</b>, or <b>Bijan</b> at 2). The R2/R3 wheel brings Hampton/Barkley — or Bowers/McBride if you draft the ceiling — back to you, then live in the rounds-4–8 WR pool this room lets slide.",
+     lean:[["Omarion Hampton","your R2 card in about a third of sims"],
+           ["Nico Collins","your most common R3 (~45% of sims)"],
+           ["Odunze · McLaurin · Pittman","usage-backed WR2s the room pushes 8–11 picks late (rds 4–8)"],
+           ["Mark Andrews","TE9 usage at a rd-8+ price — this room moves TEs up ~28 picks, act a round early"],
+           ["Kenny Gainwell","RB7 usage, 17% targets — PPR floor nearly free late"]],
+     avoid:[["James Cook","rd-1 room price; the receiving usage never came"],
+            ["Derrick Henry","5% target share — zero PPR reception floor at a rd-2 price"],
+            ["Tee Higgins · Davante Adams","rds 3–4 prices built on TD equity, not volume"]]},
+    {seats:[3,4,5],
+     build:"<b>Bijan or Gibbs still lands in most sims</b> — anchor RB, let <b>Hampton or Barkley</b> meet you in R2 and <b>Collins</b> in R3, then hammer the mid-round WR pool. At seat 3 the measured seating effects below are the real swing.",
+     lean:[["Saquon Barkley / Omarion Hampton","your R2 in ~60% of sims combined"],
+           ["Nico Collins","R3 favorite (~40% of sims)"],
+           ["Odunze · McLaurin · Pittman","the rds-4–8 usage-backed WR band — the room's blind spot"],
+           ["Mark Andrews","near-free TE1 usage rd 8-ish; go a round early here"],
+           ["Aaron Jones","RB16 usage at an RB36 price"]],
+     avoid:[["James Cook","rd-1 price, RB21 receiving usage"],
+            ["Kenneth Walker","KC price for a role he has never held"],
+            ["Jameson Williams","air-yards profile, no red-zone role"],
+            ["Marvin Harrison Jr.","two years of sub-WR3 usage — you'd be paying the name"]]},
+    {seats:[6,7],
+     build:"The elite-RB lock ends — you pivot to <b>McCaffrey / Chase / JSN</b> at the pick, take <b>Jeanty, Chase Brown or Barkley</b> in R2, then the <b>Flowers / Garrett Wilson</b> R3 band and the same mid-WR feast.",
+     lean:[["Ashton Jeanty / Chase Brown","the receiving-first R2 backs your script actually lands"],
+           ["Zay Flowers / Garrett Wilson","your real R3 band"],
+           ["Odunze · Pittman · Addison","rds 4–8 WR value, room-discounted"],
+           ["T.J. Hockenson","TE1-usage profile, effectively free (~pick 167)"],
+           ["Tyjae Spears","passing downs + one injury from lead, rd 10"]],
+     avoid:[["Jonathan Taylor","falls to you in some sims — weakest PPR profile of the top-5 RBs (11% targets)"],
+            ["DJ Moore","moved to BUF with usage already declining"],
+            ["Marvin Harrison Jr.","priced on pedigree, not usage"]]},
+    {seats:[8,9,10,11,12],
+     build:"<b>Taylor is the most common card at your pick — with eyes open:</b> the usage brief fades him (11% target share, weakest top-5 PPR profile); <b>Achane / Chase Brown</b> are the receiving-first alternates. The ceiling line instead banks <b>McBride</b> at the 2/3. Either road then hammers rds-4–8 WR.",
+     lean:[["De'Von Achane / Chase Brown","receiving-first R1 alternates to the Taylor card"],
+           ["Trey McBride","the optimizer's R2 anchor here in ~40% of sims — elite TE is the honest pivot"],
+           ["Zay Flowers / DeVonta Smith","your real R3 band"],
+           ["Odunze · Pittman · Addison · Wan'Dale","the WR pool that makes mid seats work"],
+           ["Gainwell · Spears","late RB — the room hoards depth backs rds 8–12, go a round early or skip"]],
+     avoid:[["Jonathan Taylor","only at a discount — usage says fade at his price"],
+            ["Kenneth Walker","priced on a projected role"],
+            ["Bhayshul Tuten","rd-4 hype on 17% rush share"],
+            ["Davante Adams","TD-dependent aging profile"]]},
+    {seats:[13,14],
+     build:"You draft the <b>turn</b>, not a seat: back-to-back picks pair <b>Chase Brown / Achane</b> with <b>McBride</b> or a falling RB, then double-tap the WR value band at every wheel. Only ~6% off seat 1 the way you actually draft.",
+     lean:[["Chase Brown + De'Von Achane","your real turn pair in most sims"],
+           ["Trey McBride","R1/R2 at the wheel in a third of ceiling sims — the elite-TE anchor"],
+           ["DeVonta Smith / Tetairoa McMillan","the R3 wheel band"],
+           ["Odunze · Pittman · Addison · Wan'Dale","double-tap this rds-4–8 WR pool"],
+           ["Andrews · Hockenson","if you skip early TE, TE1 usage is still near-free"]],
+     avoid:[["Bhayshul Tuten","the rd-4 hype tax"],
+            ["Depth-RB reaches rds 8–12","room takes RB40–56 8–12 picks early — commit a round early or skip the thesis"],
+            ["Marvin Harrison Jr. · DJ Moore","name prices, declining usage"]]}
+  ],
+  neighbors:{
+    measured:{
+      3:[["rrishi45 · RB-masher, just ahead",-7.3,"resolved ≈3.5σ"],
+         ["itsthevikshow · WR-first, ahead",4.9,"≈2σ — weak"],
+         ["mountaindew11 · QB-hoarder, ahead",4.3,"≈2σ — weak"]],
+      9:[["mountaindew11 · QB-hoarder, ahead",6.1,"resolved ≈3σ"],
+         ["itsthevikshow · WR-first, ahead",-4.7,"≈2σ — weak"],
+         ["rrishi45 · RB-masher, ahead",-3.7,"≈1.8σ — weak"]]
+    },
+    rule:"Seating is unknown until draft night, so read this as a tiebreaker: a manager who drafts <b>your lean</b> sitting just ahead costs you a few VOR (rrishi45 if you're RB-anchoring; itsthevikshow if you're WR-leaning), while a <b>QB-hoarder ahead</b> (mountaindew11, anizzle1) helps by roughly +5 — they spend premium picks on QBs you don't want. All second-order: ±4–7 VOR ≈ 1%."
+  }
+};
+
+/* ==== rendering ==== */
+const $=s=>document.querySelector(s);
+const DET=document.getElementById("detail");
+const S={}; SIM.opt.forEach(o=>S[o.seat]={opt:o}); SIM.chris.forEach(c=>S[c.seat].chris=c);
+let MODE="chris", SEL=1;
+const MQ=matchMedia("(min-width:880px)");
+
+const band=s=>BOARD.bands.find(b=>b.seats.includes(s));
+const floorOf=m=>S[14][m].mean, bestOf=m=>S[1][m].mean;
+const edgePct=(s,m)=>((S[s][m].mean/floorOf(m)-1)*100);
+const fmtEdge=(s,m)=>s===14?"floor":"+"+edgePct(s,m).toFixed(1)+"%";
+const shortName=n=>{const p=n.replace(/\s+(Jr\.|Sr\.|II|III|IV)$/,"").split(" ");return p[p.length-1]};
+const top1=(s,m,rd)=>{const r=SIM.r123[m][s]&&SIM.r123[m][s][rd];return r&&r.length?shortName(r[0][0]):"—"};
+const pct=c=>{const p=Math.round(c/SIM.meta.sims*100);return p<1?"<1%":p+"%"};
+
+function renderList(){
+  /* reclaim the detail panel first — on mobile it lives inside #list and would be wiped */
+  if(DET.parentElement!==$("#detailcol"))$("#detailcol").appendChild(DET);
+  $("#list").innerHTML=[...Array(14)].map((_,i)=>{
+    const s=i+1,t=BOARD.tiers[s],v=S[s][MODE],
+      w=Math.max(0,(v.mean-floorOf(MODE))/(bestOf(MODE)-floorOf(MODE))*100);
+    return `<div class="srow${s===SEL?" sel":""}" data-seat="${s}" role="button" tabindex="0" aria-label="Seat ${s}">
+      <div class="srm">
+        <div class="sn">${s}</div><span class="tb ${t}">${BOARD.tierLabel[t]}</span>
+        <div class="mini">R1–3: <b>${top1(s,MODE,"1")}</b> · ${top1(s,MODE,"2")} · ${top1(s,MODE,"3")}</div>
+        <div class="edge"><div class="bar"><i style="width:${w.toFixed(1)}%"></i></div></div>
+        <div class="vor">${v.mean.toFixed(1)}<small>${fmtEdge(s,MODE)}</small></div>
+      </div></div>`;
+  }).join("");
+  document.querySelectorAll(".srow").forEach(r=>{
+    const go=()=>select(+r.dataset.seat);
+    r.addEventListener("click",go);
+    r.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go();}});
+  });
+}
+
+function roundsCol(s,m,cls,ttl){
+  const rr=SIM.r123[m][s]||{};
+  const rows=["1","2","3"].map(rd=>{
+    const chips=(rr[rd]||[]).slice(0,5).map(([n,c])=>`<span class="pchip">${n}<small>${pct(c)}</small></span>`).join("");
+    return `<div class="rdrow"><b>R${rd}</b> ${chips}</div>`;
+  }).join("");
+  return `<div class="rcol ${cls}"><div class="ttl">${ttl}</div>${rows}</div>`;
+}
+
+function neighborsBlock(s){
+  const m=BOARD.neighbors.measured[s];
+  let out="";
+  if(m){
+    out+=m.map(([who,d,sig])=>`<div class="nbc"><span class="d ${d>0?"up":"dn"}">${d>0?"+":""}${d.toFixed(1)}</span><span>${who}</span><span class="sig">${sig}</span></div>`).join("");
+    out+=`<div class="note"><b>Measured for this seat</b> (paired sims, N=250). Only the "resolved" line is statistically solid; quote the rest as direction, not decimals. ${BOARD.neighbors.rule}</div>`;
+  }else{
+    out+=`<div class="nbc"><span class="d up">≈+5</span><span>QB-hoarder just ahead (mountaindew11, anizzle1)</span><span class="sig">directional</span></div>`;
+    out+=`<div class="nbc"><span class="d dn">−4–7</span><span>a manager who shares your lean just ahead</span><span class="sig">directional</span></div>`;
+    out+=`<div class="note"><b>Not measured at this seat</b> — effects were measured at seats 3 and 9 only; the rule of thumb carries over directionally. ${BOARD.neighbors.rule}</div>`;
+  }
+  return out;
+}
+
+function renderDetail(){
+  const s=SEL,t=BOARD.tiers[s],b=band(s),c=S[s].chris,o=S[s].opt;
+  const luck=v=>`${Math.round(v.p25)}–${Math.round(v.p75)}`;
+  DET.innerHTML=`
+    <h3>Seat ${s} <span class="tb ${t}">${BOARD.tierLabel[t]}</span></h3>
+    <div class="vline">${BOARD.verdicts[s]}</div>
+    <div class="nums">
+      <div class="ncard chris${MODE==="chris"?" on":""}"><h5>Your script · realistic</h5>
+        <div class="big">${c.mean.toFixed(1)}<small>${fmtEdge(s,"chris")}</small></div>
+        <div class="sm">vs seat-14 floor ${floorOf("chris").toFixed(1)} · luck range ${luck(c)}</div></div>
+      <div class="ncard optc${MODE==="opt"?" on":""}"><h5>Optimizer · ceiling</h5>
+        <div class="big">${o.mean.toFixed(1)}<small>${fmtEdge(s,"opt")}</small></div>
+        <div class="sm">vs seat-14 floor ${floorOf("opt").toFixed(1)} · luck range ${luck(o)}</div></div>
+    </div>
+    <h4 class="sec">What you'll land — rounds 1–3 (% of 400 sims)</h4>
+    <div class="dgrid">
+      ${roundsCol(s,"chris","chris","Your script")}
+      ${roundsCol(s,"opt","optc","Optimizer")}
+    </div>
+    <h4 class="sec">Who sits ahead of you</h4>
+    ${neighborsBlock(s)}
+    <h4 class="sec">Seat plan — lean into / let the room take</h4>
+    <div class="tg">
+      <div class="build">${b.build}</div>
+      ${b.lean.map(([n,w])=>`<div class="ti lean"><span class="nm2">${n}</span> <span class="why">— ${w}</span></div>`).join("")}
+      <div style="height:7px"></div>
+      ${b.avoid.map(([n,w])=>`<div class="ti avoid"><span class="nm2">${n}</span> <span class="why">— ${w}</span></div>`).join("")}
+    </div>
+    <div class="note">Adjacent seats inside a tier sit within noise once the gap is under ~4 VOR (SE ≈ 1.2–1.9); the 1→14 slope is the robust part, the exact per-seat sizes are not. Ranges shown are draft-luck only — season variance isn't in these numbers.</div>`;
+}
+
+function placeDetail(){
+  if(MQ.matches){$("#detailcol").appendChild(DET);$("#detailcol").style.top=(document.querySelector("header").offsetHeight+12)+"px";}
+  else{const r=document.querySelector(".srow.sel");if(r)r.after(DET);}
+}
+
+function select(s){SEL=s;
+  document.querySelectorAll(".srow").forEach(r=>r.classList.toggle("sel",+r.dataset.seat===s));
+  renderDetail();placeDetail();
+  if(!MQ.matches){const r=document.querySelector(".srow.sel");if(r)r.scrollIntoView({block:"nearest"});}
+}
+
+function setMode(m){MODE=m;document.body.classList.toggle("opt",m==="opt");
+  document.querySelectorAll("#modeseg button").forEach(b=>b.classList.toggle("on",b.dataset.m===m));
+  $("#modenote").textContent=m==="chris"
+    ?"how you actually drafted '24–'25 — read as the floor"
+    :"best-available every pick — read as the ceiling";
+  renderList();renderDetail();placeDetail();}
+
+document.querySelectorAll("#modeseg button").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.m)));
+MQ.addEventListener?MQ.addEventListener("change",placeDetail):MQ.addListener(placeDetail);
+window.addEventListener("resize",()=>{if(MQ.matches)$("#detailcol").style.top=(document.querySelector("header").offsetHeight+12)+"px";});
+setMode("chris");
+</script>
+</body></html>

@@ -1157,6 +1157,16 @@ let S={tab:'room',q:'',p:'',l:'',c:'',deep:0,rev:0,hideTaken:1,hasTakes:0,lshift
    claims a player Chris knows it got wrong, and he can veto it. */
 let MANUAL={}, MANUAL_MINE=[], SUPPRESS={};
 let FEED={}, FEED_MINE=[];
+/* Third source (run #31): the LIVE league rosters from /league/<id>/rosters.
+   The draft feed freezes on draft night — it can never learn about a waiver
+   add, a drop or a trade. In SEASON mode, once a sync has found Chris's
+   roster, ROSTER/ROSTER_MINE replace FEED/FEED_MINE as the derivation source
+   for TAKEN and MINE (recompute() below). Draft mode never reads them, so
+   nothing about the draft-day board changes. MYROSTER keeps the raw Sleeper
+   roster object so My Team can mirror the starters[] array he actually set.
+   SLMETA remembers name/pos per Sleeper id from the draft feed's metadata, so
+   a roster id that is not on the ADP board still renders as a name. */
+let ROSTER={}, ROSTER_MINE=[], MYROSTER=null, SLMETA={};
 let DRIFT={n:0,ready:false,nat:0,room:0};
 let SDBANDS=[];
 
@@ -1286,11 +1296,20 @@ function resetPicks(){
    MANUAL / SUPPRESS / FEED and calls this. */
 function recompute(){
  rcBust();          // every derived cache dies with the thing it was derived from
+ /* SEASON mode, once the league rosters have been pulled: the rosters are the
+    authority. MINE is what Sleeper says is on Chris's team TODAY — adds, drops
+    and trades included — and TAKEN is the union of every roster, so a dropped
+    player comes back to the waiver list instead of staying "gone" forever
+    because he was once drafted. DRAFT mode keeps the feed authoritative and
+    never reads ROSTER: the draft board is untouched. MANUAL and SUPPRESS still
+    layer on top in both modes, exactly as before. */
+ const ra=(MODE==='season'&&MYROSTER);
+ const src=ra?ROSTER:FEED, srcMine=ra?ROSTER_MINE:FEED_MINE;
  TAKEN={};
- Object.keys(FEED).forEach(g=>{if(!SUPPRESS[g])TAKEN[g]=1;});
+ Object.keys(src).forEach(g=>{if(!SUPPRESS[g])TAKEN[g]=1;});
  Object.keys(MANUAL).forEach(g=>{if(MANUAL[g])TAKEN[g]=1;});
  const mine=[];
- FEED_MINE.forEach(g=>{if(!SUPPRESS[g]&&mine.indexOf(g)<0)mine.push(g);});
+ srcMine.forEach(g=>{if(!SUPPRESS[g]&&mine.indexOf(g)<0)mine.push(g);});
  MANUAL_MINE.forEach(g=>{if(mine.indexOf(g)<0)mine.push(g);});
  MINE=mine;
  MINE.forEach(g=>{TAKEN[g]=1;});
@@ -1387,7 +1406,48 @@ function multiSlots(){
    reports a need for a position the roster already has and — worse — hides the
    fact that the superflex is the slot a quarterback should be competing for. */
 function rosterState(){ return rc('rs',_rosterState); }
+/* Sleeper id -> board id, never failing. A roster id the ADP board has never
+   heard of (a future waiver add of someone FFC never priced) still has to
+   RENDER — silently dropping him would show a 17-man roster and call it 18.
+   Resolution order: the board (BYSL), else the draft feed's own metadata
+   (SLMETA, captured in applyPicks), else a labelled stub carrying the raw id.
+   The stub registers in BYID under a synthetic 'sl-' key so rosterState() and
+   My Team can treat it like any other player; it is NOT pushed into PL, so the
+   Board, Players and Waivers lists never see it. */
+function rosterGid(sid){
+ sid=String(sid);
+ if(BYSL[sid])return BYSL[sid];
+ const g='sl-'+sid;
+ if(!BYID[g]){
+  const md=SLMETA[sid]||{};
+  BYID[g]={g:g,n:md.n||('Sleeper #'+sid),p:md.p||'?',tm:'',sl:sid,adp:null,pr:'',sd:null,nd:null,bi:null,
+   sdok:0,mv:null,es:'',dp:false,lean:'',cv:0,m:0,rev:0,tg:[],h:[],ro:true,tc:false,tcf:'',
+   tr:null,tw:0,st:'',bye:null,al:null,ls:null,lf:null,lr:null,lc:'',rq:0,rfg:null,bl:0,kl:null};
+ }
+ return g;
+}
 function _rosterState(){
+ /* SEASON + live roster: mirror Sleeper exactly. starters[] is index-aligned
+    with the league's roster_positions, which is what META.lineup was built
+    from, and '0' marks an empty slot. Deliberately NOT an optimizer — the
+    lineup shown is the lineup Chris set in Sleeper, per his call. Bench is
+    everyone else on the roster; the existing status-based IR split below
+    still carves the IR stash out of it. */
+ if(MODE==='season'&&MYROSTER){
+  const used=new Set();
+  const slots=[...META.lineup].map((s,i)=>{
+   const sid=String((MYROSTER.starters||[])[i]||'0');
+   const p=(sid!=='0'&&sid!=='')?BYID[rosterGid(sid)]:null;
+   if(p)used.add(p.g);
+   return {slot:s,p:p||null};
+  });
+  const rbench=[];
+  (MYROSTER.players||[]).forEach(sid=>{
+   const p=BYID[rosterGid(String(sid))];
+   if(p&&!used.has(p.g)){used.add(p.g);rbench.push(p);}
+  });
+  return {slots,bench:rbench};
+ }
  const bench=[];
  const mine=MINE.map(g=>BYID[g]).filter(Boolean);
  const used=new Set();
@@ -2047,6 +2107,10 @@ function applyPicks(picks){
   const md=pk.metadata||{};
   const nm=((md.first_name||'')+' '+(md.last_name||'')).trim()||md.player_id||'?';
   const pos=(md.position||'').toUpperCase();
+  /* Remember what the feed said this Sleeper id is called. Costs nothing here
+     and it is the name fallback for roster ids that are not on the ADP board
+     (see rosterGid) — today that is nobody, after a waiver add it is the add. */
+  if(pk.player_id)SLMETA[String(pk.player_id)]={n:nm,p:pos};
   const g=matchPick(pk);
   if(g){
    feed[g]=({no,rid:pk.roster_id,by:pk.picked_by});
@@ -3140,7 +3204,7 @@ function markById(g){
  snap();
  if(TAKEN[g]&&MINE.indexOf(g)<0){
   delete MANUAL[g];
-  if(FEED[g])SUPPRESS[g]=1;
+  if(FEED[g]||ROSTER[g])SUPPRESS[g]=1;
  }else{
   MANUAL[g]=1; delete SUPPRESS[g];
   MANUAL_MINE=MANUAL_MINE.filter(x=>x!==g);
@@ -3153,7 +3217,7 @@ function claimById(g){
  if(MINE.indexOf(g)>=0){
   MANUAL_MINE=MANUAL_MINE.filter(x=>x!==g);
   delete MANUAL[g];
-  if(FEED[g])SUPPRESS[g]=1;
+  if(FEED[g]||ROSTER[g])SUPPRESS[g]=1;
  }else{
   MANUAL_MINE.push(g); delete SUPPRESS[g];
  }
@@ -3161,7 +3225,13 @@ function claimById(g){
 function undo(){if(!HIST.length)return;const s=JSON.parse(HIST.pop());
  MANUAL=s.A;MANUAL_MINE=s.M;SUPPRESS=s.S||{};recompute();saveState();render();}
 function setSlot(v){SLOT=parseInt(v)||0;saveState();render();}
-function toggleMode(){MODE=MODE==='draft'?'season':'draft';applyMode();saveState();renderTabs();render();}
+/* recompute() on every flip: TAKEN/MINE now derive from a mode-dependent
+   source (feed in draft, rosters in season), so the flip must re-derive or the
+   screen shows the OTHER mode's truth. seasonAutoLoad() self-populates a
+   season view reached by tapping the badge, not just by the calendar — it is
+   gated inside (season mode + per-league auto flag + not already connected),
+   so in every other case it is a no-op. */
+function toggleMode(){MODE=MODE==='draft'?'season':'draft';recompute();applyMode();saveState();renderTabs();render();seasonAutoLoad();}
 function applyMode(){
  const b=document.getElementById('modeBadge');
  b.textContent=MODE==='draft'?'DRAFT':'SEASON';
@@ -3317,7 +3387,11 @@ function openSetup(){
  document.getElementById('ov3').classList.add('show');
 }
 async function syncLeague(){
- const m=document.getElementById('syncMsg');
+ /* #syncMsg only exists while the Setup overlay is open. This function now
+    also runs unattended at boot (seasonAutoLoad), so writing status into a
+    throwaway object when the panel is closed keeps every assignment below
+    valid without sprinkling null checks through it. */
+ const m=document.getElementById('syncMsg')||{};
  m.textContent='Contacting Sleeper\u2026';
  try{
   const L=META.leagueId;
@@ -3333,10 +3407,21 @@ async function syncLeague(){
   const mine=rosters.find(r=>r.owner_id===META.sleeperUserId);
   if(!mine){
    LEAGUE=null;
+   MYROSTER=null;recompute();   // roster authority off -> fall back to the feed
    m.innerHTML='<b style="color:var(--urgent)">Could not find your roster.</b> No team in this league is owned by '
      +'user id '+esc(META.sleeperUserId)+'. FAAB advice would be guesswork, so the waiver view stays off.';
    render();return;
   }
+  /* The live rosters, kept for TAKEN/MINE derivation (recompute) and for the
+     My Team starters mirror (_rosterState). Union of every roster = who is
+     actually off the waiver wire TODAY; Chris's own roster = MINE. This is
+     what lets the season page track adds/drops/trades instead of replaying
+     draft night. */
+  MYROSTER=mine;
+  ROSTER={};
+  rosters.forEach(r=>{(r.players||[]).forEach(sid=>{ROSTER[rosterGid(sid)]=1;});});
+  ROSTER_MINE=(mine.players||[]).map(sid=>rosterGid(sid));
+  recompute();
   const myFaab=faabOf[mine.roster_id];
   const rivals=rosters.filter(r=>r.roster_id!==mine.roster_id).map(r=>faabOf[r.roster_id]).sort((a,b)=>a-b);
   const mid=rivals.length?(rivals.length%2?rivals[(rivals.length-1)/2]
@@ -3377,6 +3462,36 @@ async function liveProbe(){
   else render();
  }catch(e){ /* offline, blocked, or the id is wrong. The board still works,
     and the Draft Room says so rather than pretending to be connected. */ }
+}
+
+/* SEASON auto-load (run #31). The plain hub link — no url hash, no taps — must
+   come up populated: the finished draft's picks AND the live league rosters.
+   Two pulls, the same two the Setup buttons fire, in order:
+
+     1. the draft feed, ONCE (livePoll without a timer). Same manners as
+        liveProbe above: this page is public and its draft is over, so it has
+        no business polling Sleeper every three seconds for whoever opens it.
+        The one shot fills the pick log (picksMade), FEED as the fallback
+        source, and SLMETA for roster-id name resolution.
+     2. syncLeague(), which pulls rosters + FAAB and hands TAKEN/MINE to the
+        roster authority (recompute).
+
+   Gates, in order: SEASON only (draft day belongs to liveProbe, untouched);
+   per-league opt-in via META.liveDraft.auto — "live_auto" in leagues/<id>.json,
+   ON for superflex-8 only, so joop-14 ships this code dormant; and LIVE.on,
+   so a page already connected (url-hash draft id, mid-draft toggle) is not
+   connected twice. Failures degrade exactly as before: feed-only, or the
+   "Open Setup and tap Sync league" empty state. */
+async function seasonAutoLoad(){
+ if(MODE!=='season')return;
+ if(!(META.liveDraft&&META.liveDraft.auto))return;
+ if(!LIVE.on&&liveEnabled()){
+  LIVE.draftId=(LIVE.draftId||META.liveDraft.draftId||'').trim();
+  LIVE.on=1;             // livePoll refuses to run otherwise
+  await livePoll(true);  // draft + picks, one shot — no interval is created
+  LIVE.on=0;
+ }
+ await syncLeague();
 }
 
 /* ---------- boot ---------- */
@@ -3467,7 +3582,8 @@ async function liveProbe(){
 
  document.getElementById('load').remove();
  renderTabs();render();
- liveProbe();
+ liveProbe();       // DRAFT mode: one probe, polls only if the draft is live
+ seasonAutoLoad();  // SEASON mode: auto-connect + auto-sync, gated per league
  // Test hook. The suite needs to assert that the hub path and the parachute
  // path deliver byte-identical payloads; without this it can only compare
  // rendered HTML, which would pass even if one path silently truncated a blob.

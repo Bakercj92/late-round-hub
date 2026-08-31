@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Draft Room — Joop Squad (14-team PPR)</title>
+<!--
+  draft-room.html — the focused draft-day page for Joop Squad. Built 2026-08-31.
+
+  WHAT THIS IS: a lean live board for the Joop draft (14tm full PPR, 2026-09-05).
+  One usage-ranked list; picks stream in from Sleeper's public draft feed and
+  drafted players drop off; tap a row to hand-cross it if the feed hiccups.
+  Plus: the board defaults to your open roster needs (All override); a "vs"
+  button on each row opens an inline head-to-head compare; an RB-handcuff lens
+  and a "YOUR CUFF" flag when a backup to one of your RBs is available; and a
+  quiet watch line for handcuff-available and RB-hoarding signals. QB is on the
+  board (ranked by ADP, no target share); K/DEF stay off-board.
+
+  PROVENANCE / REUSE (do not re-derive from scratch):
+  - Player data: stripped from usage-board.html's embedded PLAYERS array
+    (Sleeper 2025 actuals + Rotowire 2026 projections pulled 2026-08-25),
+    Joop view of the scores (usage_joop / tier_joop / adp_ppr). QBs added from
+    roster-authority.json (ADP board); handcuff graph + bye weeks joined by
+    build/draft_room_data.py. K/DEF carry no usage row, so those picks land
+    "off-board" (counted, and Chris's own show as roster chips).
+  - pid IS Sleeper's player_id. Verified 2026-08-31 against the finished
+    Ball Knowers draft (fixtures/bku-final.json): 107/144 picks matched a pid
+    exactly, 0 name/position disagreements, and all 37 misses were QB/K/DEF.
+  - Live engine: adapted from usage-board.html's live layer (itself the same
+    shape as the tracker's Draft Room): probe -> 3s poll while drafting; picks
+    re-pulled on movement or every 5th tick; 3 straight failures back off to
+    15s and NEVER touch the feed; a short picks read never un-drafts anyone.
+    One addition for draft day: "Go live" during pre_draft keeps watching at
+    10s and flips itself to the 3s cadence when the draft starts.
+  - Draft id is the ONLY trusted config (default = Joop's, read 2026-08-14
+    from /v1/league/1389373222666932224/drafts). Everything else — status,
+    order, league_id — is re-read live from /v1/draft/{id}. The league users/
+    rosters fetch is wired (names on picks now, roster math in Phase 2).
+-->
+<style>
+:root{--bg:#0f1720;--card:#18222e;--card2:#1e2a38;--ink:#eaf0f6;--mut:#9fb2c4;--line:#2a3947;
+--qb:#7c5cff;--rb:#22b07d;--wr:#3a95e6;--te:#e6893a;--gold:#e9c46a;--tar:#22b07d;--fade:#e05a5a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:40px}
+header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 14px}
+h1{font-size:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sub{color:var(--mut);font-size:12px;margin:2px 0 8px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;color:var(--mut);border:0;padding:7px 12px;cursor:pointer;font-size:13px}
+.seg button.on{background:var(--card2);color:var(--ink);font-weight:600}
+input[type=search],input[type=text]{background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:7px 10px;font-size:13px}
+#q{width:150px}
+#did{width:190px;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+.tgl{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--mut);cursor:pointer;user-select:none}
+.tgl input{accent-color:var(--tar)}
+button.go{background:var(--tar);color:#0f1720;border:0;border-radius:8px;padding:7px 14px;font-weight:700;cursor:pointer;font-size:13px}
+button.go.stop{background:var(--fade);color:#fff}
+#live{font-size:11px;font-weight:700;border-radius:12px;padding:3px 10px;border:1px solid var(--line);color:var(--mut)}
+#live.on{color:#0f1720;background:var(--tar);border-color:var(--tar);animation:pulse 2s infinite}
+#live.err{color:#fff;background:var(--fade);border-color:var(--fade)}
+#live.done{color:#0f1720;background:var(--gold);border-color:var(--gold)}
+#live.pre{color:var(--gold);border-color:var(--gold)}
+@keyframes pulse{50%{opacity:.65}}
+#roster{display:none;max-width:1060px;margin:8px auto 0;padding:0 14px;font-size:12px}
+#roster.show{display:block}
+.rchip{display:inline-block;background:var(--card2);border:1px solid var(--tar);border-radius:12px;padding:2px 9px;margin:2px 3px 2px 0}
+.rchip small{color:var(--mut)}
+main{max-width:1060px;margin:10px auto;padding:0 14px}
+.hdr,.row{display:grid;grid-template-columns:34px 44px minmax(180px,1fr) 62px 62px 64px 54px;gap:8px;align-items:center}
+.hdr{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.4px;padding:4px 10px;position:sticky;top:96px;background:var(--bg)}
+.row{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:7px 10px;margin-bottom:5px;cursor:pointer}
+.row:hover{border-color:#3d5268}
+.row.taken{opacity:.38}
+.row.taken .nm b{text-decoration:line-through}
+.row.mine{opacity:1;border-color:var(--tar);background:#16261f}
+.rk{color:var(--mut);font-size:12px;text-align:right}
+.pos{font-weight:800;font-size:12px;text-align:center;border-radius:6px;padding:3px 0}
+.pos.RB{background:rgba(34,176,125,.16);color:var(--rb)}.pos.WR{background:rgba(58,149,230,.16);color:var(--wr)}.pos.TE{background:rgba(230,137,58,.16);color:var(--te)}
+.nm b{font-size:14px}
+.nm small{color:var(--mut);margin-left:6px}
+.nm .st{display:block;font-size:11px;color:var(--mut)}
+.nm .st.mine{color:var(--tar);font-weight:700}
+.b{font-size:10px;font-weight:800;border-radius:4px;padding:1px 5px;margin-left:5px;vertical-align:1px}
+.bR{background:rgba(124,92,255,.2);color:var(--qb)}
+.bM{background:rgba(233,196,106,.18);color:var(--gold)}
+.bOUT{background:var(--fade);color:#fff}
+.num{font-size:13px;text-align:right;color:var(--ink)}
+.num small{color:var(--mut);font-size:10px}
+.score{font-weight:800;font-size:15px;text-align:center;border-radius:8px;padding:4px 0}
+.s-hi{background:rgba(34,176,125,.18);color:var(--rb)}.s-mid{background:rgba(233,196,106,.14);color:var(--gold)}.s-lo{background:rgba(159,178,196,.12);color:var(--mut)}
+.s-x{color:var(--mut)}
+footer{max-width:1060px;margin:18px auto 0;padding:0 14px;color:var(--mut);font-size:12px;line-height:1.6}
+@media (max-width:620px){
+ .hdr,.row{grid-template-columns:26px 38px minmax(120px,1fr) 54px 60px 50px}
+ .c-snap{display:none}
+ .hdr{top:132px}
+}
+/* --- Phase 2 --- */
+.pos.QB{background:rgba(124,92,255,.16);color:var(--qb)}
+.needline{color:var(--mut);font-size:11px}
+.needline b{color:var(--gold)}
+#watch{max-width:1060px;margin:6px auto 0;padding:0 14px}
+#watch .w{display:block;font-size:12px;padding:5px 10px;border-radius:8px;margin-bottom:4px;
+ background:rgba(233,196,106,.1);border:1px solid rgba(233,196,106,.35);color:var(--gold)}
+#watch .w.hoard{background:rgba(224,90,90,.1);border-color:rgba(224,90,90,.4);color:#f0a0a0}
+.cmp{margin-left:8px;font-size:10px;font-weight:700;color:var(--mut);background:transparent;
+ border:1px solid var(--line);border-radius:5px;padding:1px 6px;cursor:pointer;vertical-align:1px}
+.cmp.on{background:var(--wr);color:#04121f;border-color:var(--wr)}
+.num.hog{color:var(--tar);font-weight:800}
+.hc{display:block;font-size:10.5px;color:var(--mut);margin-top:1px}
+.hc.pri{color:var(--gold);font-weight:700}
+.b.bHC{background:var(--gold);color:#0f1720}
+#compare{display:none;max-width:1060px;margin:8px auto 0;padding:0 14px}
+#compare.show{display:block}
+.cmphead{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.cmphead b{font-size:12px;color:var(--mut)}
+.cmphead .clr{font-size:11px;color:var(--fade);cursor:pointer;background:none;border:0}
+.cmpwrap{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.cmpcard{flex:1 1 0;min-width:148px;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 11px;position:relative}
+.cmpcard h4{font-size:13px;margin-bottom:2px;padding-right:16px}
+.cmpcard .x{position:absolute;top:6px;right:8px;color:var(--mut);cursor:pointer;font-size:13px}
+.cmpcard .mt{color:var(--mut);font-size:10px;margin-bottom:6px}
+.cmprow{display:flex;justify-content:space-between;font-size:11px;margin:2px 0;gap:6px}
+.cmprow .k{color:var(--mut)}.cmprow .v{font-weight:700}.cmprow .v.best{color:var(--tar)}
+.cmpbar{height:4px;border-radius:2px;background:var(--line);margin:0 0 4px}
+.cmpbar i{display:block;height:100%;border-radius:2px;background:var(--wr)}
+</style>
+</head><body>
+<header>
+<h1>Draft Room <span style="color:var(--mut);font-weight:400;font-size:13px">Joop Squad &middot; 14-team full PPR</span> <span id="live">idle &mdash; not connected</span></h1>
+<div class="sub" id="count"></div>
+<div class="controls">
+  <span class="seg" id="posseg"><button data-pos="NEED" class="on">Needs</button><button data-pos="ALL">All</button><button data-pos="QB">QB</button><button data-pos="RB">RB</button><button data-pos="WR">WR</button><button data-pos="TE">TE</button></span>
+  <input type="search" id="q" placeholder="find a player&hellip;">
+  <label class="tgl"><input type="checkbox" id="hidetaken" checked> hide drafted</label>
+  <label class="tgl"><input type="checkbox" id="hconly"> RB handcuffs</label>
+  <span style="flex:1"></span>
+  <input type="text" id="did" title="Sleeper draft id (paste an id or a draft URL)">
+  <button class="go" id="golive">Go live</button>
+</div>
+</header>
+<div id="watch"></div>
+<div id="compare"></div>
+<div id="roster"></div>
+<main>
+  <div class="hdr"><span></span><span>Pos</span><span>Player</span><span style="text-align:right">Tgt %</span><span class="c-snap" style="text-align:right">Snap %</span><span style="text-align:right">ADP</span><span style="text-align:center">Usage</span></div>
+  <div id="board"></div>
+</main>
+<footer><b>How this works:</b> the Joop draft id is baked in &mdash; tap <b>Go live</b> at the table. Picks stream in every 3s and drafted players drop off (uncheck &ldquo;hide drafted&rdquo; to see them struck). The board defaults to your open <b>needs</b> &mdash; hit <b>All</b> for everyone. Tap <b>vs</b> on any two rows for a head-to-head; tap <b>RB handcuffs</b> for the backup-RB pool; a <b>&#9873; YOUR CUFF</b> flag marks a backup to an RB you&rsquo;ve drafted. Your picks glow green and fill the strip above; K/DEF aren&rsquo;t on this board (draft them off Sleeper) and show as &ldquo;off-board.&rdquo; <b>If the feed hiccups:</b> tap a row to hand-cross a player (tap again to undo, shift-tap to mark him YOURS) &mdash; hand marks live in this browser and no feed failure erases them. Usage = 60% projected 2026 role + 40% proven 2025 shares (Joop view, data 2026-08-25).</footer>
+<script>
+/* ---------------- baked data (see provenance comment in <head>) ---------- */
+const PLAYERS=[{"pid":"7564","name":"Ja'Marr Chase","pos":"WR","team":"CIN","team25":"CIN","mover":false,"rookie":false,"out":null,"injury":null,"tier":1,"usage":89.3,"adp":3.4,"tgt":30.7,"snap":94.0,"bye":"6"},{"pid":"9493","name":"Puka Nacua","pos":"WR","team":"LAR","team25":"LAR","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":1,"usage":83.4,"adp":4.2,"tgt":29.5,"snap":68.2,"bye":"11"},{"pid":"9488","name":"Jaxon Smith-Njigba","pos":"WR","team":"SEA","team25":"SEA","mover":false,"rookie":false,"out":null,"injury":null,"tier":1,"usage":92.5,"adp":6.1,"tgt":34.2,"snap":77.9,"bye":"11"},{"pid":"7547","name":"Amon-Ra St. Brown","pos":"WR","team":"DET","team25":"DET","mover":false,"rookie":false,"out":null,"injury":null,"tier":1,"usage":86.5,"adp":8.7,"tgt":29.8,"snap":84.8,"bye":"6"},{"pid":"6786","name":"CeeDee Lamb","pos":"WR","team":"DAL","team25":"DAL","mover":false,"rookie":false,"out":null,"injury":null,"tier":1,"usage":76.2,"adp":9.1,"tgt":23.7,"snap":74.7,"bye":"14"},{"pid":"6794","name":"Justin Jefferson","pos":"WR","team":"MIN","team25":"MIN","mover":false,"rookie":false,"out":null,"injury":null,"tier":1,"usage":87.5,"adp":11.7,"tgt":30.2,"snap":95.3,"bye":"6"},{"pid":"8112","name":"Drake London","pos":"WR","team":"ATL","team25":"ATL","mover":false,"rookie":false,"out":null,"injury":null,"tier":2,"usage":85.6,"adp":17.3,"tgt":29.1,"snap":89.9,"bye":"11"},{"pid":"5859","name":"A.J. Brown","pos":"WR","team":"NE","team25":"PHI","mover":true,"rookie":false,"out":null,"injury":null,"tier":2,"usage":82.8,"adp":18.9,"tgt":30.2,"snap":90.5,"bye":"11"},{"pid":"8137","name":"George Pickens","pos":"WR","team":"DAL","team25":"DAL","mover":false,"rookie":false,"out":null,"injury":null,"tier":2,"usage":67.3,"adp":24.9,"tgt":22.8,"snap":83.4,"bye":"14"},{"pid":"7569","name":"Nico Collins","pos":"WR","team":"HOU","team25":"HOU","mover":false,"rookie":false,"out":null,"injury":null,"tier":2,"usage":77.3,"adp":25.1,"tgt":23.4,"snap":76.9,"bye":"8"},{"pid":"11632","name":"Malik Nabers","pos":"WR","team":"NYG","team25":"NYG","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":2,"usage":80.7,"adp":27.2,"tgt":32.5,"snap":78.0,"bye":"8"},{"pid":"10229","name":"Rashee Rice","pos":"WR","team":"KC","team25":"KC","mover":false,"rookie":false,"out":null,"injury":null,"tier":2,"usage":68.3,"adp":27.3,"tgt":27.2,"snap":73.2,"bye":"5"},{"pid":"8144","name":"Chris Olave","pos":"WR","team":"NO","team25":"NO","mover":false,"rookie":false,"out":null,"injury":null,"tier":3,"usage":73.0,"adp":30.7,"tgt":28.4,"snap":84.0,"bye":"8"},{"pid":"6801","name":"Tee Higgins","pos":"WR","team":"CIN","team25":"CIN","mover":false,"rookie":false,"out":null,"injury":null,"tier":3,"usage":52.0,"adp":34.3,"tgt":17.4,"snap":80.3,"bye":"6"},{"pid":"7525","name":"DeVonta Smith","pos":"WR","team":"PHI","team25":"PHI","mover":false,"rookie":false,"out":null,"injury":null,"tier":3,"usage":80.0,"adp":36.7,"tgt":24.9,"snap":89.0,"bye":"10"},{"pid":"12526","name":"Tetairoa McMillan","pos":"WR","team":"CAR","team25":"CAR","mover":false,"rookie":false,"out":null,"injury":null,"tier":3,"usage":77.5,"adp":37.8,"tgt":25.5,"snap":87.2,"bye":"5"},{"pid":"11635","name":"Ladd McConkey","pos":"WR","team":"LAC","team25":"LAC","mover":false,"rookie":false,"out":null,"injury":null,"tier":3,"usage":67.6,"adp":38.2,"tgt":22.0,"snap":78.2,"bye":"7"},{"pid":"12514","name":"Emeka Egbuka","pos":"WR","team":"TB","team25":"TB","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":3,"usage":67.2,"adp":39.8,"tgt":23.4,"snap":78.1,"bye":"10"},{"pid":"9997","name":"Zay Flowers","pos":"WR","team":"BAL","team25":"BAL","mover":false,"rookie":false,"out":null,"injury":null,"tier":3,"usage":80.8,"adp":41.6,"tgt":28.0,"snap":86.0,"bye":"13"},{"pid":"8146","name":"Garrett Wilson","pos":"WR","team":"NYJ","team25":"NYJ","mover":false,"rookie":false,"out":null,"injury":null,"tier":4,"usage":76.9,"adp":45.5,"tgt":29.2,"snap":88.9,"bye":"13"},{"pid":"7526","name":"Jaylen Waddle","pos":"WR","team":"DEN","team25":"MIA","mover":true,"rookie":false,"out":null,"injury":null,"tier":4,"usage":62.3,"adp":46.5,"tgt":22.8,"snap":78.1,"bye":"10"},{"pid":"2133","name":"Davante Adams","pos":"WR","team":"LAR","team25":"LAR","mover":false,"rookie":false,"out":null,"injury":null,"tier":4,"usage":52.0,"adp":50.0,"tgt":23.2,"snap":70.3,"bye":"11"},{"pid":"12519","name":"Luther Burden","pos":"WR","team":"CHI","team25":"CHI","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":4,"usage":49.2,"adp":52.4,"tgt":12.0,"snap":38.5,"bye":"10"},{"pid":"5927","name":"Terry McLaurin","pos":"WR","team":"WAS","team25":"WAS","mover":false,"rookie":false,"out":null,"injury":null,"tier":4,"usage":77.1,"adp":55.1,"tgt":24.6,"snap":69.9,"bye":"7"},{"pid":"4983","name":"DJ Moore","pos":"WR","team":"BUF","team25":"CHI","mover":true,"rookie":false,"out":null,"injury":null,"tier":5,"usage":43.6,"adp":57.2,"tgt":15.0,"snap":84.8,"bye":"7"},{"pid":"8148","name":"Jameson Williams","pos":"WR","team":"DET","team25":"DET","mover":false,"rookie":false,"out":null,"injury":null,"tier":5,"usage":46.5,"adp":58.7,"tgt":17.6,"snap":90.0,"bye":"6"},{"pid":"2216","name":"Mike Evans","pos":"WR","team":"SF","team25":"TB","mover":true,"rookie":false,"out":null,"injury":"Questionable","tier":5,"usage":58.1,"adp":61.0,"tgt":23.9,"snap":65.4,"bye":"8"},{"pid":"11620","name":"Rome Odunze","pos":"WR","team":"CHI","team25":"CHI","mover":false,"rookie":false,"out":null,"injury":null,"tier":5,"usage":65.2,"adp":65.9,"tgt":22.4,"snap":81.5,"bye":"10"},{"pid":"13279","name":"Carnell Tate","pos":"WR","team":"TEN","team25":null,"mover":false,"rookie":true,"out":null,"injury":null,"tier":5,"usage":45.1,"adp":66.1,"tgt":null,"snap":null,"bye":"9"},{"pid":"8167","name":"Christian Watson","pos":"WR","team":"GB","team25":"GB","mover":false,"rookie":false,"out":null,"injury":null,"tier":5,"usage":52.2,"adp":69.3,"tgt":18.8,"snap":67.5,"bye":"11"},{"pid":"11631","name":"Brian Thomas","pos":"WR","team":"JAX","team25":"JAX","mover":false,"rookie":false,"out":null,"injury":null,"tier":6,"usage":47.6,"adp":72.0,"tgt":19.7,"snap":79.0,"bye":"7"},{"pid":"5846","name":"DK Metcalf","pos":"WR","team":"PIT","team25":"PIT","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":6,"usage":56.3,"adp":74.8,"tgt":22.5,"snap":87.2,"bye":"9"},{"pid":"11628","name":"Marvin Harrison","pos":"WR","team":"ARI","team25":"ARI","mover":false,"rookie":false,"out":null,"injury":null,"tier":6,"usage":33.6,"adp":75.9,"tgt":16.0,"snap":71.8,"bye":"14"},{"pid":"9487","name":"Parker Washington","pos":"WR","team":"JAX","team25":"JAX","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":6,"usage":52.5,"adp":76.3,"tgt":18.0,"snap":61.2,"bye":"7"},{"pid":"5045","name":"Courtland Sutton","pos":"WR","team":"DEN","team25":"DEN","mover":false,"rookie":false,"out":null,"injury":null,"tier":6,"usage":47.1,"adp":80.8,"tgt":20.3,"snap":85.9,"bye":"10"},{"pid":"10232","name":"Michael Wilson","pos":"WR","team":"ARI","team25":"ARI","mover":false,"rookie":false,"out":null,"injury":null,"tier":6,"usage":33.6,"adp":83.1,"tgt":19.5,"snap":81.0,"bye":"14"},{"pid":"13281","name":"Jordyn Tyson","pos":"WR","team":"NO","team25":null,"mover":false,"rookie":true,"out":null,"injury":"Doubtful","tier":7,"usage":8.3,"adp":86.5,"tgt":null,"snap":null,"bye":"8"},{"pid":"13294","name":"Makai Lemon","pos":"WR","team":"PHI","team25":null,"mover":false,"rookie":true,"out":null,"injury":null,"tier":7,"usage":52.3,"adp":87.5,"tgt":null,"snap":null,"bye":"10"},{"pid":"4037","name":"Chris Godwin","pos":"WR","team":"TB","team25":"TB","mover":false,"rookie":false,"out":null,"injury":null,"tier":7,"usage":41.8,"adp":95.3,"tgt":17.7,"snap":70.7,"bye":"10"},{"pid":"8142","name":"Alec Pierce","pos":"WR","team":"IND","team25":"IND","mover":false,"rookie":false,"out":null,"injury":"PUP","tier":8,"usage":47.5,"adp":101.9,"tgt":19.0,"snap":87.4,"bye":"13"},{"pid":"6819","name":"Michael Pittman","pos":"WR","team":"PIT","team25":"IND","mover":true,"rookie":false,"out":null,"injury":"Questionable","tier":8,"usage":51.2,"adp":102.7,"tgt":22.1,"snap":85.4,"bye":"9"},{"pid":"9756","name":"Jordan Addison","pos":"WR","team":"MIN","team25":"MIN","mover":false,"rookie":false,"out":null,"injury":null,"tier":8,"usage":56.1,"adp":104.3,"tgt":20.5,"snap":84.6,"bye":"6"},{"pid":"9500","name":"Josh Downs","pos":"WR","team":"IND","team25":"IND","mover":false,"rookie":false,"out":null,"injury":null,"tier":8,"usage":41.6,"adp":107.0,"tgt":18.6,"snap":58.4,"bye":"13"},{"pid":"5947","name":"Jakobi Meyers","pos":"WR","team":"JAX","team25":"JAX","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":8,"usage":44.5,"adp":110.8,"tgt":20.9,"snap":85.2,"bye":"7"},{"pid":"9754","name":"Quentin Johnston","pos":"WR","team":"LAC","team25":"LAC","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":8,"usage":45.0,"adp":111.2,"tgt":20.2,"snap":76.8,"bye":"7"},{"pid":"2449","name":"Stefon Diggs","pos":"WR","team":"WAS","team25":"NE","mover":true,"rookie":false,"out":null,"injury":null,"tier":9,"usage":49.7,"adp":113.6,"tgt":20.7,"snap":54.1,"bye":"7"},{"pid":"10222","name":"Jayden Reed","pos":"WR","team":"GB","team25":"GB","mover":false,"rookie":false,"out":null,"injury":null,"tier":9,"usage":41.5,"adp":115.6,"tgt":10.7,"snap":45.5,"bye":"11"},{"pid":"8126","name":"Wan'Dale Robinson","pos":"WR","team":"TEN","team25":"NYG","mover":true,"rookie":false,"out":null,"injury":null,"tier":9,"usage":59.1,"adp":116.8,"tgt":32.5,"snap":90.8,"bye":"9"},{"pid":"13298","name":"KC Concepcion","pos":"WR","team":"CLE","team25":null,"mover":false,"rookie":true,"out":null,"injury":null,"tier":9,"usage":38.9,"adp":122.3,"tgt":null,"snap":null,"bye":"11"},{"pid":"12501","name":"Matthew Golden","pos":"WR","team":"GB","team25":"GB","mover":false,"rookie":false,"out":null,"injury":null,"tier":10,"usage":26.3,"adp":128.8,"tgt":10.7,"snap":49.9,"bye":"11"},{"pid":"8121","name":"Romeo Doubs","pos":"WR","team":"NE","team25":"GB","mover":true,"rookie":false,"out":null,"injury":null,"tier":10,"usage":39.1,"adp":132.2,"tgt":18.1,"snap":78.0,"bye":"11"},{"pid":"5872","name":"Deebo Samuel","pos":"WR","team":"SF","team25":"WAS","mover":true,"rookie":false,"out":null,"injury":null,"tier":10,"usage":37.0,"adp":138.2,"tgt":25.3,"snap":72.3,"bye":"8"},{"pid":"11624","name":"Xavier Worthy","pos":"WR","team":"KC","team25":"KC","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":10,"usage":22.8,"adp":139.1,"tgt":14.5,"snap":70.3,"bye":"5"},{"pid":"8134","name":"Khalil Shakir","pos":"WR","team":"BUF","team25":"BUF","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":10,"usage":47.7,"adp":139.6,"tgt":21.9,"snap":60.1,"bye":"7"},{"pid":"11646","name":"Jalen Coker","pos":"WR","team":"CAR","team25":"CAR","mover":false,"rookie":false,"out":null,"injury":null,"tier":11,"usage":37.6,"adp":144.4,"tgt":13.9,"snap":67.7,"bye":"5"},{"pid":"8676","name":"Rashid Shaheed","pos":"WR","team":"SEA","team25":"SEA","mover":false,"rookie":false,"out":null,"injury":null,"tier":11,"usage":23.6,"adp":146.2,"tgt":18.2,"snap":60.7,"bye":"11"},{"pid":"13417","name":"De'Zhaun Stribling","pos":"WR","team":"SF","team25":null,"mover":false,"rookie":true,"out":null,"injury":"Questionable","tier":12,"usage":13.6,"adp":156.0,"tgt":null,"snap":null,"bye":"8"},{"pid":"13293","name":"Ja'Kobi Lane","pos":"WR","team":"BAL","team25":null,"mover":false,"rookie":true,"out":null,"injury":null,"tier":12,"usage":15.9,"adp":157.6,"tgt":null,"snap":null,"bye":"13"},{"pid":"13346","name":"Denzel Boston","pos":"WR","team":"CLE","team25":null,"mover":false,"rookie":true,"out":null,"injury":null,"tier":12,"usage":26.1,"adp":165.6,"tgt":null,"snap":null,"bye":"11"},{"pid":"12530","name":"Travis Hunter","pos":"WR","team":"JAX","team25":"JAX","mover":false,"rookie":false,"out":null,"injury":null,"tier":12,"usage":15.0,"adp":166.8,"tgt":19.5,"snap":66.7,"bye":"7"},{"pid":"13413","name":"Cyrus Allen","pos":"WR","team":"KC","team25":null,"mover":false,"rookie":true,"out":null,"injury":null,"tier":13,"usage":4.9,"adp":173.6,"tgt":null,"snap":null,"bye":"5"},{"pid":"11610","name":"Malik Washington","pos":"WR","team":"MIA","team25":"MIA","mover":false,"rookie":false,"out":null,"injury":null,"tier":15,"usage":15.6,"adp":200.7,"tgt":13.9,"snap":56.4,"bye":"6"},{"pid":"8180","name":"Jalen Nailor","pos":"WR","team":"LV","team25":"MIN","mover":true,"rookie":false,"out":null,"injury":null,"tier":14,"usage":16.1,"adp":183.8,"tgt":11.3,"snap":64.6,"bye":"13"},{"pid":"11618","name":"Jalen McMillan","pos":"WR","team":"TB","team25":"TB","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":15,"usage":16.3,"adp":209.1,"tgt":11.7,"snap":51.7,"bye":"10"},{"pid":"13276","name":"Omar Cooper","pos":"WR","team":"NYJ","team25":null,"mover":false,"rookie":true,"out":null,"injury":null,"tier":14,"usage":23.5,"adp":188.6,"tgt":null,"snap":null,"bye":"13"},{"pid":"10213","name":"Tre Tucker","pos":"WR","team":"LV","team25":"LV","mover":false,"rookie":false,"out":null,"injury":null,"tier":15,"usage":24.7,"adp":202.8,"tgt":18.1,"snap":94.6,"bye":"13"},{"pid":"8130","name":"Trey McBride","pos":"TE","team":"ARI","team25":"ARI","mover":false,"rookie":false,"out":null,"injury":null,"tier":2,"usage":87.8,"adp":20.2,"tgt":26.2,"snap":91.1,"bye":"14"},{"pid":"11604","name":"Brock Bowers","pos":"TE","team":"LV","team25":"LV","mover":false,"rookie":false,"out":null,"injury":null,"tier":2,"usage":94.1,"adp":23.0,"tgt":24.0,"snap":85.5,"bye":"13"},{"pid":"12517","name":"Colston Loveland","pos":"TE","team":"CHI","team25":"CHI","mover":false,"rookie":false,"out":null,"injury":null,"tier":3,"usage":76.8,"adp":40.2,"tgt":15.3,"snap":63.1,"bye":"10"},{"pid":"12518","name":"Tyler Warren","pos":"TE","team":"IND","team25":"IND","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":4,"usage":82.1,"adp":47.7,"tgt":22.3,"snap":84.0,"bye":"13"},{"pid":"10859","name":"Sam LaPorta","pos":"TE","team":"DET","team25":"DET","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":5,"usage":66.9,"adp":59.6,"tgt":16.0,"snap":90.4,"bye":"6"},{"pid":"9484","name":"Tucker Kraft","pos":"TE","team":"GB","team25":"GB","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":5,"usage":75.6,"adp":62.2,"tgt":18.8,"snap":86.1,"bye":"11"},{"pid":"12506","name":"Harold Fannin","pos":"TE","team":"CLE","team25":"CLE","mover":false,"rookie":false,"out":null,"injury":null,"tier":5,"usage":77.5,"adp":68.8,"tgt":20.4,"snap":76.2,"bye":"11"},{"pid":"7553","name":"Kyle Pitts","pos":"TE","team":"ATL","team25":"ATL","mover":false,"rookie":false,"out":null,"injury":null,"tier":5,"usage":75.5,"adp":69.4,"tgt":21.7,"snap":87.4,"bye":"11"},{"pid":"10236","name":"Dalton Kincaid","pos":"TE","team":"BUF","team25":"BUF","mover":false,"rookie":false,"out":null,"injury":null,"tier":7,"usage":55.7,"adp":89.2,"tgt":15.1,"snap":40.1,"bye":"7"},{"pid":"4217","name":"George Kittle","pos":"TE","team":"SF","team25":"SF","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":7,"usage":61.1,"adp":90.3,"tgt":18.6,"snap":79.8,"bye":"8"},{"pid":"1466","name":"Travis Kelce","pos":"TE","team":"KC","team25":"KC","mover":false,"rookie":false,"out":null,"injury":null,"tier":7,"usage":61.8,"adp":92.4,"tgt":17.7,"snap":81.1,"bye":"5"},{"pid":"8110","name":"Jake Ferguson","pos":"TE","team":"DAL","team25":"DAL","mover":false,"rookie":false,"out":null,"injury":null,"tier":7,"usage":49.1,"adp":97.1,"tgt":17.0,"snap":66.6,"bye":"14"},{"pid":"8131","name":"Isaiah Likely","pos":"TE","team":"NYG","team25":"BAL","mover":true,"rookie":false,"out":null,"injury":null,"tier":8,"usage":49.5,"adp":108.9,"tgt":10.4,"snap":57.8,"bye":"8"},{"pid":"5022","name":"Dallas Goedert","pos":"TE","team":"PHI","team25":"PHI","mover":false,"rookie":false,"out":null,"injury":null,"tier":9,"usage":60.2,"adp":123.3,"tgt":20.5,"snap":84.8,"bye":"10"},{"pid":"12493","name":"Oronde Gadsden","pos":"TE","team":"LAC","team25":"LAC","mover":false,"rookie":false,"out":null,"injury":null,"tier":9,"usage":49.1,"adp":125.2,"tgt":15.3,"snap":62.7,"bye":"7"},{"pid":"5012","name":"Mark Andrews","pos":"TE","team":"BAL","team25":"BAL","mover":false,"rookie":false,"out":null,"injury":null,"tier":10,"usage":65.4,"adp":129.2,"tgt":16.6,"snap":62.3,"bye":"13"},{"pid":"3214","name":"Hunter Henry","pos":"TE","team":"NE","team25":"NE","mover":false,"rookie":false,"out":null,"injury":null,"tier":10,"usage":58.7,"adp":135.1,"tgt":17.7,"snap":80.7,"bye":"11"},{"pid":"13330","name":"Kenyon Sadiq","pos":"TE","team":"NYJ","team25":null,"mover":false,"rookie":true,"out":null,"injury":"Questionable","tier":11,"usage":20.1,"adp":150.8,"tgt":null,"snap":null,"bye":"13"},{"pid":"9480","name":"Brenton Strange","pos":"TE","team":"JAX","team25":"JAX","mover":false,"rookie":false,"out":null,"injury":null,"tier":11,"usage":56.4,"adp":152.8,"tgt":15.2,"snap":76.5,"bye":"7"},{"pid":"5844","name":"T.J. Hockenson","pos":"TE","team":"MIN","team25":"MIN","mover":false,"rookie":false,"out":null,"injury":null,"tier":12,"usage":59.3,"adp":164.6,"tgt":16.0,"snap":78.5,"bye":"6"},{"pid":"11603","name":"AJ Barner","pos":"TE","team":"SEA","team25":"SEA","mover":false,"rookie":false,"out":null,"injury":null,"tier":14,"usage":41.8,"adp":184.8,"tgt":14.3,"snap":77.7,"bye":"11"},{"pid":"8210","name":"Chig Okonkwo","pos":"TE","team":"WAS","team25":"TEN","mover":true,"rookie":false,"out":null,"injury":null,"tier":14,"usage":50.2,"adp":186.1,"tgt":14.6,"snap":62.2,"bye":"7"},{"pid":"7002","name":"Juwan Johnson","pos":"TE","team":"NO","team25":"NO","mover":false,"rookie":false,"out":null,"injury":null,"tier":14,"usage":44.2,"adp":187.1,"tgt":17.5,"snap":75.7,"bye":"8"},{"pid":"5001","name":"Dalton Schultz","pos":"TE","team":"HOU","team25":"HOU","mover":false,"rookie":false,"out":null,"injury":null,"tier":14,"usage":51.1,"adp":193.9,"tgt":18.2,"snap":72.3,"bye":"8"},{"pid":"4033","name":"David Njoku","pos":"TE","team":"LAC","team25":"CLE","mover":true,"rookie":false,"out":null,"injury":null,"tier":15,"usage":12.3,"adp":206.8,"tgt":12.2,"snap":64.3,"bye":"7"},{"pid":"12487","name":"Terrance Ferguson","pos":"TE","team":"LAR","team25":"LAR","mover":false,"rookie":false,"out":null,"injury":null,"tier":15,"usage":14.6,"adp":207.7,"tgt":5.1,"snap":38.7,"bye":"11"},{"pid":"12498","name":"Mason Taylor","pos":"TE","team":"NYJ","team25":"NYJ","mover":false,"rookie":false,"out":null,"injury":null,"tier":16,"usage":34.4,"adp":224.3,"tgt":17.3,"snap":81.3},{"pid":"8172","name":"Greg Dulcich","pos":"TE","team":"MIA","team25":"MIA","mover":false,"rookie":false,"out":null,"injury":null,"tier":16,"usage":23.7,"adp":229.7,"tgt":12.0,"snap":40.7,"bye":"6"},{"pid":"11597","name":"Theo Johnson","pos":"TE","team":"NYG","team25":"NYG","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":16,"usage":37.5,"adp":232.2,"tgt":18.3,"snap":86.5},{"pid":"12502","name":"Gunnar Helm","pos":"TE","team":"TEN","team25":"TEN","mover":false,"rookie":false,"out":null,"injury":null,"tier":16,"usage":27.4,"adp":233.1,"tgt":10.8,"snap":53.2},{"pid":"8111","name":"Cade Otton","pos":"TE","team":"TB","team25":"TB","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":16,"usage":35.4,"adp":236.7,"tgt":15.8,"snap":93.2},{"pid":"13349","name":"Eli Stowers","pos":"TE","team":"PHI","team25":null,"mover":false,"rookie":true,"out":null,"injury":"Questionable","tier":16,"usage":13.3,"adp":238.9,"tgt":null,"snap":null},{"pid":"7600","name":"Pat Freiermuth","pos":"TE","team":"PIT","team25":"PIT","mover":false,"rookie":false,"out":null,"injury":null,"tier":16,"usage":30.8,"adp":239.9,"tgt":10.8,"snap":49.2,"bye":"9"},{"pid":"6865","name":"Colby Parkinson","pos":"TE","team":"LAR","team25":"LAR","mover":false,"rookie":false,"out":null,"injury":null,"tier":16,"usage":13.5,"adp":251.4,"tgt":10.6,"snap":59.0},{"pid":"9221","name":"Jahmyr Gibbs","pos":"RB","team":"DET","team25":"DET","mover":false,"rookie":false,"out":null,"injury":null,"tier":1,"usage":91.2,"adp":1.7,"tgt":16.3,"snap":66.8,"bye":"6","dep":1},{"pid":"9509","name":"Bijan Robinson","pos":"RB","team":"ATL","team25":"ATL","mover":false,"rookie":false,"out":null,"injury":null,"tier":1,"usage":96.9,"adp":2.8,"tgt":18.9,"snap":78.1,"bye":"11","dep":1},{"pid":"4034","name":"Christian McCaffrey","pos":"RB","team":"SF","team25":"SF","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":1,"usage":97.6,"adp":5.7,"tgt":22.5,"snap":83.0,"bye":"8","dep":1},{"pid":"6813","name":"Jonathan Taylor","pos":"RB","team":"IND","team25":"IND","mover":false,"rookie":false,"out":null,"injury":null,"tier":1,"usage":70.4,"adp":7.0,"tgt":11.0,"snap":84.3,"bye":"13","dep":1},{"pid":"8138","name":"James Cook","pos":"RB","team":"BUF","team25":"BUF","mover":false,"rookie":false,"out":null,"injury":null,"tier":1,"usage":61.7,"adp":10.3,"tgt":8.7,"snap":60.3,"bye":"7","dep":1},{"pid":"9226","name":"De'Von Achane","pos":"RB","team":"MIA","team25":"MIA","mover":false,"rookie":false,"out":null,"injury":null,"tier":1,"usage":90.5,"adp":12.7,"tgt":19.4,"snap":75.2,"bye":"6","dep":1},{"pid":"4866","name":"Saquon Barkley","pos":"RB","team":"PHI","team25":"PHI","mover":false,"rookie":false,"out":null,"injury":null,"tier":1,"usage":79.8,"adp":13.5,"tgt":11.7,"snap":78.2,"bye":"10","dep":1},{"pid":"12527","name":"Ashton Jeanty","pos":"RB","team":"LV","team25":"LV","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":1,"usage":81.4,"adp":13.9,"tgt":14.4,"snap":76.4,"bye":"13","dep":1},{"pid":"12507","name":"Omarion Hampton","pos":"RB","team":"LAC","team25":"LAC","mover":false,"rookie":false,"out":null,"injury":null,"tier":2,"usage":82.4,"adp":15.5,"tgt":12.9,"snap":63.4,"bye":"7","dep":1},{"pid":"9224","name":"Chase Brown","pos":"RB","team":"CIN","team25":"CIN","mover":false,"rookie":false,"out":null,"injury":null,"tier":2,"usage":86.2,"adp":16.4,"tgt":13.8,"snap":67.1,"bye":"6","dep":1},{"pid":"8151","name":"Kenneth Walker","pos":"RB","team":"KC","team25":"SEA","mover":true,"rookie":false,"out":null,"injury":null,"tier":2,"usage":56.5,"adp":19.9,"tgt":7.5,"snap":46.8,"bye":"5","dep":1},{"pid":"3198","name":"Derrick Henry","pos":"RB","team":"BAL","team25":"BAL","mover":false,"rookie":false,"out":null,"injury":null,"tier":2,"usage":34.4,"adp":20.8,"tgt":5.0,"snap":53.9,"bye":"13","dep":1},{"pid":"13287","name":"Jeremiyah Love","pos":"RB","team":"ARI","team25":null,"mover":false,"rookie":true,"out":null,"injury":"Questionable","tier":2,"usage":74.6,"adp":26.7,"tgt":null,"snap":null,"bye":"14","dep":1},{"pid":"8150","name":"Kyren Williams","pos":"RB","team":"LAR","team25":"LAR","mover":false,"rookie":false,"out":null,"injury":null,"tier":3,"usage":55.1,"adp":29.0,"tgt":8.4,"snap":68.4,"bye":"11","dep":1},{"pid":"5850","name":"Josh Jacobs","pos":"RB","team":"GB","team25":"GB","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":3,"usage":60.9,"adp":31.5,"tgt":10.0,"snap":59.3,"bye":"11","dep":1},{"pid":"8155","name":"Breece Hall","pos":"RB","team":"NYJ","team25":"NYJ","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":3,"usage":80.2,"adp":33.0,"tgt":10.4,"snap":64.1,"bye":"13","dep":1},{"pid":"7588","name":"Javonte Williams","pos":"RB","team":"DAL","team25":"DAL","mover":false,"rookie":false,"out":null,"injury":null,"tier":3,"usage":54.2,"adp":34.9,"tgt":9.0,"snap":68.0,"bye":"14","dep":1},{"pid":"11584","name":"Bucky Irving","pos":"RB","team":"TB","team25":"TB","mover":false,"rookie":false,"out":null,"injury":null,"tier":3,"usage":72.2,"adp":41.6,"tgt":11.0,"snap":61.5,"bye":"10","dep":1},{"pid":"12481","name":"Cam Skattebo","pos":"RB","team":"NYG","team25":"NYG","mover":false,"rookie":false,"out":null,"injury":null,"tier":4,"usage":78.4,"adp":43.4,"tgt":14.8,"snap":54.1,"bye":"8","dep":1},{"pid":"7543","name":"Travis Etienne","pos":"RB","team":"NO","team25":"JAX","mover":true,"rookie":false,"out":null,"injury":null,"tier":4,"usage":62.9,"adp":44.9,"tgt":9.3,"snap":60.3,"bye":"8","dep":1},{"pid":"5892","name":"David Montgomery","pos":"RB","team":"HOU","team25":"DET","mover":true,"rookie":false,"out":null,"injury":null,"tier":4,"usage":40.4,"adp":48.1,"tgt":5.0,"snap":36.7,"bye":"8","dep":1},{"pid":"12529","name":"TreVeyon Henderson","pos":"RB","team":"NE","team25":"NE","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":4,"usage":51.2,"adp":53.3,"tgt":8.5,"snap":46.1,"bye":"11","dep":1},{"pid":"12512","name":"Quinshon Judkins","pos":"RB","team":"CLE","team25":"CLE","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":4,"usage":47.7,"adp":54.7,"tgt":7.3,"snap":50.1,"bye":"11","dep":1},{"pid":"6790","name":"D'Andre Swift","pos":"RB","team":"CHI","team25":"CHI","mover":false,"rookie":false,"out":null,"injury":null,"tier":4,"usage":62.2,"adp":55.0,"tgt":9.0,"snap":57.8,"bye":"10","dep":1},{"pid":"12490","name":"Bhayshul Tuten","pos":"RB","team":"JAX","team25":"JAX","mover":false,"rookie":false,"out":null,"injury":null,"tier":5,"usage":37.1,"adp":62.4,"tgt":2.8,"snap":20.9,"bye":"7","dep":1},{"pid":"13286","name":"Jadarian Price","pos":"RB","team":"SEA","team25":null,"mover":false,"rookie":true,"out":null,"injury":null,"tier":5,"usage":32.4,"adp":67.3,"tgt":null,"snap":null,"bye":"11","dep":1},{"pid":"8228","name":"Jaylen Warren","pos":"RB","team":"PIT","team25":"PIT","mover":false,"rookie":false,"out":null,"injury":null,"tier":6,"usage":62.6,"adp":73.1,"tgt":9.6,"snap":51.1,"bye":"9","dep":1},{"pid":"7594","name":"Chuba Hubbard","pos":"RB","team":"CAR","team25":"CAR","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":6,"usage":42.9,"adp":76.6,"tgt":9.2,"snap":46.8,"bye":"5","dep":1},{"pid":"12489","name":"RJ Harvey","pos":"RB","team":"DEN","team25":"DEN","mover":false,"rookie":false,"out":null,"injury":null,"tier":6,"usage":61.0,"adp":79.7,"tgt":9.5,"snap":41.4,"bye":"10","dep":1},{"pid":"7611","name":"Rhamondre Stevenson","pos":"RB","team":"NE","team25":"NE","mover":false,"rookie":false,"out":null,"injury":null,"tier":6,"usage":52.2,"adp":81.3,"tgt":9.1,"snap":60.2,"bye":"11","dep":2},{"pid":"5967","name":"Tony Pollard","pos":"RB","team":"TEN","team25":"TEN","mover":false,"rookie":false,"out":null,"injury":null,"tier":6,"usage":43.3,"adp":83.5,"tgt":7.6,"snap":62.2,"bye":"9","dep":1},{"pid":"7021","name":"Rico Dowdle","pos":"RB","team":"PIT","team25":"CAR","mover":true,"rookie":false,"out":null,"injury":null,"tier":7,"usage":66.3,"adp":85.0,"tgt":10.5,"snap":55.7,"bye":"9","dep":2},{"pid":"6806","name":"J.K. Dobbins","pos":"RB","team":"DEN","team25":"DEN","mover":false,"rookie":false,"out":null,"injury":null,"tier":7,"usage":31.9,"adp":94.9,"tgt":3.9,"snap":50.8,"bye":"10","dep":2},{"pid":"12534","name":"Kyle Monangai","pos":"RB","team":"CHI","team25":"CHI","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":8,"usage":35.8,"adp":99.0,"tgt":5.3,"snap":41.4,"bye":"10","dep":2},{"pid":"11586","name":"Blake Corum","pos":"RB","team":"LAR","team25":"LAR","mover":false,"rookie":false,"out":null,"injury":null,"tier":8,"usage":13.2,"adp":103.1,"tgt":2.3,"snap":29.0,"bye":"11","dep":2},{"pid":"11583","name":"Jonathon Brooks","pos":"RB","team":"CAR","team25":null,"mover":false,"rookie":false,"out":null,"injury":null,"tier":8,"usage":63.4,"adp":109.3,"tgt":null,"snap":null,"bye":"5","dep":2},{"pid":"7567","name":"Kenny Gainwell","pos":"RB","team":"TB","team25":"PIT","mover":true,"rookie":false,"out":null,"injury":null,"tier":8,"usage":82.4,"adp":111.6,"tgt":17.1,"snap":48.8,"bye":"10","dep":2},{"pid":"12533","name":"Jacory Croskey-Merritt","pos":"RB","team":"WAS","team25":"WAS","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":9,"usage":30.1,"adp":114.4,"tgt":3.1,"snap":38.7,"bye":"7","dep":1},{"pid":"8408","name":"Jordan Mason","pos":"RB","team":"MIN","team25":"MIN","mover":false,"rookie":false,"out":null,"injury":null,"tier":9,"usage":28.7,"adp":117.7,"tgt":3.6,"snap":43.9,"bye":"6","dep":1},{"pid":"4199","name":"Aaron Jones","pos":"RB","team":"MIN","team25":"MIN","mover":false,"rookie":false,"out":null,"injury":null,"tier":9,"usage":66.0,"adp":124.6,"tgt":12.4,"snap":55.1,"bye":"6","dep":2},{"pid":"8136","name":"Rachaad White","pos":"RB","team":"WAS","team25":"TB","mover":true,"rookie":false,"out":null,"injury":"Questionable","tier":10,"usage":61.5,"adp":131.3,"tgt":8.3,"snap":50.6,"bye":"7","dep":2},{"pid":"10219","name":"Chris Rodriguez","pos":"RB","team":"JAX","team25":"WAS","mover":true,"rookie":false,"out":null,"injury":null,"tier":11,"usage":18.8,"adp":142.6,"tgt":1.3,"snap":30.5,"bye":"7","dep":2},{"pid":"9753","name":"Zach Charbonnet","pos":"RB","team":"SEA","team25":"SEA","mover":false,"rookie":false,"out":null,"injury":"PUP","tier":11,"usage":25.8,"adp":145.0,"tgt":5.3,"snap":48.6,"bye":"11","dep":2},{"pid":"8132","name":"Tyler Allgeier","pos":"RB","team":"ARI","team25":"ATL","mover":true,"rookie":false,"out":null,"injury":null,"tier":11,"usage":9.2,"adp":146.0,"tgt":2.9,"snap":29.5,"bye":"14","dep":2},{"pid":"8154","name":"Brian Robinson","pos":"RB","team":"ATL","team25":"SF","mover":true,"rookie":false,"out":null,"injury":null,"tier":11,"usage":13.2,"adp":153.2,"tgt":2.1,"snap":16.9,"bye":"11","dep":2},{"pid":"4035","name":"Alvin Kamara","pos":"RB","team":"NO","team25":"NO","mover":false,"rookie":false,"out":null,"injury":"Questionable","tier":12,"usage":45.1,"adp":160.7,"tgt":10.3,"snap":63.0,"bye":"8","dep":2},{"pid":"12474","name":"Woody Marks","pos":"RB","team":"HOU","team25":"HOU","mover":false,"rookie":false,"out":null,"injury":null,"tier":12,"usage":36.0,"adp":162.6,"tgt":6.6,"snap":52.6,"bye":"8","dep":2},{"pid":"11655","name":"Tyrone Tracy","pos":"RB","team":"NYG","team25":"NYG","mover":false,"rookie":false,"out":null,"injury":null,"tier":12,"usage":49.5,"adp":163.3,"tgt":11.9,"snap":53.7,"bye":"8","dep":2},{"pid":"13345","name":"Jonah Coleman","pos":"RB","team":"DEN","team25":null,"mover":false,"rookie":true,"out":null,"injury":null,"tier":12,"usage":14.6,"adp":167.6,"tgt":null,"snap":null,"bye":"10","dep":3},{"pid":"9508","name":"Tyjae Spears","pos":"RB","team":"TEN","team25":"TEN","mover":false,"rookie":false,"out":null,"injury":null,"tier":12,"usage":60.7,"adp":167.8,"tgt":12.1,"snap":46.0,"bye":"9","dep":2},{"pid":"13305","name":"Mike Washington","pos":"RB","team":"LV","team25":null,"mover":false,"rookie":true,"out":null,"injury":null,"tier":13,"usage":25.8,"adp":172.7,"tgt":null,"snap":null,"dep":2},{"pid":"9225","name":"Tank Bigsby","pos":"RB","team":"PHI","team25":"PHI","mover":false,"rookie":false,"out":null,"injury":null,"tier":13,"usage":9.1,"adp":177.5,"tgt":0.9,"snap":10.2,"bye":"10","dep":2},{"pid":"9511","name":"Keaton Mitchell","pos":"RB","team":"LAC","team25":"BAL","mover":true,"rookie":false,"out":null,"injury":null,"tier":13,"usage":24.0,"adp":180.0,"tgt":3.7,"snap":16.8,"bye":"7","dep":2},{"pid":"8205","name":"Isiah Pacheco","pos":"RB","team":"DET","team25":"KC","mover":true,"rookie":false,"out":null,"injury":"Questionable","tier":14,"usage":16.8,"adp":185.2,"tgt":5.6,"snap":51.5,"bye":"6","dep":2},{"pid":"12469","name":"Dylan Sampson","pos":"RB","team":"CLE","team25":"CLE","mover":false,"rookie":false,"out":null,"injury":null,"tier":14,"usage":41.5,"adp":188.2,"tgt":8.1,"snap":24.6,"bye":"11","dep":2},{"pid":"13337","name":"Emmett Johnson","pos":"RB","team":"KC","team25":null,"mover":false,"rookie":true,"out":null,"injury":null,"tier":14,"usage":18.2,"adp":195.2,"tgt":null,"snap":null,"bye":"5","dep":2},{"pid":"11581","name":"MarShawn Lloyd","pos":"RB","team":"GB","team25":null,"mover":false,"rookie":false,"out":null,"injury":null,"tier":15,"usage":3.1,"adp":199.8,"tgt":null,"snap":null,"bye":"11","dep":2},{"pid":"11576","name":"Braelon Allen","pos":"RB","team":"NYJ","team25":"NYJ","mover":false,"rookie":false,"out":null,"injury":null,"tier":15,"usage":16.7,"adp":208.2,"tgt":2.6,"snap":23.9,"bye":"13","dep":2},{"pid":"13288","name":"Nicholas Singleton","pos":"RB","team":"TEN","team25":null,"mover":false,"rookie":true,"out":null,"injury":null,"tier":15,"usage":20.4,"adp":209.1,"tgt":null,"snap":null,"dep":3},{"pid":"11575","name":"Ray Davis","pos":"RB","team":"BUF","team25":"BUF","mover":false,"rookie":false,"out":null,"injury":null,"tier":16,"usage":13.2,"adp":228.9,"tgt":2.8,"snap":11.4,"bye":"7","dep":2},{"pid":"1479","name":"Keenan Allen","pos":"WR","team":"IND","team25":"LAC","mover":true,"rookie":false,"out":null,"injury":null,"tier":15,"usage":25.3,"adp":197.7,"tgt":23.8,"snap":55.2,"bye":"13"},{"pid":"11627","name":"Troy Franklin","pos":"WR","team":"DEN","team25":"DEN","mover":false,"rookie":false,"out":null,"injury":null,"tier":16,"usage":11.4,"adp":241.8,"tgt":17.0,"snap":59.7,"bye":"10"},{"pid":"7049","name":"Jauan Jennings","pos":"WR","team":"MIN","team25":"SF","mover":true,"rookie":false,"out":null,"injury":null,"tier":11,"usage":25.1,"adp":146.3,"tgt":17.8,"snap":81.8,"bye":"6"},{"pid":"5848","name":"Marquise Brown","pos":"WR","team":"PHI","team25":"KC","mover":true,"rookie":false,"out":null,"injury":null,"tier":null,"usage":7.2,"adp":null,"tgt":12.9,"snap":50.5},{"pid":"12484","name":"Jayden Higgins","pos":"WR","team":"HOU","team25":"HOU","mover":false,"rookie":false,"out":"ACL \u2014 out for 2026","injury":"IR","tier":13,"usage":null,"adp":172.2,"tgt":11.7,"snap":56.4},{"pid":"4066","name":"Evan Engram","pos":"TE","team":"DEN","team25":"DEN","mover":false,"rookie":false,"out":null,"injury":null,"tier":null,"usage":10.6,"adp":999.0,"tgt":13.2,"snap":42.3},{"pid":"9506","name":"Sean Tucker","pos":"RB","team":"TB","team25":"TB","mover":false,"rookie":false,"out":null,"injury":null,"tier":null,"usage":null,"adp":null,"tgt":null,"snap":15.6,"dep":3},{"pid":"11643","name":"Jaylen Wright","pos":"RB","team":"MIA","team25":"MIA","mover":false,"rookie":false,"out":null,"injury":null,"tier":null,"usage":null,"adp":null,"tgt":null,"snap":14.3,"dep":2},{"pid":"12471","name":"DJ Giddens","pos":"RB","team":"IND","team25":"IND","mover":false,"rookie":false,"out":null,"injury":null,"tier":null,"usage":null,"adp":null,"tgt":null,"snap":9.9,"dep":2},{"pid":"9757","name":"Kendre Miller","pos":"RB","team":"NO","team25":"NO","mover":false,"rookie":false,"out":null,"injury":null,"tier":null,"usage":null,"adp":null,"tgt":null,"snap":24.4,"dep":3},{"pid":"13347","name":"Demond Claiborne","pos":"RB","team":"MIN","team25":null,"mover":false,"rookie":true,"out":null,"injury":null,"tier":null,"usage":null,"adp":null,"tgt":null,"snap":null,"dep":3},{"pid":"11199","name":"Emari Demercado","pos":"RB","team":"KC","team25":"ARI","mover":true,"rookie":false,"out":null,"injury":null,"tier":null,"usage":null,"adp":null,"tgt":null,"snap":23.2,"bye":"5","dep":3},{"pid":"12457","name":"Jaydon Blue","pos":"RB","team":"DAL","team25":"DAL","mover":false,"rookie":false,"out":null,"injury":null,"tier":null,"usage":null,"adp":null,"tgt":null,"snap":17.6,"bye":"14","dep":2},{"pid":"11571","name":"Isaiah Davis","pos":"RB","team":"NYJ","team25":"NYJ","mover":false,"rookie":false,"out":null,"injury":null,"tier":null,"usage":null,"adp":null,"tgt":null,"snap":28.5,"dep":3},{"pid":"11729","name":"Sione Vaki","pos":"RB","team":"DET","team25":"DET","mover":false,"rookie":false,"out":null,"injury":null,"tier":null,"usage":null,"adp":null,"tgt":null,"snap":0.2,"dep":3},{"pid":"5995","name":"Justice Hill","pos":"RB","team":"BAL","team25":"BAL","mover":false,"rookie":false,"out":null,"injury":null,"tier":null,"usage":null,"adp":null,"tgt":null,"snap":37.1,"bye":"13","dep":2},{"pid":"11589","name":"Trey Benson","pos":"RB","team":"ARI","team25":"ARI","mover":false,"rookie":false,"out":null,"injury":"IR","tier":null,"usage":null,"adp":null,"tgt":null,"snap":48.4,"dep":3},{"pid":"13414","name":"Kaelon Black","pos":"RB","team":"SF","team25":null,"mover":false,"rookie":true,"out":null,"injury":null,"tier":null,"usage":null,"adp":null,"tgt":null,"snap":null,"bye":"8","dep":2},{"pid":"12544","name":"LeQuint Allen Jr.","pos":"RB","team":"JAX","team25":"JAX","mover":false,"rookie":false,"out":null,"injury":null,"tier":null,"usage":null,"adp":null,"tgt":null,"snap":22.8,"dep":3},{"pid":"4984","name":"Josh Allen","pos":"QB","team":"BUF","team25":"BUF","mover":false,"rookie":false,"out":null,"injury":null,"tier":3,"usage":null,"adp":34.2,"tgt":null,"snap":null,"bye":"7"},{"pid":"11564","name":"Drake Maye","pos":"QB","team":"NE","team25":"NE","mover":false,"rookie":false,"out":null,"injury":null,"tier":4,"usage":null,"adp":51.8,"tgt":null,"snap":null,"bye":"11"},{"pid":"4881","name":"Lamar Jackson","pos":"QB","team":"BAL","team25":"BAL","mover":false,"rookie":false,"out":null,"injury":null,"tier":4,"usage":null,"adp":56.9,"tgt":null,"snap":null,"bye":"13"},{"pid":"6770","name":"Joe Burrow","pos":"QB","team":"CIN","team25":"CIN","mover":false,"rookie":false,"out":null,"injury":null,"tier":5,"usage":null,"adp":57.9,"tgt":null,"snap":null,"bye":"6"},{"pid":"3294","name":"Dak Prescott","pos":"QB","team":"DAL","team25":"DAL","mover":false,"rookie":false,"out":null,"injury":null,"tier":5,"usage":null,"adp":65.6,"tgt":null,"snap":null,"bye":"14"},{"pid":"11566","name":"Jayden Daniels","pos":"QB","team":"WAS","team25":"WAS","mover":false,"rookie":false,"out":null,"injury":null,"tier":6,"usage":null,"adp":72.2,"tgt":null,"snap":null,"bye":"7"},{"pid":"421","name":"Matthew Stafford","pos":"QB","team":"LAR","team25":"LAR","mover":false,"rookie":false,"out":null,"injury":null,"tier":6,"usage":null,"adp":76.9,"tgt":null,"snap":null,"bye":"11"},{"pid":"6904","name":"Jalen Hurts","pos":"QB","team":"PHI","team25":"PHI","mover":false,"rookie":false,"out":null,"injury":null,"tier":6,"usage":null,"adp":78.8,"tgt":null,"snap":null,"bye":"10"},{"pid":"8183","name":"Brock Purdy","pos":"QB","team":"SF","team25":"SF","mover":false,"rookie":false,"out":null,"injury":null,"tier":7,"usage":null,"adp":88.0,"tgt":null,"snap":null,"bye":"8"},{"pid":"11560","name":"Caleb Williams","pos":"QB","team":"CHI","team25":"CHI","mover":false,"rookie":false,"out":null,"injury":null,"tier":7,"usage":null,"adp":90.6,"tgt":null,"snap":null,"bye":"10"},{"pid":"7523","name":"Trevor Lawrence","pos":"QB","team":"JAX","team25":"JAX","mover":false,"rookie":false,"out":null,"injury":null,"tier":7,"usage":null,"adp":91.2,"tgt":null,"snap":null,"bye":"7"},{"pid":"3163","name":"Jared Goff","pos":"QB","team":"DET","team25":"DET","mover":false,"rookie":false,"out":null,"injury":null,"tier":8,"usage":null,"adp":99.8,"tgt":null,"snap":null,"bye":"6"},{"pid":"4046","name":"Patrick Mahomes","pos":"QB","team":"KC","team25":"KC","mover":false,"rookie":false,"out":null,"injury":null,"tier":8,"usage":null,"adp":102.7,"tgt":null,"snap":null,"bye":"5"},{"pid":"6797","name":"Justin Herbert","pos":"QB","team":"LAC","team25":"LAC","mover":false,"rookie":false,"out":null,"injury":null,"tier":8,"usage":null,"adp":105.9,"tgt":null,"snap":null,"bye":"7"},{"pid":"11563","name":"Bo Nix","pos":"QB","team":"DEN","team25":"DEN","mover":false,"rookie":false,"out":null,"injury":null,"tier":8,"usage":null,"adp":111.9,"tgt":null,"snap":null,"bye":"10"},{"pid":"12508","name":"Jaxson Dart","pos":"QB","team":"NYG","team25":"NYG","mover":false,"rookie":false,"out":null,"injury":null,"tier":9,"usage":null,"adp":116.4,"tgt":null,"snap":null,"bye":"8"},{"pid":"4892","name":"Baker Mayfield","pos":"QB","team":"TB","team25":"TB","mover":false,"rookie":false,"out":null,"injury":null,"tier":10,"usage":null,"adp":129.2,"tgt":null,"snap":null,"bye":"10"},{"pid":"5849","name":"Kyler Murray","pos":"QB","team":"MIN","team25":"MIN","mover":false,"rookie":false,"out":null,"injury":null,"tier":10,"usage":null,"adp":133.3,"tgt":null,"snap":null,"bye":"6"},{"pid":"12545","name":"Tyler Shough","pos":"QB","team":"NO","team25":"NO","mover":false,"rookie":false,"out":null,"injury":null,"tier":10,"usage":null,"adp":134.0,"tgt":null,"snap":null,"bye":"8"},{"pid":"4943","name":"Sam Darnold","pos":"QB","team":"SEA","team25":"SEA","mover":false,"rookie":false,"out":null,"injury":null,"tier":10,"usage":null,"adp":142.4,"tgt":null,"snap":null,"bye":"11"},{"pid":"6804","name":"Jordan Love","pos":"QB","team":"GB","team25":"GB","mover":false,"rookie":false,"out":null,"injury":null,"tier":11,"usage":null,"adp":146.8,"tgt":null,"snap":null,"bye":"11"},{"pid":"9999","name":"Will Levis","pos":"QB","team":"TEN","team25":"TEN","mover":false,"rookie":false,"out":null,"injury":null,"tier":11,"usage":null,"adp":149.6,"tgt":null,"snap":null,"bye":"9"},{"pid":"9758","name":"C.J. Stroud","pos":"QB","team":"HOU","team25":"HOU","mover":false,"rookie":false,"out":null,"injury":null,"tier":12,"usage":null,"adp":158.1,"tgt":null,"snap":null,"bye":"8"},{"pid":"5870","name":"Daniel Jones","pos":"QB","team":"IND","team25":"IND","mover":false,"rookie":false,"out":null,"injury":null,"tier":12,"usage":null,"adp":160.7,"tgt":null,"snap":null,"bye":"13"},{"pid":"9228","name":"Bryce Young","pos":"QB","team":"CAR","team25":"CAR","mover":false,"rookie":false,"out":null,"injury":null,"tier":12,"usage":null,"adp":161.9,"tgt":null,"snap":null,"bye":"5"},{"pid":"8161","name":"Malik Willis","pos":"QB","team":"MIA","team25":"MIA","mover":false,"rookie":false,"out":null,"injury":null,"tier":12,"usage":null,"adp":162.8,"tgt":null,"snap":null,"bye":"6"},{"pid":"13269","name":"Fernando Mendoza","pos":"QB","team":"LV","team25":"LV","mover":false,"rookie":false,"out":null,"injury":null,"tier":12,"usage":null,"adp":164.0,"tgt":null,"snap":null,"bye":"13"},{"pid":"12522","name":"Cam Ward","pos":"QB","team":"TEN","team25":"TEN","mover":false,"rookie":false,"out":null,"injury":null,"tier":12,"usage":null,"adp":168.4,"tgt":null,"snap":null,"bye":"9"},{"pid":"3257","name":"Jacoby Brissett","pos":"QB","team":"ARI","team25":"ARI","mover":false,"rookie":false,"out":null,"injury":null,"tier":12,"usage":null,"adp":168.6,"tgt":null,"snap":null,"bye":"14"},{"pid":"96","name":"Aaron Rodgers","pos":"QB","team":"PIT","team25":"PIT","mover":false,"rookie":false,"out":null,"injury":null,"tier":12,"usage":null,"adp":169.2,"tgt":null,"snap":null,"bye":"9"},{"pid":"1373","name":"Geno Smith","pos":"QB","team":"NYJ","team25":"NYJ","mover":false,"rookie":false,"out":null,"injury":null,"tier":13,"usage":null,"adp":180.2,"tgt":null,"snap":null,"bye":"13"}];
+const HANDCUFF={"12509":{"cuffs":[{"name":"Ladd McConkey","pid":"11635","pos":"WR","role":"are the named end-of-d"}]},"13287":{"backs":[{"name":"Tyler Allgeier","pid":"8132","pos":"RB","role":"retains only a possibl"},{"name":"Trey Benson","pid":"11589","pos":"RB","role":null}]},"6801":{"cuffs":[{"name":"Ja'Marr Chase","pid":"7564","pos":"WR","role":null}]},"9754":{"cuffs":[{"name":"Ladd McConkey","pid":"11635","pos":"WR","role":"and **Tre' Harris** ar"}]},"9506":{"cuffs":[{"name":"Bucky Irving","pid":"11584","pos":"RB","role":null}]},"11584":{"backs":[{"name":"Kenny Gainwell","pid":"7567","pos":"RB","role":null},{"name":"Sean Tucker","pid":"9506","pos":"RB","role":null}]},"7049":{"cuffs":[{"name":"Justin Jefferson or Jordan Addison","pid":null,"pos":"WR","role":"~15% target-share cap"}]},"12544":{"cuffs":[{"name":"Bhayshul Tuten","pid":"12490","pos":"RB","role":null}]},"8150":{"backs":[{"name":"Blake Corum","pid":"11586","pos":"RB","role":": Corum leads a guest'"}]},"7611":{"backs":[{"name":"TreVeyon Henderson","pid":"12529","pos":"RB","role":null}],"cuffs":[{"name":"TreVeyon Henderson","pid":"12529","pos":"RB","role":null}]},"11586":{"cuffs":[{"name":"Kyren Williams","pid":"8150","pos":"RB","role":": Corum leads a guest'"}]},"6790":{"backs":[{"name":"Kyle Monangai","pid":"12534","pos":"RB","role":null}]},"5967":{"backs":[{"name":"Tyjae Spears","pid":"9508","pos":"RB","role":null},{"name":"Nicholas Singleton","pid":"13288","pos":"RB","role":null}],"cuffs":[{"name":"Tyjae Spears","pid":"9508","pos":"RB","role":null}]},"11655":{"cuffs":[{"name":"Cam Skattebo","pid":"12481","pos":"RB","role":null}]},"12469":{"cuffs":[{"name":"Quinshon Judkins","pid":"12512","pos":"RB","role":": Sampson already owns"}]},"9484":{"cuffs":[{"name":"Christian Watson","pid":"8167","pos":"WR","role":"absorbs targets"}]},"5995":{"cuffs":[{"name":"Derrick Henry","pid":"3198","pos":"RB","role":null}]},"13294":{"backs":[{"name":"Dontayvion Wicks","pid":"9486","pos":"WR","role":"holds the role"}]},"12493":{"backs":[{"name":"David Njoku","pid":"4033","pos":"TE","role":"fallback"}]},"10222":{"cuffs":[{"name":"Christian Watson","pid":"8167","pos":"WR","role":"gets outside snaps on"}]},"11575":{"cuffs":[{"name":"James Cook","pid":"8138","pos":"RB","role":null}]},"8136":{"cuffs":[{"name":"Jacory Croskey-Merritt","pid":"12533","pos":"RB","role":null}]},"11199":{"cuffs":[{"name":"Kenneth Walker","pid":"8151","pos":"RB","role":null}]},"11581":{"cuffs":[{"name":"Josh Jacobs","pid":"5850","pos":"RB","role":null}]},"5850":{"backs":[{"name":"MarShawn Lloyd","pid":"11581","pos":"RB","role":null}]},"13286":{"backs":[{"name":"Zach Charbonnet","pid":"9753","pos":"RB","role":null}]},"8155":{"backs":[{"name":"Braelon Allen","pid":"11576","pos":"RB","role":null},{"name":"Isaiah Davis","pid":"11571","pos":"RB","role":null}]},"13414":{"cuffs":[{"name":"Christian McCaffrey","pid":"4034","pos":"RB","role":null}]},"13330":{"cuffs":[{"name":"Garrett Wilson","pid":"8146","pos":"WR","role":"are the three named ta"}]},"8408":{"backs":[{"name":"Aaron Jones","pid":"4199","pos":"RB","role":null},{"name":"Demond Claiborne","pid":"13347","pos":"RB","role":null}]},"7564":{"backs":[{"name":"Tee Higgins","pid":"6801","pos":"WR","role":null}]},"12471":{"cuffs":[{"name":"Jonathan Taylor","pid":"6813","pos":"RB","role":null}]},"9486":{"cuffs":[{"name":"Makai Lemon","pid":"13294","pos":"WR","role":"holds the role"}]},"13305":{"cuffs":[{"name":"Ashton Jeanty","pid":"12527","pos":"RB","role":null}]},"13274":{"cuffs":[{"name":"Michael Pittman Jr. or DK Metcalf","pid":null,"pos":"WR","role":"named beneficiary"}]},"4034":{"backs":[{"name":"Kaelon Black","pid":"13414","pos":"RB","role":null}]},"12529":{"backs":[{"name":"Rhamondre Stevenson","pid":"7611","pos":"RB","role":null}],"cuffs":[{"name":"Rhamondre Stevenson","pid":"7611","pos":"RB","role":null}]},"13276":{"cuffs":[{"name":"Adonai Mitchell","pid":"11625","pos":"WR","role":"takes it"},{"name":"Garrett Wilson","pid":"8146","pos":"WR","role":null}]},"12514":{"backs":[{"name":"Chris Godwin Jr.","pid":"4037","pos":"WR","role":"Tampa WR1"}],"cuffs":[{"name":"Ted Hurst","pid":null,"pos":"WR","role":"fixed at Z"}]},"13279":{"backs":[{"name":"Wan'Dale Robinson","pid":"8126","pos":"WR","role":"retains more of the sl"}]},"10219":{"backs":[{"name":"Bhayshul Tuten","pid":"12490","pos":"RB","role":"first"}],"cuffs":[{"name":"Bhayshul Tuten","pid":"12490","pos":"RB","role":null}]},"9509":{"backs":[{"name":"Brian Robinson","pid":"8154","pos":"RB","role":null}]},"9225":{"cuffs":[{"name":"Saquon Barkley","pid":"4866","pos":"RB","role":null}]},"4035":{"cuffs":[{"name":"Travis Etienne","pid":"7543","pos":"RB","role":"per Nez this is largel"}]},"9753":{"cuffs":[{"name":"Jadarian Price","pid":"13286","pos":"RB","role":null}]},"13288":{"cuffs":[{"name":"Tony Pollard","pid":"5967","pos":"RB","role":null}]},"9511":{"cuffs":[{"name":"Omarion Hampton","pid":"12507","pos":"RB","role":"only other Chargers ba"}]},"12527":{"backs":[{"name":"Mike Washington","pid":"13305","pos":"RB","role":null}]},"11576":{"cuffs":[{"name":"Breece Hall","pid":"8155","pos":"RB","role":null}]},"12457":{"cuffs":[{"name":"Javonte Williams","pid":"7588","pos":"RB","role":": Nez frames Blue as a"}]},"5892":{"backs":[{"name":"Woody Marks","pid":"12474","pos":"RB","role":null}]},"7543":{"backs":[{"name":"Alvin Kamara","pid":"4035","pos":"RB","role":"per Nez this is largel"},{"name":"Kendre Miller","pid":"9757","pos":"RB","role":null}]},"3198":{"backs":[{"name":"Justice Hill","pid":"5995","pos":"RB","role":null}]},"11729":{"cuffs":[{"name":"Jahmyr Gibbs","pid":"9221","pos":"RB","role":null}]},"8132":{"cuffs":[{"name":"Jeremiyah Love","pid":"13287","pos":"RB","role":"retains only a possibl"}]},"7588":{"backs":[{"name":"Jaydon Blue","pid":"12457","pos":"RB","role":": Nez frames Blue as a"}]},"13345":{"cuffs":[{"name":"RJ Harvey","pid":"12489","pos":"RB","role":null},{"name":"J.K. Dobbins","pid":"6806","pos":"RB","role":"directly"}]},"12533":{"backs":[{"name":"Rachaad White","pid":"8136","pos":"RB","role":null}]},"7567":{"cuffs":[{"name":"Bucky Irving","pid":"11584","pos":"RB","role":null}]},"4037":{"cuffs":[{"name":"Emeka Egbuka","pid":"12514","pos":"WR","role":"Tampa WR1"}]},"11583":{"cuffs":[{"name":"Chuba Hubbard","pid":"7594","pos":"RB","role":null}]},"11635":{"backs":[{"name":"Quentin Johnston","pid":"9754","pos":"WR","role":"and **Tre' Harris** ar"},{"name":"Tre Harris","pid":"12509","pos":"WR","role":"are the named end-of-d"}]},"12474":{"cuffs":[{"name":"David Montgomery","pid":"5892","pos":"RB","role":null}]},"9226":{"backs":[{"name":"Jaylen Wright","pid":"11643","pos":"RB","role":null}]},"11618":{"cuffs":[{"name":"Ted Hurst","pid":null,"pos":"WR","role":"absorbs it"}]},"8144":{"backs":[{"name":"Jordyn Tyson","pid":"13281","pos":"WR","role":"beneficiary"}]},"12489":{"backs":[{"name":"J.K. Dobbins","pid":"6806","pos":"RB","role":null},{"name":"Jonah Coleman","pid":"13345","pos":"RB","role":null}],"cuffs":[{"name":"J.K. Dobbins","pid":"6806","pos":"RB","role":"at 60% snaps"}]},"12512":{"backs":[{"name":"Dylan Sampson","pid":"12469","pos":"RB","role":": Sampson already owns"}]},"8228":{"backs":[{"name":"Rico Dowdle","pid":"7021","pos":"RB","role":null}]},"13347":{"cuffs":[{"name":"Jordan Mason","pid":"8408","pos":"RB","role":null}]},"7594":{"backs":[{"name":"Jonathon Brooks","pid":"11583","pos":"RB","role":null}]},"13281":{"cuffs":[{"name":"Chris Olave","pid":"8144","pos":"WR","role":"beneficiary"}]},"11628":{"backs":[{"name":"Michael Wilson","pid":"10232","pos":"WR","role":null}]},"8205":{"cuffs":[{"name":"Jahmyr Gibbs","pid":"9221","pos":"RB","role":null}]},"8146":{"backs":[{"name":"Omar Cooper","pid":"13276","pos":"WR","role":null},{"name":"Adonai Mitchell","pid":"11625","pos":"WR","role":"and **Kenyon Sadiq** a"},{"name":"Kenyon Sadiq","pid":"13330","pos":"TE","role":"are the three named ta"}]},"12507":{"backs":[{"name":"Keaton Mitchell","pid":"9511","pos":"RB","role":"only other Chargers ba"},{"name":"Kimani Vidal","pid":"11647","pos":"RB","role":"third body"}]},"8154":{"cuffs":[{"name":"Bijan Robinson","pid":"9509","pos":"RB","role":null}]},"7021":{"cuffs":[{"name":"Jaylen Warren","pid":"8228","pos":"RB","role":null}]},"12481":{"backs":[{"name":"Tyrone Tracy","pid":"11655","pos":"RB","role":null}]},"8167":{"backs":[{"name":"Jayden Reed","pid":"10222","pos":"WR","role":"gets outside snaps on"},{"name":"Tucker Kraft","pid":"9484","pos":"TE","role":"absorbs targets"}]},"9221":{"backs":[{"name":"Isiah Pacheco","pid":"8205","pos":"RB","role":null},{"name":"Sione Vaki","pid":"11729","pos":"RB","role":null}]},"9508":{"backs":[{"name":"Tony Pollard","pid":"5967","pos":"RB","role":null}],"cuffs":[{"name":"Tony Pollard","pid":"5967","pos":"RB","role":null}]},"8126":{"cuffs":[{"name":"Carnell Tate","pid":"13279","pos":"WR","role":"retains more of the sl"}]},"9757":{"cuffs":[{"name":"Travis Etienne","pid":"7543","pos":"RB","role":null}]},"6813":{"backs":[{"name":"DJ Giddens","pid":"12471","pos":"RB","role":null}]},"12534":{"cuffs":[{"name":"D'Andre Swift","pid":"6790","pos":"RB","role":null}]},"4199":{"cuffs":[{"name":"Jordan Mason","pid":"8408","pos":"RB","role":null}]},"13337":{"cuffs":[{"name":"Kenneth Walker","pid":"8151","pos":"RB","role":null}]},"11625":{"backs":[{"name":"Omar Cooper","pid":"13276","pos":"WR","role":"takes it"}],"cuffs":[{"name":"Garrett Wilson","pid":"8146","pos":"WR","role":"and **Kenyon Sadiq** a"}]},"11643":{"cuffs":[{"name":"De'Von Achane","pid":"9226","pos":"RB","role":null}]},"12490":{"backs":[{"name":"Chris Rodriguez","pid":"10219","pos":"RB","role":null},{"name":"LeQuint Allen Jr.","pid":"12544","pos":"RB","role":null}],"cuffs":[{"name":"Chris Rodriguez Jr.","pid":"10219","pos":"RB","role":"first"}]},"4866":{"backs":[{"name":"Tank Bigsby","pid":"9225","pos":"RB","role":null}]},"11571":{"cuffs":[{"name":"Breece Hall","pid":"8155","pos":"RB","role":null}]},"11589":{"cuffs":[{"name":"Jeremiyah Love","pid":"13287","pos":"RB","role":null}]},"6806":{"backs":[{"name":"Jonah Coleman","pid":"13345","pos":"RB","role":"directly"},{"name":"RJ Harvey","pid":"12489","pos":"RB","role":"at 60% snaps"}],"cuffs":[{"name":"RJ Harvey","pid":"12489","pos":"RB","role":null}]},"10232":{"cuffs":[{"name":"Marvin Harrison Jr.","pid":"11628","pos":"WR","role":null}]},"8138":{"backs":[{"name":"Ray Davis","pid":"11575","pos":"RB","role":null}]},"8151":{"backs":[{"name":"Emmett Johnson","pid":"13337","pos":"RB","role":null},{"name":"Emari Demercado","pid":"11199","pos":"RB","role":null}]},"4033":{"cuffs":[{"name":"Oronde Gadsden II","pid":"12493","pos":"TE","role":"fallback"}]},"11647":{"cuffs":[{"name":"Omarion Hampton","pid":"12507","pos":"RB","role":"third body"}]}};
+ const DATA_NOTE='usage 2026-08-25 · QB/bye/handcuffs 2026-08-31';
+const ONBOARD=new Set(PLAYERS.map(p=>p.pid));
+const BYID={};PLAYERS.forEach(p=>BYID[p.pid]=p);
+
+/* ---------------- config: the draft id is the only trusted input --------- */
+const DEFAULT_DRAFT='1389373222666932225';   /* Joop Squad 2026 */
+const MY_USER='1135437440241680384';         /* KurtChillingsworth */
+const API='https://api.sleeper.app/v1/';
+
+let POS='NEED',Q='',HIDE=true,HCONLY=false,CMP=[];
+const LIVE={on:false,status:null,order:null,mySlot:null,lastPicked:0,ticks:0,fails:0,timer:null,ms:0,
+            feed:{},feedMine:{},feedCount:0,offBoard:0,myOffBoard:[],leagueId:null};
+let USERS=null,ROSTERS=null;   /* league users/rosters — names + hoarder math */
+let MANUAL={};
+
+/* ---------------- Phase 2: needs, handcuffs, compare, hoarder ----------- */
+const NEED_BASE={QB:1,RB:2,WR:2,TE:1};          /* Joop starters; K/DEF are off-board */
+const SKILL_REQ=6;                               /* 2RB+2WR+1TE+1FLEX */
+/* QBs (and the few deep fliers with no projected role) carry no usage score,
+   so they sink below the usage-ranked skill players and order by ADP among
+   themselves — predictable, and the QB filter ranks them by ADP too. No faked
+   usage number: the cell still prints "–". */
+const val=p=>(p.usage==null?-1:p.usage);
+const hcOf=p=>HANDCUFF[p.pid]||{};
+function myRoster(){const cnt={QB:0,RB:0,WR:0,TE:0};const got=PLAYERS.filter(p=>mine(p));
+ got.forEach(p=>{if(cnt[p.pos]!=null)cnt[p.pos]++;});return {got,cnt};}
+function needSet(){const cnt=myRoster().cnt;const need=new Set();
+ ['QB','RB','WR','TE'].forEach(pos=>{if((cnt[pos]||0)<NEED_BASE[pos])need.add(pos);});
+ if((cnt.RB||0)+(cnt.WR||0)+(cnt.TE||0)<SKILL_REQ){need.add('RB');need.add('WR');need.add('TE');}
+ return need;}
+/* backups of MY drafted RBs that are still on the board */
+function myHandcuffTargets(){const out=[];
+ PLAYERS.filter(p=>mine(p)&&p.pos==='RB').forEach(s=>{(hcOf(s).backs||[]).forEach(b=>{
+  const bp=BYID[b.pid];if(bp&&!taken(bp))out.push({backup:bp,starter:s,role:b.role});});});
+ return out;}
+const myHcPids=()=>new Set(myHandcuffTargets().map(x=>x.backup.pid));
+/* value of the best starter a backup sits behind — ranks the depth lens */
+function starterVal(p){let mx=-1;(hcOf(p).cuffs||[]).forEach(c=>{const s=BYID[c.pid];if(s){const v=val(s);if(v>mx)mx=v;}});return mx;}
+/* live RBs-per-team from the pick feed (the hoarder signal) */
+function rbCountsByTeam(){const c={};Object.keys(LIVE.feed).forEach(pid=>{const inf=LIVE.feed[pid],p=BYID[pid];
+ if(p&&p.pos==='RB'&&inf.by&&inf.by!=='you')c[inf.by]=(c[inf.by]||0)+1;});return c;}
+
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const jget=u=>fetch(u,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json();});
+const scls=v=>v==null?'s-x':(v>=70?'s-hi':(v>=45?'s-mid':'s-lo'));
+function draftId(){const m=String(document.getElementById('did').value||'').match(/\d{10,}/);return m?m[0]:DEFAULT_DRAFT;}
+function loadManual(){try{MANUAL=JSON.parse(localStorage.getItem('dr_manual_'+draftId())||'{}');}catch(e){MANUAL={};}}
+function saveManual(){try{localStorage.setItem('dr_manual_'+draftId(),JSON.stringify(MANUAL));}catch(e){}}
+const taken=p=>LIVE.feed[p.pid]||MANUAL[p.pid]||null;
+const mine=p=>!!((LIVE.feed[p.pid]&&LIVE.feed[p.pid].mine)||(MANUAL[p.pid]&&MANUAL[p.pid].mine));
+
+/* ---------------- the live Sleeper feed ---------------------------------- */
+function setBadge(txt,cls){const el=document.getElementById('live');el.innerHTML=txt;el.className=cls||'';}
+function paintCtl(){const b=document.getElementById('golive');b.textContent=LIVE.on?'Stop':'Go live';b.classList.toggle('stop',LIVE.on);}
+function startPoll(ms){stopPoll();LIVE.ms=ms;LIVE.timer=setInterval(tick,ms);}
+function stopPoll(){if(LIVE.timer){clearInterval(LIVE.timer);LIVE.timer=null;}LIVE.ms=0;}
+function resetFeed(){LIVE.status=null;LIVE.order=null;LIVE.mySlot=null;LIVE.lastPicked=0;LIVE.ticks=0;LIVE.fails=0;
+ LIVE.feed={};LIVE.feedMine={};LIVE.feedCount=0;LIVE.offBoard=0;LIVE.myOffBoard=[];}
+
+async function goLive(){
+ LIVE.on=true;paintCtl();resetFeed();loadManual();
+ try{localStorage.setItem('dr_did',draftId());}catch(e){}
+ setBadge('connecting&hellip;','');
+ try{
+  const d=await jget(API+'draft/'+draftId());
+  if(!d||!d.draft_id)throw new Error('no draft');
+  await route(d,true);
+ }catch(e){
+  /* offline or bad id — board still works, says so honestly */
+  LIVE.on=false;paintCtl();setBadge('offline board','err');render();
+ }
+}
+function stopLive(){LIVE.on=false;stopPoll();setBadge('stopped','');paintCtl();render();}
+
+async function tick(){
+ LIVE.ticks++;
+ try{
+  const d=await jget(API+'draft/'+draftId());
+  if(LIVE.fails>=3&&LIVE.ms===15000)startPoll(3000);  /* recovered from backoff */
+  LIVE.fails=0;
+  await route(d,false);
+ }catch(e){
+  LIVE.fails++;
+  /* Back off, but never stop and NEVER touch the feed. A failed poll must
+     leave the board exactly as it was. */
+  if(LIVE.fails===3){startPoll(15000);setBadge('reconnecting&hellip;','err');}
+ }
+}
+
+async function route(d,first){
+ const was=LIVE.status;LIVE.status=d.status;
+ if(d.draft_order){LIVE.order=d.draft_order;if(d.draft_order[MY_USER])LIVE.mySlot=d.draft_order[MY_USER];}
+ if(d.league_id&&d.league_id!==LIVE.leagueId){LIVE.leagueId=d.league_id;fetchLeague(d.league_id);}
+ if(d.status==='drafting'||d.status==='paused'){
+  if(LIVE.ms!==3000)startPoll(3000);
+  const moved=d.last_picked&&d.last_picked!==LIVE.lastPicked;
+  if(moved)LIVE.lastPicked=d.last_picked;
+  if(first||moved||LIVE.ticks%5===0||!LIVE.feedCount){try{await pull(first);}catch(e){}}
+  setBadge('&#9679; LIVE'+(LIVE.feedCount?' &middot; pick '+LIVE.feedCount:''),'on');
+  if(first)render();
+ }else if(d.status==='complete'){
+  try{await pull(true);}catch(e){render();}
+  setBadge('draft complete','done');stopPoll();LIVE.on=false;paintCtl();
+ }else{ /* pre_draft: keep watching at 10s; tick() lands here and flips us live */
+  if(LIVE.ms!==10000)startPoll(10000);
+  setBadge('pre-draft &mdash; watching','pre');
+  if(first)render();
+ }
+}
+
+async function pull(force){
+ const picks=await jget(API+'draft/'+draftId()+'/picks');
+ if(!Array.isArray(picks))return;                 /* a weird body never wipes state */
+ if(!force&&picks.length<LIVE.feedCount)return;   /* a short read never un-drafts   */
+ const feed={},feedMine={},myOff=[];let off=0;
+ picks.forEach(pk=>{
+  const isMine=(pk.picked_by===MY_USER)||(!!LIVE.mySlot&&pk.draft_slot===LIVE.mySlot);
+  const id=String(pk.player_id||'');
+  if(id&&ONBOARD.has(id)){
+   const info={no:pk.pick_no,rd:pk.round,mine:isMine,by:byName(pk)};
+   feed[id]=info;if(isMine)feedMine[id]=info;
+  }else{
+   off++;const md=pk.metadata||{};
+   if(isMine)myOff.push(esc(((md.first_name||'')+' '+(md.last_name||'')).trim()+' ('+(md.position||'?')+')'));
+  }
+ });
+ LIVE.feed=feed;LIVE.feedMine=feedMine;LIVE.feedCount=picks.length;LIVE.offBoard=off;LIVE.myOffBoard=myOff;
+ render();
+}
+
+function byName(pk){
+ if(pk.picked_by===MY_USER)return 'you';
+ const u=USERS&&USERS[pk.picked_by];
+ if(u)return u.team||u.name;
+ return pk.draft_slot?('slot '+pk.draft_slot):'';
+}
+async function fetchLeague(lid){
+ try{
+  const [users,rosters]=await Promise.all([jget(API+'league/'+lid+'/users'),jget(API+'league/'+lid+'/rosters')]);
+  if(Array.isArray(users)){USERS={};users.forEach(u=>USERS[u.user_id]={name:u.display_name,team:(u.metadata||{}).team_name||null});}
+  if(Array.isArray(rosters))ROSTERS=rosters;
+  if(LIVE.feedCount)render();   /* names arrived after picks — repaint attribution */
+ }catch(e){/* names are a nicety; the board never depends on them */}
+}
+
+/* ---------------- manual fallback: tap to cross off ---------------------- */
+function tapRow(pid,ev){
+ const fed=LIVE.feed[pid];
+ if(fed)return;                       /* the feed owns it — nothing to hand-fix   */
+ if(MANUAL[pid])delete MANUAL[pid];   /* tap again to undo                        */
+ else MANUAL[pid]={manual:true,mine:!!(ev&&ev.shiftKey)};
+ saveManual();render();
+}
+
+/* ---------------- render ------------------------------------------------- */
+function hcLine(p,myHc){
+ if(p.pos!=='RB')return '';
+ const cu=(hcOf(p).cuffs||[]);
+ if(!cu.length)return '';                      // lead backs stay clean
+ const s=cu[0],role=s.role?' ('+esc(s.role)+')':'';
+ const pri=myHc&&myHc.has(p.pid);
+ return '<span class="hc'+(pri?' pri':'')+'">RB'+(p.dep||2)+' &middot; behind '+esc(s.name)+role+'</span>';
+}
+function rowHTML(p,rk,myHc){
+ const t=taken(p),isMine=mine(p);
+ const cls='row'+(t?' taken':'')+(isMine?' mine':'');
+ let st='';
+ if(t)st='<span class="st'+(isMine?' mine':'')+'">'+(t.no?('P'+t.no+' &middot; R'+t.rd+(t.by?' &middot; '+esc(t.by):'')):'hand-crossed &mdash; tap to undo')+(isMine?' &middot; MINE':'')+'</span>';
+ let bdg='';
+ if(myHc&&myHc.has(p.pid))bdg+='<span class="b bHC" title="Handcuff to one of your RBs">&#9873; YOUR CUFF</span>';
+ if(p.rookie)bdg+='<span class="b bR" title="Rookie — projection-only score">R</span>';
+ if(p.mover)bdg+='<span class="b bM" title="Changed teams: 2025 usage earned with '+esc(p.team25||'')+'">'+esc(p.team25||'')+'&rarr;</span>';
+ if(p.out)bdg+='<span class="b bOUT" title="'+esc(p.out)+'">OUT</span>';
+ const cmpb='<button class="cmp'+(CMP.indexOf(p.pid)>=0?' on':'')+'" onclick="event.stopPropagation();toggleCmp(\''+p.pid+'\')">vs</button>';
+ const u=p.usage, hog=(p.tgt!=null&&p.tgt>=25);
+ return '<div class="'+cls+'" data-pid="'+p.pid+'" onclick="tapRow(\''+p.pid+'\',event)" title="'+(p.injury?esc(p.injury):'')+'">'
+  +'<div class="rk">'+rk+'</div>'
+  +'<div class="pos '+p.pos+'">'+p.pos+'</div>'
+  +'<div class="nm"><b>'+esc(p.name)+'</b><small>'+esc(p.team||'FA')+'</small>'+cmpb+bdg+st+hcLine(p,myHc)+'</div>'
+  +'<div class="num'+(hog?' hog':'')+'">'+(p.tgt==null?'&ndash;':p.tgt.toFixed(1)+'<small>%</small>')+'</div>'
+  +'<div class="num c-snap">'+(p.snap==null?'&ndash;':p.snap.toFixed(0)+'<small>%</small>')+'</div>'
+  +'<div class="num">'+(p.adp==null?'&ndash;':p.adp.toFixed(1))+'</div>'
+  +'<div class="score '+scls(u)+'">'+(p.out?'OUT':(u==null?'&ndash;':u.toFixed(0)))+'</div>'
+  +'</div>';
+}
+function render(){
+ const needs=needSet();
+ let list=PLAYERS.slice();
+ if(HCONLY)list=list.filter(p=>p.pos==='RB'&&(p.dep||1)>=2);
+ else if(POS==='NEED')list=needs.size?list.filter(p=>needs.has(p.pos)):list;
+ else if(POS!=='ALL')list=list.filter(p=>p.pos===POS);
+ if(Q)list=list.filter(p=>(p.name+' '+(p.team||'')).toLowerCase().includes(Q));
+ const shown=HIDE?list.filter(p=>!taken(p)||mine(p)):list;
+ const ranked=HCONLY
+  ? [...shown].sort((a,b)=>(starterVal(b)-starterVal(a))||(val(b)-val(a)))
+  : [...shown].sort((a,b)=>(val(b)-val(a))||((a.adp??999)-(b.adp??999)));
+ const myHc=myHcPids();
+ let h='';ranked.forEach((p,i)=>{h+=rowHTML(p,i+1,myHc);});
+ document.getElementById('board').innerHTML=h||'<div style="color:var(--mut);padding:20px 4px">Nobody matches &mdash; switch off a filter.</div>';
+ const nManual=Object.keys(MANUAL).length;
+ document.getElementById('count').innerHTML=
+  PLAYERS.length+' players &middot; '+DATA_NOTE
+  +(LIVE.feedCount?' &middot; <b>'+Object.keys(LIVE.feed).length+' drafted off this board</b>':'')
+  +(nManual?' &middot; '+nManual+' hand-crossed':'')
+  +(LIVE.offBoard?' &middot; '+LIVE.offBoard+' picks off-board (K/DEF live elsewhere)':'');
+ renderWatch();renderCompare();rosterHTML(needs);
+}
+function rosterHTML(needs){
+ const r=myRoster(),got=r.got,cnt=r.cnt;
+ const el=document.getElementById('roster');
+ if(!got.length&&!LIVE.myOffBoard.length){el.className='';el.innerHTML='';return;}
+ const req={QB:1,RB:2,WR:2,TE:1};
+ const counts=['QB','RB','WR','TE'].map(pos=>pos+' '+(cnt[pos]||0)+'/'+req[pos]).join(' &middot; ');
+ const flex=((cnt.RB||0)+(cnt.WR||0)+(cnt.TE||0))>=SKILL_REQ?'FLEX &check;':'FLEX open';
+ const ns=(needs&&needs.size)?' &middot; need <b>'+[...needs].join('/')+'</b>':' &middot; <b>starters full</b>';
+ let h='<b>MY ROSTER</b> <span class="needline">'+counts+' &middot; '+flex+ns+'</span><br>';
+ got.slice().sort((a,b)=>{const ta=taken(a),tb=taken(b);return((ta&&ta.no)||999)-((tb&&tb.no)||999);})
+  .forEach(p=>{const t=taken(p);h+='<span class="rchip">'+esc(p.name)+' <small>'+p.pos+(t&&t.no?' &middot; P'+t.no:'')+'</small></span>';});
+ LIVE.myOffBoard.forEach(n=>{h+='<span class="rchip" style="border-color:var(--line)">'+n+' <small>off-board</small></span>';});
+ el.className='show';el.innerHTML=h;
+}
+
+/* ---------------- backfield watch (quiet — speaks only when actionable) -- */
+function renderWatch(){
+ const el=document.getElementById('watch');const lines=[];
+ myHandcuffTargets().slice(0,2).forEach(x=>lines.push(['w','&#9873; <b>'+esc(x.backup.name)+'</b> &mdash; your '+esc(x.starter.name)+'&rsquo;s handcuff &mdash; still available']));
+ const rc=rbCountsByTeam();
+ Object.keys(rc).map(t=>[t,rc[t]]).filter(e=>e[1]>=4).sort((a,b)=>b[1]-a[1]).slice(0,1)
+  .forEach(e=>lines.push(['w hoard','&#9888; '+esc(e[0])+' has '+e[1]+' RBs &mdash; backfields cornering']));
+ el.innerHTML=lines.map(l=>'<span class="'+l[0]+'">'+l[1]+'</span>').join('');
+}
+/* ---------------- head-to-head compare (the tool Chris actually uses) ---- */
+function toggleCmp(pid){const i=CMP.indexOf(pid);if(i>=0)CMP.splice(i,1);else if(CMP.length<4)CMP.push(pid);render();}
+function clearCmp(){CMP=[];render();}
+function cmpMetric(label,v,fmt,mx,best){
+ return '<div class="cmprow"><span class="k">'+label+'</span><span class="v'+((v!=null&&best)?' best':'')+'">'+(v==null?'&ndash;':fmt(v))+'</span></div>'
+  +(mx?'<div class="cmpbar"><i style="width:'+(v==null?0:Math.max(3,Math.round(100*v/mx)))+'%"></i></div>':'');
+}
+function renderCompare(){
+ const el=document.getElementById('compare');
+ const ps=CMP.map(pid=>BYID[pid]).filter(Boolean);
+ if(!ps.length){el.className='';el.innerHTML='';return;}
+ const bU=Math.max.apply(0,ps.map(p=>p.usage==null?-1:p.usage));
+ const bT=Math.max.apply(0,ps.map(p=>p.tgt==null?-1:p.tgt));
+ const bS=Math.max.apply(0,ps.map(p=>p.snap==null?-1:p.snap));
+ const bA=Math.min.apply(0,ps.map(p=>p.adp==null?1e9:p.adp));
+ el.className='show';
+ el.innerHTML='<div class="cmphead"><b>Head-to-head</b><button class="clr" onclick="clearCmp()">clear</button></div><div class="cmpwrap">'+
+  ps.map(function(p){
+   const cu=(hcOf(p).cuffs||[]).map(c=>esc(c.name)).join(', ');
+   const bk=(hcOf(p).backs||[]).map(c=>esc(c.name)).slice(0,2).join(', ');
+   return '<div class="cmpcard"><span class="x" onclick="toggleCmp(\''+p.pid+'\')">&times;</span>'+
+    '<h4>'+esc(p.name)+'</h4>'+
+    '<div class="mt"><b class="pos '+p.pos+'" style="padding:0 4px;border-radius:4px">'+p.pos+'</b> '+esc(p.team||'FA')+(p.bye?' &middot; bye '+p.bye:'')+(p.injury?' &middot; '+esc(p.injury):'')+'</div>'+
+    cmpMetric('Usage',p.usage,v=>v.toFixed(0),100,p.usage!=null&&p.usage===bU)+
+    cmpMetric('Tgt %',p.tgt,v=>v.toFixed(1),40,p.tgt!=null&&p.tgt===bT)+
+    cmpMetric('Snap %',p.snap,v=>v.toFixed(0),100,p.snap!=null&&p.snap===bS)+
+    cmpMetric('ADP',p.adp,v=>v.toFixed(1),0,p.adp!=null&&p.adp===bA)+
+    (cu?'<div class="hc">behind '+cu+'</div>':'')+
+    (bk?'<div class="hc">cuff: '+bk+'</div>':'')+
+   '</div>';
+  }).join('')+'</div>';
+}
+/* ---------------- wiring ------------------------------------------------- */
+document.getElementById('golive').onclick=()=>{LIVE.on?stopLive():goLive();};
+document.getElementById('posseg').onclick=e=>{if(e.target.dataset.pos){POS=e.target.dataset.pos;
+ if(HCONLY){HCONLY=false;const hc=document.getElementById('hconly');if(hc)hc.checked=false;}
+ document.querySelectorAll('#posseg button').forEach(b=>b.classList.toggle('on',b.dataset.pos===POS));render();}};
+document.getElementById('q').oninput=e=>{Q=e.target.value.toLowerCase();render();};
+document.getElementById('hidetaken').onchange=e=>{HIDE=e.target.checked;render();};
+document.getElementById('hconly').onchange=e=>{HCONLY=e.target.checked;render();};
+(function init(){
+ let id=DEFAULT_DRAFT;try{id=localStorage.getItem('dr_did')||DEFAULT_DRAFT;}catch(e){}
+ document.getElementById('did').value=id;
+ loadManual();render();
+})();
+</script>
+</body></html>
