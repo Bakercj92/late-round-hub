@@ -1,11 +1,12 @@
 late-round-tracker / dist
 =========================
 
-This folder is the hub. Open index.html, or bookmark a league page directly.
+This folder is the hub. Open index.html (the front door: pick a league), or
+bookmark a page directly.
 
 WHAT UPDATES AND WHAT DOES NOT
   manifest.js + *.main.<hash>.js + *.text.<hash>.js   rewritten every build
-  *.html shells                                        only when the UI changes
+  *.html shells + *.portal.html + index.html           only when the UI changes
 
 So a normal update rewrites the data files and leaves the pages alone. You
 refresh the page. There is nothing to import and no file to drag anywhere.

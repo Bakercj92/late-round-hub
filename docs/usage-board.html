@@ -143,7 +143,7 @@ const CFG = {
 };
 const MY_USER = '1135437440241680384';
 const SLEEPER = 'https://api.sleeper.app/v1/draft/';
-let LG='joop', POS='ALL', Q='', SEL=[], HIDE=false;
+let LG=(new URLSearchParams(location.search).get('lg')==='bk'?'bk':'joop'), POS='ALL', Q='', SEL=[], HIDE=false;
 
 /* ---- live state. FEED comes from Sleeper and is never persisted; MANUAL is
    hand marks only, persisted per-league in localStorage, and a failed or short
@@ -515,5 +515,5 @@ document.getElementById('caveats').innerHTML = `<b>How to read this / caveats</b
 <li><b>Team-changers</b> (purple badge) earned their proven usage elsewhere; scheme arrows (&#9650;/&#9654;/&#9660;) are coarse and nudge projected reception share &plusmn;8%.</li>
 <li>Usage data: Sleeper 2025 actuals + Rotowire 2026 projections pulled 2026-08-25; ADP shown is Sleeper's (adp_ppr / adp_2qb). Team pass volumes corrected for the Flacco CLE&rarr;CIN split and missing backup-QB games; BAL anchored to its verified 422 att. Jayden Higgins is OUT for 2026 (ACL) &mdash; do not draft at his stale ADP.</li>
 <li>This page is data-frozen at build time; the tracker's draft board stays the pick-timing tool. This board answers "who do I take of these two?"</li></ul>`;
-loadManual(); probe();
+document.querySelectorAll('#lgseg button').forEach(b=>b.classList.toggle('on',b.dataset.lg===LG)); loadManual(); probe();
 </script></body></html>

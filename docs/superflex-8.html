@@ -3582,6 +3582,12 @@ async function seasonAutoLoad(){
 
  document.getElementById('load').remove();
  renderTabs();render();
+ /* Deep-link (added 2026-08-31): a portal card may request a specific tab via
+    ?tab=<key>. Honored AFTER the mode's default tab is set; an unknown key is
+    ignored because renderTabs() already guards S.tab against the mode. Purely
+    additive -- no ?tab means behavior identical to before. */
+ try{var _dt=new URLSearchParams(location.search).get('tab');
+  if(_dt&&(TABS[MODE]||[]).concat(MORE[MODE]||[]).some(function(x){return x[0]===_dt;})){S.tab=_dt;renderTabs();render();}}catch(e){}
  liveProbe();       // DRAFT mode: one probe, polls only if the draft is live
  seasonAutoLoad();  // SEASON mode: auto-connect + auto-sync, gated per league
  // Test hook. The suite needs to assert that the hub path and the parachute

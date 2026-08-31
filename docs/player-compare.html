@@ -103,7 +103,7 @@ const BACKFIELDS={"ARI":[{"name":"Jeremiyah Love","role":"Lead","note":"High ank
 const TMAP = {}; TEAMS.forEach(t=>TMAP[t.team]=t);
 
 /* ---- state + accessors (verbatim from 2026-Usage-Board.html) ---- */
-let LG='joop', Q='', SEL=[];
+let LG=(new URLSearchParams(location.search).get('lg')==='bk'?'bk':'joop'), Q='', SEL=[];
 const usage = p => LG==='joop' ? p.usage_joop : p.usage_bk;
 const proven = p => LG==='joop' ? p.proven_joop : p.proven_bk;
 const tier = p => LG==='joop' ? p.tier_joop : p.tier_bk;
@@ -356,5 +356,5 @@ document.getElementById('caveats').innerHTML = `<h4>How to read this</h4><ul>
 <li>Ball Knowers view uses superflex ADP (adp_2qb) and 8-team tiers; Joop uses PPR ADP and 14-team tiers.</li>
 <li>Numbers mirror the <b>2026 Usage Board</b> exactly (same embedded data, pulled 2026-08-25; same scoring code).</li></ul>`;
 
-renderAll();
+document.querySelectorAll('#lgseg button').forEach(b=>b.classList.toggle('on',b.dataset.lg===LG)); renderAll();
 </script></body></html>
