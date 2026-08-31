@@ -128,12 +128,12 @@ footer b{color:var(--ink)}
 <footer>
   <h4>How to read this</h4>
   <ul>
-    <li><b>The order is the robust result.</b> Seats rank 1&rarr;14 monotonically &mdash; no plateau &mdash; and the ranking survives every sensitivity variant (no-usage, flat/steep value curve, your real script: spearman +1.00). Seat 1 is best and seat 14 worst in all of them.</li>
+    <li><b>The order is the robust result.</b> Seats rank 1&rarr;14 monotonically &mdash; no plateau &mdash; and the ranking survives every sensitivity variant (no-usage, flat/steep value curve, your real script: spearman +1.00, bar one 11&harr;12 dead heat inside the noise). Seat 1 is best and seat 14 worst in all of them.</li>
     <li><b>The size of the edge is a range, not a number.</b> Seat 1 over seat 14 &asymp; <b>+6.2% (37 VOR)</b> drafting the way you actually drafted '24&ndash;'25 (the floor) up to <b>+11.7% (72 VOR)</b> drafting best-available perfectly every pick (the ceiling). Reality sits between, likely nearer the floor.</li>
     <li><b>Why it slopes:</b> this year's top-heavy talent under a competent drafter &mdash; not the per-manager opponent modeling. The manager models reproduce the real 2025 draft within ~5 picks at every position/round, supply the neighbor effects, and confirm the ranking holds against real opponents; they don't create the gradient.</li>
     <li><b>Luck range (p25&ndash;p75) is draft-luck only</b> &mdash; who falls to you across 400 sims. Season/player variance is not modeled, and it dwarfs seat choice.</li>
     <li><b>Neighbor effects are second-order and directional</b> (&plusmn;4&ndash;7 VOR &asymp; 1%): a manager who shares your lean sitting just ahead hurts; a QB-hoarder ahead helps. Only 2 of 26 measured estimates are strongly resolved (rrishi45 ahead of seat 3, mountaindew11 ahead of seat 9) &mdash; use as a tiebreaker, not a driver.</li>
-    <li><b>Numbers:</b> slot_results.json, phase 1.5 per-manager engine, N=400/seat (SE &asymp; 1.2&ndash;1.9 VOR), generated 2026-08-31, Reviewer-Auditor PASS. ADP basis FFC 2026-08-25 &mdash; <b>refresh on draft eve (Sept 4&ndash;5) and re-run.</b></li>
+    <li><b>Numbers:</b> slot_results.json, phase 1.5 per-manager engine, N=400/seat (SE &asymp; 1.0&ndash;1.9 VOR), generated 2026-08-31, Reviewer-Auditor PASS. ADP basis FFC 2026-08-25 &mdash; <b>refresh on draft eve (Sept 4&ndash;5) and re-run.</b></li>
   </ul>
 </footer>
 <script>
@@ -145,14 +145,14 @@ const BOARD = {
   tiers:{1:"prime",2:"prime",3:"strong",4:"strong",5:"strong",6:"solid",7:"solid",8:"solid",9:"solid",10:"late",11:"late",12:"late",13:"late",14:"late"},
   tierLabel:{prime:"PRIME",strong:"STRONG",solid:"SOLID",late:"LATE"},
   verdicts:{
-    1:"The clear best seat — Gibbs in 100% of sims and a real gap (≈9 VOR) back to seat 2. Win the claim race, end it here.",
-    2:"Right behind 1 — Gibbs or Bijan is waiting either way, and you're clearly ahead of everything from 3 back.",
+    1:"The clear best seat — Gibbs in 100% of sims and a real gap (7–9 VOR) back to seat 2. Win the claim race, end it here.",
+    2:"Right behind 1 — Gibbs or Bijan is waiting either way. The edge over seats 3–5 is clear at the ceiling but thin (~2 VOR) as you actually draft.",
     3:"Best of the rest — Bijan in half your sims, an elite RB near-locked. The one early seat where who sits ahead is measured to matter (below).",
     4:"Strong — Bijan still falls to you over half the time; Hampton or Barkley meets you in round 2.",
     5:"Strong — the back end of the front-five pocket; realistically within about 1 VOR of seat 4.",
     6:"Solid — the elite-RB near-lock ends here; you pivot to McCaffrey / Chase / JSN with a deep round 2 behind it.",
     7:"Solid — nothing cliffs; about +2.6% over the floor as you draft, +5% at the ceiling.",
-    8:"Solid — the Taylor zone begins: he's the most common card at your pick, and the usage brief fades him (see the plan).",
+    8:"Solid — the Taylor zone begins: he's your script's most common card at this pick, and the usage brief fades him (see the plan).",
     9:"Solid — the measured mid seat: a QB-hoarder just ahead is worth about +6, a WR-first manager ahead about −5.",
     10:"Back half opens — Taylor or Achane at the pick, and your real value shifts to the rounds-4–8 WR pool.",
     11:"Statistical dead heat with seat 12 as you draft (602.8 vs 603.0) — the turn matters more than the seat number.",
@@ -174,7 +174,7 @@ const BOARD = {
     {seats:[3,4,5],
      build:"<b>Bijan or Gibbs still lands in most sims</b> — anchor RB, let <b>Hampton or Barkley</b> meet you in R2 and <b>Collins</b> in R3, then hammer the mid-round WR pool. At seat 3 the measured seating effects below are the real swing.",
      lean:[["Saquon Barkley / Omarion Hampton","your R2 in ~60% of sims combined"],
-           ["Nico Collins","R3 favorite (~40% of sims)"],
+           ["Nico Collins","R3 anchor — 38% at seat 3, easing to ~26% by seat 5"],
            ["Odunze · McLaurin · Pittman","the rds-4–8 usage-backed WR band — the room's blind spot"],
            ["Mark Andrews","near-free TE1 usage rd 8-ish; go a round early here"],
            ["Aaron Jones","RB16 usage at an RB36 price"]],
@@ -206,7 +206,7 @@ const BOARD = {
     {seats:[13,14],
      build:"You draft the <b>turn</b>, not a seat: back-to-back picks pair <b>Chase Brown / Achane</b> with <b>McBride</b> or a falling RB, then double-tap the WR value band at every wheel. Only ~6% off seat 1 the way you actually draft.",
      lean:[["Chase Brown + De'Von Achane","your real turn pair in most sims"],
-           ["Trey McBride","R1/R2 at the wheel in a third of ceiling sims — the elite-TE anchor"],
+           ["Trey McBride","R1/R2 at the wheel in nearly half of ceiling sims (~48%) — the elite-TE anchor"],
            ["DeVonta Smith / Tetairoa McMillan","the R3 wheel band"],
            ["Odunze · Pittman · Addison · Wan'Dale","double-tap this rds-4–8 WR pool"],
            ["Andrews · Hockenson","if you skip early TE, TE1 usage is still near-free"]],
@@ -314,7 +314,7 @@ function renderDetail(){
       <div style="height:7px"></div>
       ${b.avoid.map(([n,w])=>`<div class="ti avoid"><span class="nm2">${n}</span> <span class="why">— ${w}</span></div>`).join("")}
     </div>
-    <div class="note">Adjacent seats inside a tier sit within noise once the gap is under ~4 VOR (SE ≈ 1.2–1.9); the 1→14 slope is the robust part, the exact per-seat sizes are not. Ranges shown are draft-luck only — season variance isn't in these numbers.</div>`;
+    <div class="note">Adjacent seats inside a tier sit within noise once the gap is under ~4 VOR (SE ≈ 1.0–1.9); the 1→14 slope is the robust part, the exact per-seat sizes are not. Ranges shown are draft-luck only — season variance isn't in these numbers.</div>`;
 }
 
 function placeDetail(){
