@@ -700,6 +700,8 @@ body[data-view="cockpit"] .ckbar .ckt{font-size:var(--fs-body);color:var(--muted
 body[data-view="cockpit"] .ckbar .ckt i{font-style:normal}
 body[data-view="cockpit"] .ckbar .ckt b{color:var(--text);font-weight:var(--w-bold);margin-left:3px}
 body[data-view="cockpit"] .ckbar .clock{margin-left:auto;font-size:var(--fs-answer);font-weight:var(--w-bold);font-variant-numeric:tabular-nums}
+body[data-view="cockpit"] .ckbar.onclock{background:var(--positive-fill);border-color:var(--positive);--muted:var(--text-dim)}
+body[data-view="cockpit"] .ckbar .ckclkhint{font-size:11px;color:var(--muted);white-space:nowrap;align-self:center}
 body[data-view="cockpit"] .ckqe{position:relative;margin-bottom:var(--s3)}
 body[data-view="cockpit"] .ckqe input{width:100%;background:var(--raised-hi);border:1px solid var(--line-strong);color:var(--text);border-radius:var(--r2);padding:9px var(--s3);font-size:var(--fs-input)}
 body[data-view="cockpit"] .ckwrap{display:grid;grid-template-columns:minmax(0,37fr) minmax(0,63fr);gap:var(--s4);align-items:start}
@@ -737,20 +739,29 @@ body[data-view="cockpit"] .ckwarn{margin-bottom:var(--s3)}
 /* ===== cockpit Phase B — usage columns, handcuff + reserved Phase-C flags,
    tier grouping. Additive: these override the base cockpit grid by source order
    and stay scoped to body[data-view=cockpit], so the tabbed pages are untouched. ===== */
-body[data-view="cockpit"] .ckhdr{grid-template-columns:34px minmax(0,1fr) 38px 40px 42px 36px 52px}
-body[data-view="cockpit"] .ckhdr span:nth-child(3),body[data-view="cockpit"] .ckhdr span:nth-child(4),body[data-view="cockpit"] .ckhdr span:nth-child(5),body[data-view="cockpit"] .ckhdr span:nth-child(6),body[data-view="cockpit"] .ckhdr span:nth-child(7){text-align:right}
-body[data-view="cockpit"] .ckr{grid-template-columns:34px minmax(0,1fr) 38px 40px 42px 36px 52px}
+body[data-view="cockpit"] .ckhdr{grid-template-columns:34px minmax(0,1fr) 46px 58px 30px}
+body[data-view="cockpit"] .ckhdr span:nth-child(3),body[data-view="cockpit"] .ckhdr span:nth-child(4){text-align:right}
+body[data-view="cockpit"] .ckhdr .ckcmph{text-align:center;font-size:12px}
+body[data-view="cockpit"] .ckr{grid-template-columns:34px minmax(0,1fr) 46px 58px 30px}
 body[data-view="cockpit"] .ckr .cknm{display:flex;align-items:center;gap:4px;min-width:0;overflow:hidden;white-space:normal}
 body[data-view="cockpit"] .ckr .cknm .nmt{flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 body[data-view="cockpit"] .ckr .cknm .pill,body[data-view="cockpit"] .ckr .ckcuff,body[data-view="cockpit"] .ckr .ckflags{flex:0 0 auto}
 body[data-view="cockpit"] .ckr .ckadp{font-variant-numeric:tabular-nums}
-body[data-view="cockpit"] .ckr .cktgt,body[data-view="cockpit"] .ckr .cksnap,body[data-view="cockpit"] .ckr .cksos{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;font-size:var(--fs-meta)}
-body[data-view="cockpit"] .ckr .cktgt.has,body[data-view="cockpit"] .ckr .cksnap.has,body[data-view="cockpit"] .ckr .cksos.has{color:var(--text-dim)}
-body[data-view="cockpit"] .ckr .cksos.easy{color:var(--positive)}
-body[data-view="cockpit"] .ckr .cksos.tough{color:var(--urgent)}
+/* (Phase 4 trim: the board row's target%/snap%/SoS cells were removed — those stats
+   now live in the ⚖ compare pop-out + the player detail; their CSS is dropped.) */
 body[data-view="cockpit"] .ckr .ckol{flex:0 0 auto;font-size:10px;font-weight:var(--w-med);line-height:1.5;letter-spacing:.02em;border-radius:var(--r3);padding:0 6px;white-space:nowrap;cursor:help;color:var(--muted);background:var(--raised);border:1px solid var(--line)}
 body[data-view="cockpit"] .ckr .ckol.good{color:var(--positive);border-color:var(--positive);background:var(--positive-fill)}
 body[data-view="cockpit"] .ckr .ckol.bad{color:var(--urgent);border-color:var(--urgent);background:var(--urgent-fill)}
+/* Phase 4 — compare tray: ⚖ add-to-compare per row + fixed tray bar (reuses UB compare) */
+body[data-view="cockpit"] .ckr .ckcmp{justify-self:center;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:var(--r3);font-size:11px;line-height:1;padding:3px 5px;cursor:pointer}
+body[data-view="cockpit"] .ckr .ckcmp.on{color:var(--accent);border-color:var(--accent);background:var(--accent-fill)}
+body[data-view="cockpit"] .ckr.cmp{background:var(--accent-fill);--muted:var(--text-dim)}
+body[data-view="cockpit"] .ckcmpbar{position:fixed;left:50%;transform:translateX(-50%);bottom:72px;z-index:45;display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:92vw;background:var(--raised);border:1px solid var(--accent);border-radius:var(--r2);padding:8px 12px;box-shadow:0 6px 24px rgba(0,0,0,.4)}
+body[data-view="cockpit"] .ckcmpbar .ccl{font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps);color:var(--muted)}
+body[data-view="cockpit"] .ckcmpbar .ccchip{font-size:var(--fs-meta);background:var(--surface);border:1px solid var(--line);border-radius:var(--r3);padding:2px 8px;cursor:pointer;color:var(--text)}
+body[data-view="cockpit"] .ckcmpbar .ccgo{background:var(--accent-fill);border:1px solid var(--accent);color:var(--text);border-radius:var(--r3);padding:4px 12px;cursor:pointer;font-weight:var(--w-bold)}
+body[data-view="cockpit"] .ckcmpbar .ccx{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:var(--r3);padding:4px 10px;cursor:pointer}
+body[data-view="cockpit"] .ckcmpbar .cchint{font-size:var(--fs-meta);color:var(--muted)}
 body[data-view="cockpit"] .ckcuff{font-size:10px;font-weight:var(--w-med);line-height:1.5;text-transform:uppercase;letter-spacing:.03em;color:var(--caution);background:var(--caution-fill);border:1px solid var(--caution);border-radius:var(--r3);padding:0 6px;cursor:help;white-space:nowrap}
 body[data-view="cockpit"] .ckr .ckflags{display:inline-flex;gap:2px;align-items:center}
 body[data-view="cockpit"] .ckr .ckflag{display:none}
@@ -782,10 +793,18 @@ body[data-view="cockpit"] .ckplan .plab{font-size:var(--fs-meta);text-transform:
 body[data-view="cockpit"] .ckplan .pchip{font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps);color:var(--muted);background:var(--raised);border:1px solid var(--line);border-radius:var(--r3);padding:2px 9px;white-space:nowrap;font-variant-numeric:tabular-nums}
 body[data-view="cockpit"] .ckplan .pchip.done{color:var(--positive);border-color:var(--positive);background:var(--positive-fill)}
 body[data-view="cockpit"] .ckplan .pchip.now{color:var(--accent);border-color:var(--accent);background:var(--accent-fill);font-weight:var(--w-bold)}
+body[data-view="cockpit"] .ckplan .pchip.soon{color:var(--caution);border-color:var(--caution)}
+body[data-view="cockpit"] .ckplan .pchip.later{border-style:dashed}
+body[data-view="cockpit"] .ckplan .pchip.due{color:var(--caution);border-color:var(--caution);background:var(--caution-fill);font-weight:var(--w-bold)}
+body[data-view="cockpit"] .ckpleg{font-size:11px;color:var(--muted);margin:0 0 var(--s2);line-height:1.5}
 body[data-view="cockpit"] .ckalert{background:var(--caution-fill);border:1px solid var(--caution);border-left:4px solid var(--caution);border-radius:var(--r2);padding:var(--s2) var(--s3);margin-top:var(--s2);font-size:var(--fs-body);cursor:pointer}
 body[data-view="cockpit"] .ckalert b{color:var(--caution);font-weight:var(--w-bold)}
 body[data-view="cockpit"] .ckalert .an{color:var(--text);font-weight:var(--w-bold)}
 body[data-view="cockpit"] .ckalert i{font-style:normal;color:var(--muted);font-size:var(--fs-meta);margin-left:4px}
+body[data-view="cockpit"] .ckval{background:var(--raised);border:1px solid var(--line);border-left:4px solid var(--muted);border-radius:var(--r2);padding:var(--s2) var(--s3);margin-top:var(--s2);font-size:var(--fs-body);cursor:pointer}
+body[data-view="cockpit"] .ckval b{color:var(--muted);font-weight:var(--w-bold)}
+body[data-view="cockpit"] .ckval .an{color:var(--text);font-weight:var(--w-bold)}
+body[data-view="cockpit"] .ckval i{font-style:normal;color:var(--muted);font-size:var(--fs-meta);margin-left:4px}
 body[data-view="cockpit"] .ckpace{font-size:var(--fs-meta);color:var(--muted);margin:0 0 var(--s2);line-height:1.5}
 body[data-view="cockpit"] .ckpace .plab{text-transform:uppercase;letter-spacing:var(--ls-caps);color:var(--muted)}
 body[data-view="cockpit"] .ckpace b{color:var(--text-dim);font-weight:var(--w-med);font-variant-numeric:tabular-nums}
@@ -819,6 +838,7 @@ body[data-view="cockpit"] .ckpace .pnote{color:var(--accent)}
 <div class="ov" id="ov"><div class="oh"><div class="nm" id="on"></div><button class="x" onclick="closeOv()">Close</button></div><div class="ob" id="ob"></div></div>
 <div class="ov" id="ov2"><div class="oh"><div class="nm" id="on2"></div><button class="x" onclick="closeOv2()">Close</button></div><div class="ob md" id="ob2"></div></div>
 <div class="ov" id="ov3"><div class="oh"><div class="nm">Setup</div><button class="x" onclick="closeOv3()">Close</button></div><div class="ob" id="ob3"></div></div>
+<div class="ov" id="ov4"><div class="oh"><div class="nm">Compare</div><button class="x" onclick="closeOv4()">Close</button></div><div class="ob" id="ob4"></div></div>
 
 
 <script>
@@ -1144,8 +1164,9 @@ function paintCompare(root){
   const cps=C.sel.map(pid=>PLAYERS.find(x=>x.pid===pid));
   vb.innerHTML='<div class="verdict">'+verdict(cps)+'</div>'+backfieldMap();
 }
-function mountCompare(host, league){
+function mountCompare(host, league, initialPids){
   LG=league;
+  if(initialPids&&initialPids.length){C.sel=initialPids.map(String).filter(x=>BYPID[x]).slice(0,4);}
   host.innerHTML=`<div class="ub">
     <div class="ubhead"><input type="search" id="ubC-q" placeholder="Search a player to add…" autocomplete="off"></div>
     <div id="ubC-results"></div>
@@ -1771,9 +1792,9 @@ function runDebug(cp){
 }
 
 /* ===================== POSITIONAL BUILD PLAN — Joop cockpit ==================
-   Chris's draft archetype, encoded as a soft script over the FIRST THREE rounds
-   plus a gentle lean after. Nothing here touches rounds 7+, which stay the pure
-   value / VONA / run engine. Joop-14 cockpit + draft mode ONLY (planOn()); every
+   Chris's draft archetype: a hard 2RB+1WR script over the FIRST THREE rounds, a
+   gentle WR lean in R4-6, then fullPlanPick() carries a need-aware, punt-window
+   plan through R7+ (was: pure value). Joop-14 cockpit + draft mode ONLY (planOn()); every
    other build — the tabbed shells, superflex-8, season mode — sees planOn()
    false and is byte-identical to before.
 
@@ -1826,15 +1847,16 @@ function rbFloorCount(cp){
 }
 function rbFloorSafe(cp){return rbFloorCount(cp)>=PLAN_RBFLOOR_N;}
 /* the plan's target for THIS pick, or null when the plan is done / off.
-   kind:'hard' rounds 1-3 (a hero promotion) · 'lean' rounds 4-6 (a tilt). rd is
-   the round of the pick this advice is FOR (my next pick), not the live pick. */
+   kind:'hard' rounds 1-3 (a hero promotion) · 'lean' R4-6 · R7+ hands to
+   fullPlanPick() (full-lineup punt windows). rd is the round of the pick this
+   advice is FOR (my next pick), not the live pick. */
 function planPick(cp){
  if(!planOn())return null;
  return rc('plan:'+cp,()=>{
   const m0=nextMyPick(), rd=Math.ceil((m0||cp)/RS());
   if(rd>PLAN_WINDOW){
    if(rd>=PLAN_WRLEAN_LO&&rd<=PLAN_WRLEAN_HI)return{pos:'WR',kind:'lean',why:'mid-round WR lean'};
-   return null;                                     // R7+ hands back to the value engine
+   return fullPlanPick(cp,rd);                      // R7+ — full-lineup, punt-window-aware (was: null / pure value)
   }
   const c=myPosCounts(),rbN=Math.max(0,PLAN_RB-(c.RB||0)),wrN=Math.max(0,PLAN_WR-(c.WR||0));
   if(rbN===0&&wrN===0)return null;                   // 2 RB + 1 WR already in hand
@@ -1850,6 +1872,86 @@ function planPick(cp){
   if(vWR!=null&&vRB!=null&&vWR+0.05<vRB)return{pos:'WR',kind:'hard',why:'plan: WR-first (RB floor safe, WR won\'t last)'};
   return{pos:'RB',kind:'hard',why:'plan: lock RB'};
  });
+}
+
+const PLAN_SOON=1;   // lean a position when its punt window is this many rounds away
+/* ===== FULL-LINEUP PUNT WINDOWS (Joop cockpit, rounds 7+) =====================
+   Extends the R1-3 opener + R4-6 WR lean into a need-aware plan for the WHOLE
+   starting lineup, so the call stops reverting to pure ADP after round 6. Per
+   position: open = earliest round to surface as a plan lean (K/DEF discipline --
+   Chris: "K won't come before R10"); by = the round by which the startable tier
+   is gone, so an unfilled starter goes urgent; depth = target roster count
+   (starters+bench) for post-starter upside/contingency. Numbers from the
+   2026-09-01 ADP pull (QB14 ~R8, TE cliff ~R7, K/DEF no early ADP) + Chris's
+   rules; tunable. All planOn()-gated (fullPlanPick is only reached from planPick,
+   which returns null when the plan is off), so non-cockpit builds are unchanged. */
+const PLAN2={
+ QB :{open:4,  by:9,  depth:2},
+ RB :{open:1,  by:6,  depth:5},
+ WR :{open:1,  by:10, depth:6},
+ TE :{open:2,  by:7,  depth:1},
+ K  :{open:10, by:14, depth:1},
+ DEF:{open:10, by:13, depth:1}
+};
+/* Still need a STARTER at this position? A dedicated slot is open, or (RB/WR only)
+   an open FLEX we would fill with one. TE deliberately does not chase the FLEX --
+   you draft an RB/WR into it, not a second TE. Reads the live optimal-fill need(). */
+function starterNeedFor(pos,nd){
+ nd=nd||need();
+ const flex=nd.FLEX||0;
+ if(pos==='RB')return (nd.RB||0)>0||flex>0;
+ if(pos==='WR')return (nd.WR||0)>0||flex>0;
+ return (nd[pos]||0)>0;
+}
+/* Rounds 7+: the need-aware target. HARD (a hero promotion) only when a punt
+   window has CLOSED on an unfilled starter; otherwise a soft LEAN toward the
+   position whose window is next, then bench upside, then the best-value open
+   need. K/DEF are capped at LEAN -- bestAvailable()'s mustTakeKDef owns the force. */
+function fullPlanPick(cp,rd){
+ const nd=need(), hard=[], soon=[];
+ ['QB','RB','WR','TE','K','DEF'].forEach(pos=>{
+  const cfg=PLAN2[pos]; if(!cfg||rd<cfg.open)return;   // discipline: not on the radar yet
+  if(!((nd[pos]||0)>0))return;                         // DEDICATED slot open only (the FLEX is a lean, never a hard window -- it has no positional cliff)
+  if(!bestAvailPos(pos))return;                        // nothing left at the position
+  const kd=(pos==='K'||pos==='DEF');
+  if(rd>=cfg.by&&!kd)hard.push({pos,by:cfg.by});       // window closed -> hero seat
+  else if(rd>=cfg.by-PLAN_SOON)soon.push({pos,by:cfg.by}); // window next round -> lean
+ });
+ if(hard.length){hard.sort((a,b)=>a.by-b.by);const t=hard[0];
+  return{pos:t.pos,kind:'hard',why:'plan: last startable '+t.pos+' (by R'+t.by+')'};}
+ if(soon.length){soon.sort((a,b)=>a.by-b.by);const t=soon[0];
+  return{pos:t.pos,kind:'lean',why:'plan: '+t.pos+' window (R'+t.by+')'};}
+ const bp=benchPlan(rd,nd); if(bp)return bp;
+ const open=['RB','WR','TE','QB'].filter(p=>rd>=PLAN2[p].open&&starterNeedFor(p,nd)&&bestAvailPos(p));
+ if(open.length){open.sort((a,b)=>bestAvailPos(a).adp-bestAvailPos(b).adp);const p=open[0];
+  return{pos:p,kind:'lean',why:'plan: '+p+' -- best value among open needs'};}
+ return null;                                          // lineup full -> pure value board
+}
+/* Once the 9 starters are set, keep the board tilted to the deep-league edge:
+   RB contingency/depth first, then WR upside, to the PLAN2 depth targets. Returns
+   null while any skill starter is still open (not bench time yet). */
+function benchPlan(rd,nd){
+ nd=nd||need();
+ if(['QB','RB','WR','TE'].some(p=>starterNeedFor(p,nd)))return null;
+ const c=myPosCounts();
+ if((c.RB||0)<PLAN2.RB.depth&&bestAvailPos('RB'))return{pos:'RB',kind:'lean',why:'plan: RB depth / contingency'};
+ if((c.WR||0)<PLAN2.WR.depth&&bestAvailPos('WR'))return{pos:'WR',kind:'lean',why:'plan: WR upside'};
+ return null;
+}
+/* Cockpit-only board tilt: an extra, bounded pull toward a position whose DEDICATED
+   punt window is closing, so the whole board (not just the promoted hero) reflects
+   urgency. Ramps 0 -> 1 across NEED_TILT_LEAD rounds before PLAN2[pos].by, capped at
+   NEED_TILT_MAX (~half a round). planOn()-gated + stage-weighted at the call site, so
+   non-cockpit builds stay byte-identical and it can never leap a tier. */
+const NEED_TILT_MAX=6, NEED_TILT_LEAD=3;
+function planNeedTilt(p,cp){
+ if(!planOn())return 0;
+ const cfg=PLAN2[p.p]; if(!cfg)return 0;
+ const nd=need(); if(!((nd[p.p]||0)>0))return 0;         // DEDICATED open slot only
+ const rd=Math.ceil((nextMyPick()||cp)/RS());
+ if(rd<cfg.open)return 0;                                // discipline (K/DEF held early)
+ const u=Math.max(0,Math.min(1,(rd-(cfg.by-NEED_TILT_LEAD))/NEED_TILT_LEAD));
+ return NEED_TILT_MAX*u;
 }
 
 /* ===================== PHASE 2 — value radar (Joop cockpit) ==================
@@ -1889,19 +1991,37 @@ function offPlanAlert(ba){
  if(!alt||alt.adp==null||hero.adp==null)return null;
  const better=alt.adp+VALUE_ALERT_GAP<hero.adp;    // clearly better by market
  const fallen=(cp-alt.adp)>=thr;                   // an elite who dropped to you
- if(!better&&!fallen)return null;
- return {p:alt, planPos:hero.p, tgt:!!(typeof MYLIST!=='undefined'&&MYLIST.t[alt.g]),
-   why:fallen?('fell '+Math.round(cp-alt.adp)+' past ADP'):('ADP '+alt.adp.toFixed(0)+' — better value than a '+hero.p)};
+ // Always surface the top other-position VALUE pick while a hard plan holds the seat
+ // (Chris's "show me both, my call"); `strong` marks the emphatic better/fallen case.
+ return {p:alt, planPos:hero.p, strong:(better||fallen), tgt:!!(typeof MYLIST!=='undefined'&&MYLIST.t[alt.g]),
+   why:fallen?('fell '+Math.round(cp-alt.adp)+' past ADP')
+      :better?('ADP '+alt.adp.toFixed(0)+' — better value than a '+hero.p)
+      :('ADP '+alt.adp.toFixed(0))};
 }
-/* the 2 RB + 1 WR build, as three chips + a one-word next-step. Display only. */
+/* Full-lineup checklist: one chip per STARTING slot (lineup order), showing what
+   is filled (✓) and, for what is open, whether to take one now (•/!), soon (»),
+   hold (K/DEF: R10+), or wait to a punt round (R#). Reads the live rosterState()
+   fill + the PLAN2 punt windows. planOn()-gated. */
 function planStrip(){
  if(!planOn())return '';
- const cp=currentPick(), c=myPosCounts(), pt=planPick(cp), rb=c.RB||0, wr=c.WR||0;
+ const {slots}=rosterState(), cp=currentPick(), rd=Math.ceil((nextMyPick()||cp)/RS()), pt=planPick(cp);
  const tp=(pt&&pt.kind==='hard')?pt.pos:null;
- const chip=(lbl,have,now)=>'<span class="pchip'+(have?' done':(now?' now':''))+'">'+lbl+(have?' ✓':(now?' •':''))+'</span>';
- const chips=chip('RB',rb>=1,tp==='RB'&&rb<1)+chip('RB',rb>=2,tp==='RB'&&rb>=1)+chip('WR',wr>=1,tp==='WR');
- const tail=(pt&&pt.kind==='hard')?('lock '+pt.pos):(pt&&pt.kind==='lean')?'hammer WR (R4-6)':((rb>=2&&wr>=1)?'2RB+1WR set — value board':'value board');
- return '<div class="ckplan"><span class="plab">Build</span>'+chips+'<span class="plab">'+esc(tail)+'</span></div>';
+ let chips='';
+ slots.forEach(s=>{
+  const pos=s.slot, cfg=PLAN2[pos]||null, kd=(pos==='K'||pos==='DEF'); let cls='pchip', suf='', tip='';
+  if(s.p){cls+=' done'; suf=' ✓'; tip=esc(s.p.n);}
+  else if(tp===pos){cls+=' now'; suf=' •'; tip='target now';}
+  else if(cfg){
+   if(rd>=cfg.by&&!kd){cls+=' due'; suf=' !'; tip='window closed — take one';}  /* K/DEF never HARD — they fall to soon/wait, matching the lean-only plan */
+   else if(rd>=cfg.by-PLAN_SOON){cls+=' soon'; suf=' »'; tip='window next round (by R'+cfg.by+')';}
+   else if(rd<cfg.open){cls+=' later'; suf=' R'+cfg.open+'+'; tip='hold until R'+cfg.open;}
+   else{suf=' R'+cfg.by; tip='can wait to R'+cfg.by;}
+  }else{suf=' flex'; tip='fill with the best RB/WR/TE value';}   // FLEX has no positional cliff
+  chips+='<span class="'+cls+'" title="'+tip+'">'+pos+suf+'</span>';
+ });
+ const tail=pt?(pt.kind==='hard'?('now: '+pt.pos):(esc(pt.pos)+' lean')):'value board';
+ return '<div class="ckplan"><span class="plab">Lineup</span>'+chips+'<span class="plab">'+esc(tail)+'</span></div>'
+   +'<div class="ckpleg">✓ filled · • take now · ! past due · » next round · R#+ hold · flex any value</div>';
 }
 /* Room-pace readout — makes visible that the plan reads THIS room's tempo, not
    just national ADP. The tempo is reproduced live from the baked room price (al =
@@ -1990,10 +2110,16 @@ function bestAvailable(limit){
   else if(flexible.length){eff-=10*w;why.push('fills '+flexible[0]);}
   else if(!starters.size){why.push('lineup full — best available');}
   else {eff+=10*w;why.push('no open '+p.p+' slot');}
+  // Cockpit-only: sharpen the board toward a DEDICATED need whose punt window is
+  // closing, so runner-ups reflect urgency too (not just the promoted hero). Bounded.
+  if(planOn()){const _nt=planNeedTilt(p,cp)*w;if(_nt>0){eff-=_nt;why.push('need −'+_nt.toFixed(1)+' ('+p.p+' window)');}}
   // Podcast conviction: near-zero early, full late. THIS is the change that
   // kills the Amon-Ra bug — a BUY-3 can no longer flip a top-10 ADP gap.
   if(p.lean==='BUY'){eff-=5*(p.cv||1)*w;why.push('BUY conv '+p.cv);}
-  if(p.lean==='FADE'){eff+=8*(p.cv||1)*w;why.push('FADE conv '+p.cv);}
+  if(p.lean==='FADE'){
+   if(planOn()&&typeof MYLIST!=='undefined'&&MYLIST.t[p.g]&&MYLIST.t[p.g].st){why.push('podcast FADE ignored (your ★ target)');}  /* cockpit-only: never rescore public/superflex boards */
+   else{eff+=8*(p.cv||1)*w;why.push('FADE conv '+p.cv);}
+  }
   if(p.tw){eff-=8*w;why.push('last of tier '+p.tr);}
   // Personal board tilt — Chris's own ranking, composed WITH ADP + the podcast
   // lean (never replacing them) and kept visibly SEPARATE from JJ's BUY/FADE via
@@ -2417,7 +2543,12 @@ async function livePoll(force){
     if(!r.ok)throw new Error('picks '+r.status);return r.json();});
    if(Array.isArray(picks))applyPicks(picks);
   }
-  LIVE.drew++; LIVE.fails=0; LIVE.err=''; LIVE.lastOk=Date.now();
+  LIVE.drew++; LIVE.err=''; LIVE.lastOk=Date.now();
+  // A wifi blip backs the poll off to the 12-15s floor (see the catch below).
+  // Without this the board stays slow for the rest of the draft; the first clean
+  // poll after a backoff restores the normal cadence.
+  if(LIVE.timer&&LIVE.fails>=3){clearInterval(LIVE.timer);LIVE.timer=setInterval(()=>livePoll(false),LIVE.pollMs);}
+  LIVE.fails=0;
   renderIfChanged();
  }catch(e){
   LIVE.fails++; LIVE.err=e.message||'network';
@@ -2572,6 +2703,17 @@ function rosterPath(){
   Object.keys(pool).forEach(k=>pool[k].sort((a,b)=>a.adp-b.adp));
   return {pick,round:Math.ceil(pick/RS()),pool,open};
  });
+}
+/* "Your path from here" as a rail block — projected survivors (>50%) at your next
+   up-to-5 picks, grouped by position. Promoted out of the old bottom drawer into
+   the cockpit's left decision rail (Phase 3). '' when there is no set slot / path. */
+function ckPathBlock(){
+ const np=nextMyPick(), path=rosterPath();
+ if(!path.length)return '';
+ let h='<div class="cklbl">Your path from here</div>';
+ path.forEach(st=>{const bits=Object.keys(st.pool).sort().map(k=>'<b>'+k+'</b> '+st.pool[k].slice(0,3).map(p=>esc(surname(p.n))).join(', '));
+  h+='<div class="path"><div class="ph">#'+st.pick+' · R'+st.round+(st.pick===np?' · next':'')+'</div><div class="pb">'+(bits.length?bits.join(' · '):'<em>nothing projected to survive</em>')+'</div></div>';});
+ return h;
 }
 
 /* ---------- quick entry ----------
@@ -2986,8 +3128,8 @@ function ckRow(p){
  // the engine's p.g is the GSIS id. Joining on p.g matches nothing.
  const u=(typeof UB!=='undefined'&&UB.byId&&p.sl!=null)?UB.byId(p.sl):null;
  const skill=(p.p==='RB'||p.p==='WR'||p.p==='TE');
- const tgt=(u&&skill&&u.tgt_share!=null)?Math.round(u.tgt_share)+'%':'';
- const snap=(u&&skill&&u.snap_share!=null)?Math.round(u.snap_share)+'%':'';
+ /* usage numbers (target% / snap% / SoS) moved OFF the scan row into the ⚖ compare
+    pop-out + the player detail (Phase 4 trim) — the row stays Pos·Player·ADP·Lasts·⚖ */
  const role=u?u.role:null, isCuff=(role==='Backup'||role==='Passing-down');
  const cuff=isCuff?'<span class="ckcuff" title="'+(u.ahead_name?'behind '+esc(u.ahead_name):'handcuff / contingency stash')+'">cuff</span>':'';
  /* Reserved Phase-C personal-flag hooks — empty now, filled by the Phase-C
@@ -3012,22 +3154,19 @@ function ckRow(p){
  // (blank for K/DEF). OL is RB/QB-relevant only, shown as an inline chip. Display only;
  // the SoS *tilt* on the rec ranking lives in bestAvailable(), not here.
  const tx=(typeof TEAMX!=='undefined')?TEAMX[p.tm]:null;
- const sr=(tx&&tx.sos&&tx.sos[p.p]!=null)?tx.sos[p.p]:null;
- const sosCls=sr==null?'':(sr<=10?' easy':(sr>=23?' tough':''));
- const sosCell='<span class="cksos'+(sr!=null?' has':'')+sosCls+'"'+(sr!=null?' title="Schedule: '+p.p+' rank '+sr+'/32 (1=easiest, FFToolbox 2026 season)"':'')+'>'+(sr!=null?sr:'·')+'</span>';
  const ol=(tx&&tx.ol!=null)?tx.ol:null;
  const olChip=(ol!=null&&(p.p==='RB'||p.p==='QB'))?'<span class="ckol'+(ol<=10?' good':(ol>=23?' bad':''))+'" title="Offensive line: PFF 2026 rank '+ol+'/32 (1=best)">OL '+ol+'</span>':'';
- return '<div class="ckr'+(TAKEN[p.g]?' taken':'')+(MINE.includes(p.g)?' mine':'')+'" onclick="openP('+p._i+')">'
+ const inCmp=CMP.indexOf(String(p.sl))>=0;
+ const canCmp=(p.sl!=null&&typeof UB!=='undefined'&&UB.byId&&UB.byId(p.sl));
+ return '<div class="ckr'+(TAKEN[p.g]?' taken':'')+(MINE.includes(p.g)?' mine':'')+(inCmp?' cmp':'')+'" onclick="openP('+p._i+')">'
   +'<span class="ckpos">'+esc(p.p)+'</span>'
   +'<span class="cknm"><span class="nmt">'+esc(p.n)+'</span>'+cuff
     +(p.tw?'<span class="pill tier">wall</span>':'')
-    +(p.lean&&p.lean!=='NEUTRAL'?'<span class="pill '+p.lean+'">'+esc(p.lean)+'</span>':'')
+    +((p.lean&&p.lean!=='NEUTRAL'&&!(planOn()&&_mt&&_mt.st&&p.lean==='FADE'))?'<span class="pill '+p.lean+'">'+esc(p.lean)+'</span>':'')  /* cockpit: hide a mislabeled FADE pill on your ★ target (mirrors the scoring exemption; full take still in the detail) */
     +olChip+pcflags+'</span>'
   +'<span class="ckadp">'+(p.adp==null?'—':p.adp.toFixed(0))+'</span>'
-  +'<span class="cktgt'+(tgt?' has':'')+'">'+(tgt||'·')+'</span>'
-  +'<span class="cksnap'+(snap?' has':'')+'">'+(snap||'·')+'</span>'
-  +sosCell
   +'<span class="cklast '+(v!=null?'sv '+svClass(v):'')+'">'+(v!=null?pct(v):'—')+'</span>'
+  +(canCmp?'<button class="ckcmp'+(inCmp?' on':'')+'" onclick="event.stopPropagation();cmpToggle(\''+esc(String(p.sl))+'\')" title="'+(inCmp?'in compare':'add to compare')+'">⚖</button>':'<span class="ckcmp0"></span>')
   +'</div>';
 }
 function ckBoardBody(rows){
@@ -3081,7 +3220,7 @@ function ckMyTargets(){
  return h+'</div>';
 }
 function viewCockpit(){
- const cp=currentPick(), np=nextMyPick();
+ const cp=currentPick(), np=nextMyPick(), onClock=np&&np===cp;
  let h='';
 
  /* command bar */
@@ -3089,16 +3228,20 @@ function viewCockpit(){
  const SW={drafting:'live from Sleeper',paused:'paused',pre_draft:'not started',complete:'complete'};
  const stTxt=LIVE.on?(LIVE.err?'feed error — board held, type picks below':esc(SW[LIVE.status]||'connected'))
    :(liveEnabled()?'not connected — tap Go live':'manual');
- h+='<div class="ckbar">'
+ h+='<div class="ckbar'+(onClock?' onclock':'')+'">'
   +'<span class="dot '+dot+'"></span><span class="st">'+stTxt+'</span>'
   +'<span class="ckt"><i>on clock</i><b>'+cp+'</b></span>'
   +'<span class="ckt"><i>your pick</i><b>'+(np||'—')+'</b></span>'
   +'<span class="ckt"><i>away</i><b>'+(np?Math.max(0,np-cp):'—')+'</b></span>'
   +'<span class="ckt"><i>slot'+(LIVE.autoSlot?' ✓':'')+'</i><b>'+(SLOT||'—')+'</b></span>'
   +'<span class="clock" id="clk">'+(LIVE.on&&clockLeft()!=null?mmss(clockLeft()):'--:--')+'</span>'
+  +(LIVE.on?'':'<span class="ckclkhint" title="The pick clock is driven by the live Sleeper feed — tap Go live to start it">clock runs on Sleeper</span>')
   +(LIVE.on?'<button class="hbtn" onclick="liveStop()">Stop</button>'
           :'<button class="hbtn" onclick="liveStart()">Go live</button>')
   +'</div>';
+
+ if(onClock)h+='<div class="hot" style="background:var(--positive-fill);border-color:var(--positive);color:var(--positive)">'
+   +'<b>You are on the clock — pick #'+cp+'.</b></div>';
 
  if(!SLOT){
   let sel='<select onchange="setSlot(this.value)"><option value="0">set slot…</option>';
@@ -3117,8 +3260,6 @@ function viewCockpit(){
 
  /* ---- LEFT: the call ---- */
  h+='<div class="ckdec">';
- h+=planStrip();      // Phase 2: the 2 RB + 1 WR build progress (Joop cockpit only)
- h+=roomPaceLine();   // Phase 2a: makes visible that the plan reads this room's pace
  const ba=bestAvailable(5), bsv=ba.map(o=>survivalNext(o.p)), bvd=verdicts(bsv);
  // Hero = the single most-urgent rec (the lone TAKE NOW, if one exists), else
  // highest value. verdicts() flags at most one 'now', already the best-value
@@ -3139,12 +3280,23 @@ function viewCockpit(){
    +'<button class="ckdraft" onclick="claimById(\''+p.g+'\')">Draft him</button>'
    +'</div>';
  }
+ // Fix 4: hero owns the top of the rail; the lineup checklist + room pace now sit
+ // just beneath it (they used to sit above "The call").
+ h+=planStrip();      // Phase 3: full-lineup checklist — filled/target/soon/hold/wait (Joop cockpit only)
+ h+=roomPaceLine();   // Phase 2a: makes visible that the plan reads this room's pace
  // Phase 2: off-plan value alert — the plan hero holds the seat, but if a clearly
  // better or fallen player sits at another position, name him. Never reorders.
  const opa=offPlanAlert(ba);
- if(opa)h+='<div class="ckalert" onclick="openP('+opa.p._i+')"><b>⚡ Off-plan value</b> '
-   +'<span class="an">'+(opa.tgt?'★ ':'')+esc(opa.p.n)+'</span><i>'+esc(opa.p.p)+' · '+esc(opa.why)+'</i>'
-   +' — plan says '+esc(opa.planPos)+', your call</div>';
+ if(opa){
+  if(opa.strong)
+   h+='<div class="ckalert" onclick="openP('+opa.p._i+')"><b>⚡ Value alert</b> '
+    +'<span class="an">'+(opa.tgt?'★ ':'')+esc(opa.p.n)+'</span><i>'+esc(opa.p.p)+' · '+esc(opa.why)+'</i>'
+    +' — plan wants '+esc(opa.planPos)+', your call</div>';
+  else
+   h+='<div class="ckval" onclick="openP('+opa.p._i+')"><b>Value</b> '
+    +'<span class="an">'+(opa.tgt?'★ ':'')+esc(opa.p.n)+'</span><i>'+esc(opa.p.p)+' · '+esc(opa.why)+'</i>'
+    +' — plan wants '+esc(opa.planPos)+', your call</div>';
+ }
  for(let k=1;k<Math.min(3,order.length);k++){
   const i=order[k], p=ba[i].p, s=bsv[i], v=bvd[i];
   h+='<div class="ckrec" onclick="openP('+p._i+')">'
@@ -3158,11 +3310,20 @@ function viewCockpit(){
    h+='<div class="cklbl">Gone before your pick #'+(myReturnPick()||np)+'</div>';
    gb.forEach(o=>{const val=o.s.room!=null?o.s.room:o.s.nat;
     h+='<div class="ckgone" onclick="openP('+o.p._i+')"><span>'+esc(o.p.n)+'<i>'+esc(o.p.p)+'</i></span>'
-     +'<span class="gs '+svClass(val)+'">'+pct(val)+'</span></div>';});
+     +'<span class="gs '+svClass(val)+'">'+pct(val)+' lasts</span></div>';});
   }
  }
  h+=ckFallers();   // Phase 2: scoop watch — players falling past ADP at a needed position
  h+=ckMyTargets();
+ h+=ckPathBlock();  // Phase 3: "your path from here", promoted into the decision rail
+ // Phase 3: reference drawer moved into the LEFT rail so it is never behind the
+ // players list (the right column). "your path" + "room pace" are promoted above;
+ // this holds only the room runs, last picks and live pace you glance at.
+ {let more='<div class="cklbl" style="margin-top:0">What the room is doing</div>'+runBlock();
+  if(LIVE.seq.length)more+='<div class="cklbl">Last picks</div>'+LIVE.seq.slice(-12).reverse().map(s=>
+   '<div class="log'+(s.me?' me':'')+(s.g?'':' unm')+'"><b>'+s.no+'</b><span>'+esc(s.nm)+(s.pos?' · '+esc(s.pos):'')+(s.g?'':' — not on board')+(s.me?' ← you':'')+'</span></div>').join('');
+  const db=driftBox(); if(db)more+='<div class="cklbl">Live pace</div>'+db;
+  h+=fold('ckmore','More — room · last picks · pace',more,{});}
  h+='</div>';
 
  /* ---- RIGHT: the board ---- */
@@ -3178,26 +3339,19 @@ function viewCockpit(){
    +'</div>';
  let rows=PL.filter(pass);
  if(needOn){const ns=ckNeedSet(); rows=rows.filter(p=>ns.has(p.p));}
- h+='<div class="ckhdr"><span>Pos</span><span>Player</span><span>ADP</span><span>Tgt</span><span>Snap</span><span>SoS</span><span>Lasts</span></div>';
+ h+='<div class="ckhdr"><span>Pos</span><span>Player</span><span>ADP</span><span>Lasts</span><span class="ckcmph" title="Add to compare">⚖</span></div>';
  h+='<div class="ckgrid">'+ckBoardBody(rows)+'</div>';
  h+='</div>';
 
  h+='</div>'; /* ckwrap */
 
- /* ---- More drawer ---- */
- let more='<div class="cklbl" style="margin-top:0">What the room is doing</div>'+runBlock();
- const path=rosterPath();
- if(path.length){
-  more+='<div class="cklbl">Your path from here</div>';
-  path.forEach(st=>{const bits=Object.keys(st.pool).sort().map(k=>'<b>'+k+'</b> '+st.pool[k].slice(0,3).map(p=>esc(surname(p.n))).join(', '));
-   more+='<div class="path"><div class="ph">#'+st.pick+' · R'+st.round+(st.pick===np?' · next':'')+'</div><div class="pb">'+(bits.length?bits.join(' · '):'<em>nothing projected to survive</em>')+'</div></div>';});
+ // Phase 4: compare tray — a fixed bar listing the ⚖-picked players + a pop button.
+ if(CMP.length){
+  h+='<div class="ckcmpbar"><span class="ccl">Compare</span>'
+    +CMP.map(sl=>{const pp=PL.find(x=>String(x.sl)===String(sl));return '<span class="ccchip" onclick="cmpToggle(\''+esc(String(sl))+'\')" title="remove">'+esc(pp?surname(pp.n):String(sl))+' ×</span>';}).join('')
+    +(CMP.length>=2?'<button class="ccgo" onclick="openCompare()">Compare '+CMP.length+' →</button>':'<span class="cchint">add '+(2-CMP.length)+' more</span>')
+    +'<button class="ccx" onclick="cmpClear()">clear</button></div>';
  }
- if(LIVE.seq.length){
-  more+='<div class="cklbl">Last picks</div>'+LIVE.seq.slice(-12).reverse().map(s=>
-   '<div class="log'+(s.me?' me':'')+(s.g?'':' unm')+'"><b>'+s.no+'</b><span>'+esc(s.nm)+(s.pos?' · '+esc(s.pos):'')+(s.g?'':' — not on board')+(s.me?' ← you':'')+'</span></div>').join('');
- }
- const db=driftBox(); if(db)more+='<div class="cklbl">Live pace</div>'+db;
- h+=fold('ckmore','More — room · path · last picks · pace',more,{});
 
  return h;
 }
@@ -3876,6 +4030,20 @@ function openP(i){
 function closeOv(){document.getElementById('ov').classList.remove('show');}
 function closeOv2(){document.getElementById('ov2').classList.remove('show');}
 function closeOv3(){document.getElementById('ov3').classList.remove('show');}
+function closeOv4(){document.getElementById('ov4').classList.remove('show');}
+/* ===== Compare tray (cockpit) — tap ⚖ on 2–4 board rows, pop the existing
+   head-to-head compare in an overlay. Reuses the UB compare engine; the tray holds
+   Sleeper ids (== UB pids). No tab switch. Only players UB has data for are addable. */
+let CMP=[];
+function cmpToggle(sl){sl=String(sl);const i=CMP.indexOf(sl);
+ if(i>=0)CMP.splice(i,1);
+ else{if(CMP.length>=4)return; if(typeof UB!=='undefined'&&UB.byId&&!UB.byId(sl))return; CMP.push(sl);}
+ render();}
+function cmpClear(){CMP=[];render();}
+function openCompare(){
+ if(CMP.length<2)return;
+ UB.mountCompare(document.getElementById('ob4'), META.superflex?'bk':'joop', CMP);
+ const ov=document.getElementById('ov4');ov.classList.add('show');ov.scrollTop=0;}
 
 function md(t){
  const L=t.split('\n');let o='',inl=0;
@@ -4147,7 +4315,7 @@ async function seasonAutoLoad(){
   document.getElementById(id).onclick=e=>{S[key]^=1;e.target.classList.toggle('on');render();};});
  // A league with no prior drafts on file has no second price to filter by.
  if(!LP())document.getElementById('bl').style.display='none';
- document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeOv();closeOv2();closeOv3();}});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeOv();closeOv2();closeOv3();closeOv4();}});
 
  document.getElementById('load').remove();
  try{var _vw=new URLSearchParams(location.search).get('view');if(_vw==='cockpit'||window.__COCKPIT__){document.body.dataset.view='cockpit';S.tab='room';}}catch(e){}
