@@ -1648,7 +1648,7 @@ const LIVE={
  pickTimer:120, pollMs:3000, lastPicked:0, order:null, myRoster:null,
  seq:[],          // the real pick log, INCLUDING players not on our board
  maxPick:0, unmatched:0, err:'', lastOk:0, fails:0, timer:null, tick:null,
- autoSlot:null, serverNow:0, drew:0
+ autoSlot:null, serverNow:0, drew:0, timerMs:null
 };
 
 /* ---------- league-adjusted price ----------
@@ -2859,52 +2859,105 @@ function liveStart(id){
  saveState();
  livePoll(true);
  if(LIVE.timer)clearInterval(LIVE.timer);
- LIVE.timer=setInterval(()=>livePoll(false),LIVE.pollMs);
+ LIVE.timer=null; LIVE.timerMs=null;
+ liveArm(pollCadence());
  if(!LIVE.tick)LIVE.tick=setInterval(tickClock,500);
 }
 function liveStop(){
  LIVE.on=0;
  if(LIVE.timer){clearInterval(LIVE.timer);LIVE.timer=null;}
+ LIVE.timerMs=null;
  render();
 }
+/* ---------- poll cadence (2026-09-02) -------------------------------------
+   Measured before changing anything: the client-side half of an update —
+   applyPicks + recompute + a full render of the 384-row board — costs ~8ms.
+   None of the wait Chris feels at the table is this app thinking. It is all
+   cadence, so cadence is the only thing worth tuning.
+
+   Poll faster the closer his pick is. On the clock is when a stale board
+   actually costs a pick; ten picks away it costs nothing and there is no
+   reason to hammer Sleeper. Sleeper's documented ceiling is ~1000 calls/min;
+   the fastest setting below is 2 endpoints every 1.5s = 80/min, i.e. 8%. */
+function pollCadence(){
+ const base=Math.max(1200,LIVE.pollMs||3000);
+ try{
+  if(!LIVE.on)return base;
+  const cp=currentPick(), np=nextMyPick();
+  if(!cp||!np)return base;
+  const away=np-cp;
+  if(away<=2)return Math.max(1200,Math.round(base/2));  // on the clock, or next up
+  if(away>=8)return Math.min(6000,base*2);              // nowhere near — ease off
+ }catch(e){}
+ return base;
+}
+/* Re-arm the interval only when the target actually changes, so an adaptive
+   cadence does not clear and rebuild a timer on every single poll. */
+function liveArm(ms){
+ if(!LIVE.on)return;
+ if(LIVE.timer&&LIVE.timerMs===ms)return;
+ if(LIVE.timer)clearInterval(LIVE.timer);
+ LIVE.timerMs=ms;
+ LIVE.timer=setInterval(()=>livePoll(false),ms);
+}
+
 async function livePoll(force){
  if(!LIVE.on)return;
+ /* Both endpoints, CONCURRENTLY, every poll.
+    This used to fetch the draft metadata first and only go back for /picks if
+    d.last_picked had changed — otherwise every 5th poll. At a 3s cadence that
+    fallback is 15 SECONDS, which is exactly the lag Chris reported, and it
+    needs no network fault at all: any pick where last_picked does not tick
+    promptly (autopick, commissioner edit) sits in the /picks response while the
+    board simply is not asking for it. Fetching both every time removes the
+    last_picked dependency entirely, and running them in parallel removes the
+    second sequential round trip that every update used to pay.
+    allSettled, not all: if one endpoint fails the other still lands, so a flaky
+    /picks can no longer cost him the clock, and a flaky /draft can no longer
+    cost him the board. */
+ const [mr,pr]=await Promise.allSettled([
+  fetch(SLEEPER+LIVE.draftId,{cache:'no-store'})
+    .then(r=>{if(!r.ok)throw new Error('draft '+r.status);return r.json();}),
+  fetch(SLEEPER+LIVE.draftId+'/picks',{cache:'no-store'})
+    .then(r=>{if(!r.ok)throw new Error('picks '+r.status);return r.json();})
+ ]);
  try{
-  const d=await fetch(SLEEPER+LIVE.draftId,{cache:'no-store'}).then(r=>{
-   if(!r.ok)throw new Error('draft '+r.status);return r.json();});
-  if(!d||!d.draft_id)throw new Error('no draft at that id');
-  const moved=(d.last_picked||0)!==LIVE.lastPicked;
-  LIVE.cfg=d; LIVE.status=d.status||''; LIVE.type=d.type||'';
-  LIVE.lastPicked=d.last_picked||0;
-  const st=d.settings||{};
-  // Read the shape from the draft itself, every poll. The config file carries
-  // only the id precisely so a stale local number can never drive pick maths.
-  if(st.pick_timer)LIVE.pickTimer=st.pick_timer;
-  if(st.teams)LIVE.teams=st.teams;
-  if(st.rounds)LIVE.rounds=st.rounds;
-  LIVE.order=d.draft_order||null;
-  autoSlot();
-  if(force||moved||LIVE.drew%5===0){
-   const picks=await fetch(SLEEPER+LIVE.draftId+'/picks',{cache:'no-store'}).then(r=>{
-    if(!r.ok)throw new Error('picks '+r.status);return r.json();});
-   if(Array.isArray(picks))applyPicks(picks);
+  const metaOk=mr.status==='fulfilled'&&mr.value&&mr.value.draft_id;
+  const picksOk=pr.status==='fulfilled'&&Array.isArray(pr.value);
+  if(!metaOk&&!picksOk){
+   throw new Error((mr.reason&&mr.reason.message)||(pr.reason&&pr.reason.message)||'network');
   }
+  if(metaOk){
+   const d=mr.value;
+   LIVE.cfg=d; LIVE.status=d.status||''; LIVE.type=d.type||'';
+   LIVE.lastPicked=d.last_picked||0;
+   const st=d.settings||{};
+   // Read the shape from the draft itself, every poll. The config file carries
+   // only the id precisely so a stale local number can never drive pick maths.
+   if(st.pick_timer)LIVE.pickTimer=st.pick_timer;
+   if(st.teams)LIVE.teams=st.teams;
+   if(st.rounds)LIVE.rounds=st.rounds;
+   LIVE.order=d.draft_order||null;
+   autoSlot();
+  }
+  if(picksOk)applyPicks(pr.value);
   LIVE.drew++; LIVE.err=''; LIVE.lastOk=Date.now();
-  // A wifi blip backs the poll off to the 12-15s floor (see the catch below).
-  // Without this the board stays slow for the rest of the draft; the first clean
-  // poll after a backoff restores the normal cadence.
-  if(LIVE.timer&&LIVE.fails>=3){clearInterval(LIVE.timer);LIVE.timer=setInterval(()=>livePoll(false),LIVE.pollMs);}
+  // Recover the instant a poll comes back clean. Previously recovery only
+  // re-armed the timer, so it still cost a full backoff interval to take
+  // effect; now the cadence is recomputed on every success anyway.
+  if(LIVE.fails>=3&&LIVE.timer){liveArm(LIVE.pollMs);}
   LIVE.fails=0;
+  if(LIVE.timer)liveArm(pollCadence());
   renderIfChanged();
  }catch(e){
   LIVE.fails++; LIVE.err=e.message||'network';
   // Back off, but never stop and NEVER touch FEED. A failed poll must leave
   // the board exactly as it was — the one thing worse than a stale board at a
   // draft table is a board that empties itself.
-  if(LIVE.timer&&LIVE.fails===3){
-   clearInterval(LIVE.timer);
-   LIVE.timer=setInterval(()=>livePoll(false),Math.min(LIVE.pollMs*4,15000));
-  }
+  // Graduated, not a cliff: one wifi blip used to cost a flat 12s. Three fails
+  // now costs 6s and only a sustained outage (6+) reaches the old floor.
+  if(LIVE.timer&&LIVE.fails===3)liveArm(Math.min(LIVE.pollMs*2,8000));
+  if(LIVE.timer&&LIVE.fails===6)liveArm(Math.min(LIVE.pollMs*4,15000));
   renderIfChanged();
  }
 }
