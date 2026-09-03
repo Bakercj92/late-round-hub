@@ -3733,8 +3733,13 @@ function ckDots(){
 function ckNeedLine(){
  const n=need(), ord=['QB','RB','WR','TE','FLEX','SUPERFLEX','SUPER_FLEX','K','DEF'];
  const ks=Object.keys(n).sort((a,b)=>{const x=ord.indexOf(a),y=ord.indexOf(b);return (x<0?99:x)-(y<0?99:y);});
+ /* Bold is what the plan wants NEXT; grey is what is still open after that.
+    A full-lineup need list at R1 is nine slots long and reads as noise, so only
+    the first two carry weight. Same source as the checklist — need(). */
+ const lab=k=>esc(k)+(n[k]>1?' &times;'+n[k]:'');
  const txt=ks.length
-   ? ks.map(k=>esc(k)+(n[k]>1?' &times;'+n[k]:'')).join(' &middot; ')
+   ? ks.slice(0,2).map(lab).join(' &middot; ')
+     +(ks.length>2?' <em>&middot; '+ks.slice(2).map(lab).join(' &middot; ')+'</em>':'')
    : '<em>starters full &mdash; best available</em>';
  return '<div class="needline"><span class="nl">Need</span><span class="nv">'+txt+'</span></div>';
 }
@@ -3764,7 +3769,12 @@ function ckQ4(opa){
    targets so the same name is not printed twice on one 380px column. */
 function ckGoneSub(np,skip){
  if(!np)return '';
- const gb=goneBefore(3,skip||new Set());
+ /* Capped at 2, not 8 and not the mockup's 5. Measured budget at 1440x900 with
+    Chrome's full chrome (720px of page): column 1 wants 694px into 636 with 3
+    gone rows and 666 with 2. At 2, ckFit() pays for it by dropping exactly the
+    block 01 R4 nominates first — the second runner-up — and the Q5 sub-block
+    survives. Full-screen (F11, ~820px of page) fits all of it untrimmed. */
+ const gb=goneBefore(2,skip||new Set());
  if(!gb.length)return '';
  let h='<div class="cklbl ckgonel">Also gone by #'+np+'</div>';
  gb.forEach(o=>{const val=o.s.room!=null?o.s.room:o.s.nat;
@@ -3932,6 +3942,13 @@ function viewCockpit2(){
 function ckFit(){
  const d=document.getElementById('ckdec');
  if(!d||typeof d.clientHeight!=='number'||!d.clientHeight||!d.children||!d.children.length)return;
+ /* Stand down in .ckall — "+N more" deliberately gives column 1 its own
+    scrollbar, so there is nothing to trim. Without this, ckFit still ran and
+    deleted the second runner-up AND every "gone before" row, so opening the full
+    target list silently destroyed the Q5 answer it was opened to read. Caught in
+    the 2026-09-02 audit. It self-healed on the next render(), which made it a
+    flicker nobody would have reported and everybody would have felt. */
+ if(d.classList&&d.classList.contains&&d.classList.contains('ckall'))return;
  const cap=d.clientHeight;
  const content=()=>{let m=0;const cs=d.children;
    for(let i=0;i<cs.length;i++){const c=cs[i];m=Math.max(m,(c.offsetTop||0)+(c.offsetHeight||0));}
@@ -3954,8 +3971,16 @@ function ckFit(){
    Inert without the flag, and position:fixed so it cannot move the layout. */
 function ckMeasure(){
  const old=document.getElementById('ckmeas'); if(old&&old.remove)old.remove();
+ /* ?measure=1 OR window.__MEASURE__. The window flag exists because a file://
+    page opened by double-clicking cannot carry a query string, and this readout
+    is the ONLY way the layout gets verified — no headless browser is installable
+    in the build sandbox and Chrome blocks file:// from the extension. So
+    build/make_measure_build.py bakes the flag into a separate local file that
+    Chris can just open. Both paths are inert in every other mode. */
  let on=false; try{on=new URLSearchParams(location.search).get('measure')==='1';}catch(e){}
- if(!on||typeof requestAnimationFrame!=='function'||!document.createElement)return;
+ if(!on&&typeof window!=='undefined'&&window.__MEASURE__===true)on=true;
+ if(!on||document.body.dataset.view!=='cockpit2')return;
+ if(typeof requestAnimationFrame!=='function'||!document.createElement)return;
  requestAnimationFrame(function(){
   const H=q=>{const e=(typeof q==='string')?document.querySelector(q):q;
     if(!e||!e.getBoundingClientRect)return null;
@@ -4494,7 +4519,8 @@ function render(){
    if(_sbT){const a=document.getElementById('ckbs'); if(a)a.scrollTop=_sbT;}
    if(_scT){const b=document.getElementById('ckctxb'); if(b)b.scrollTop=_scT;}
    wireRoom();
-   if(_dv==='cockpit2'){ ckFit(); ckMeasure(); }
+   if(_dv==='cockpit2')ckFit();
+   ckMeasure();          /* self-gating: clears its own readout outside cockpit2 */
  }
  else if(S.tab==='plan')v.innerHTML=viewPlan();
  else if(S.tab==='board')v.innerHTML=viewBoard();
@@ -4968,6 +4994,17 @@ async function seasonAutoLoad(){
   document.getElementById(id).onclick=e=>{S[key]^=1;e.target.classList.toggle('on');render();};});
  // A league with no prior drafts on file has no second price to filter by.
  if(!LP())document.getElementById('bl').style.display='none';
+ /* Re-fit column 1 when the window changes size. ckFit otherwise only runs on
+    render(), so leaving F11 fullscreen mid-draft shrinks the cap by ~100px and
+    column 1 stays over-full until the next pick arrives. In a 14-team snake that
+    self-heals within seconds, which is exactly why it would never get reported —
+    and why it is one line. (2026-09-02 audit, annotation 3.) */
+ if(typeof window!=='undefined'&&window.addEventListener){
+  window.addEventListener('resize',function(){
+   try{ if(document.body.dataset.view==='cockpit2')ckFit(); }catch(e){}
+  });
+ }
+
  document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){closeOv();closeOv2();closeOv3();closeOv4();return;}
   /* ITEM 15 — `2` flips between cockpit2 and the classic cockpit, live, and
