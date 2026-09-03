@@ -1600,6 +1600,44 @@ async function acquire(){
 
 let D,EPTXT,PL,BOARD,CN,EPS,DEPTH,META,PLAN=null,BYID={},BYSL={};
 let TAKEN={}, MINE=[], HIST=[], SLOT=0, MODE='draft', LEAGUE=null;
+/* ============ DRAFT/SEASON CALENDAR FLIP — two bugs, both live-fire ==========
+   The old rule was one line:
+
+       MODE = (META.draft && new Date().toISOString().slice(0,10) > META.draft)
+              ? 'season' : 'draft';
+
+   and it had two ways to strand him ON DRAFT DAY. planOn() requires
+   MODE==='draft', so either one takes the whole plan layer down with it.
+
+   1. toISOString() is UTC. An evening draft in ET is already TOMORROW in UTC:
+      8:00 PM ET = 00:00 UTC. So a draft that ran past 8pm flipped the tool into
+      season mode MID-DRAFT — the cockpit, the plan, the survival numbers, all
+      of it, replaced by a season view, between two picks. localISODate() reads
+      the LOCAL calendar date instead, which is the one Chris is living in.
+
+   2. It flipped the instant the date passed, so a payload carrying a draft date
+      one day stale (exactly what shipped on 2026-09-02: the league config said
+      09-06, the baked payload still said 09-05) went to season mode the evening
+      BEFORE the draft. MODE_GRACE_DAYS holds draft mode for two days past the
+      recorded date, so a one-day-stale date can no longer cost him the tool.
+
+   The grace only delays the automatic flip. The DRAFT/SEASON badge is unchanged
+   and still overrides it in one tap, in both directions. */
+const MODE_GRACE_DAYS=2;
+function localISODate(d){
+ d=d||new Date();
+ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+/* True once the calendar says the draft is comfortably behind us. `todayISO` is
+   injectable so the smoke suite can test the boundary without moving the clock. */
+function seasonByCalendar(todayISO){
+ if(!META||!META.draft)return false;
+ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(META.draft);
+ if(!m)return false;                                   // unparseable date -> never auto-flip
+ const flip=new Date(+m[1],+m[2]-1,+m[3]);             // local midnight, draft day
+ flip.setDate(flip.getDate()+MODE_GRACE_DAYS);
+ return (todayISO||localISODate())>localISODate(flip);
+}
 /* tab defaults to the Draft Room, not the Board. It used to open on 'board',
    and renderTabs() only redirects when the saved tab is absent from the mode's
    tab list — which 'board' is not — so draft day started on the wrong screen
@@ -2160,7 +2198,30 @@ function runDebug(cp){
 const PLAN_RB=2, PLAN_WR=1, PLAN_WINDOW=3;                 // first 3 rounds: 2 RB + 1 WR
 const PLAN_RBFLOOR_CONF=0.80, PLAN_RBFLOOR_N=2;            // WR-first needs >=2 RBs this-safe to your next pick
 const PLAN_RB_STARTRANK=30;                                // "startable RB" = top-30 by ADP
-const PLAN_WRLEAN_LO=4, PLAN_WRLEAN_HI=6, PLAN_WRLEAN_PTS=5;// soft WR lean, rounds 4-6
+/* Rounds 4-6 used to be a FLAT WR lean, and that was the bug Chris reported on
+   2026-09-02: following the hero every round produced RB RB WR WR WR QB TE, with
+   the RB-floor count at ZERO by round 5. Two RBs through seven rounds in a
+   14-team full PPR is not a build, and it contradicted PLAN2.RB.depth=5 sitting
+   right below it. The window is now a DEPTH-GAP lean: whichever of RB/WR is
+   furthest below its PLAN2 depth target gets the tilt, recomputed every pick, so
+   the plan comes back to RB on its own instead of riding WR into round 7.
+   Still a lean (a small tilt), never a promotion — the hard window is R1-3 only.
+   PLAN_MIDLEAN_PTS is the old PLAN_WRLEAN_PTS value, unchanged in magnitude. */
+/* PLAN_MIDLEAN_PTS was 5, inherited from the flat WR lean, and at 5 the lean was
+   DECORATIVE: bestAvailable() gives a player who fills an open dedicated starter
+   slot -20*w, so a 5-point tilt could never move the hero. The visible symptom was
+   the plan line reading "RB depth" while the hero card showed a TE — the screen
+   arguing with itself, which is a large part of what Chris reported.
+   Measured 2026-09-02 at seat 5, sweeping 5/10/14/20 through eight rounds:
+     5  -> RB RB WR WR TE QB WR TE   (lean never moves the hero; 2 RB through R8)
+     10 -> RB RB WR WR RB QB TE WR   (lean lands; starters full by R8)
+     14 -> RB RB WR WR RB QB TE RB
+     20 -> RB RB WR WR RB WR TE QB   (QB slides to R8 — starting to steamroll)
+   10 is the knee: the smallest value that makes the plan line and the hero agree,
+   and still well under a full round (RS()=14), so it tilts within a tier and can
+   never leap one. A judgment call, not a derived constant — move it if the table
+   says otherwise. */
+const PLAN_MIDLEAN_LO=4, PLAN_MIDLEAN_HI=6, PLAN_MIDLEAN_PTS=10;
 function planOn(){return !!(typeof window!=='undefined'&&window.__COCKPIT__)&&LEAGUE_KEY==='joop-14'&&MODE==='draft';}
 /* how many of each position I already OWN (MINE), bench included — the plan is
    about acquiring 2 RB + 1 WR, not about slotting them. */
@@ -2201,7 +2262,7 @@ function planPick(cp){
  return rc('plan:'+cp,()=>{
   const m0=nextMyPick(), rd=Math.ceil((m0||cp)/RS());
   if(rd>PLAN_WINDOW){
-   if(rd>=PLAN_WRLEAN_LO&&rd<=PLAN_WRLEAN_HI)return{pos:'WR',kind:'lean',why:'mid-round WR lean'};
+   if(rd>=PLAN_MIDLEAN_LO&&rd<=PLAN_MIDLEAN_HI){const dg=midDepthLean(); if(dg)return dg;}
    return fullPlanPick(cp,rd);                      // R7+ — full-lineup, punt-window-aware (was: null / pure value)
   }
   const c=myPosCounts(),rbN=Math.max(0,PLAN_RB-(c.RB||0)),wrN=Math.max(0,PLAN_WR-(c.WR||0));
@@ -2234,11 +2295,44 @@ const PLAN_SOON=1;   // lean a position when its punt window is this many rounds
 const PLAN2={
  QB :{open:4,  by:9,  depth:2},
  RB :{open:1,  by:6,  depth:5},
- WR :{open:1,  by:10, depth:6},
+ /* WR depth was 6. RB5+WR6+QB2+TE1+K1+DEF1 = 16 targets on a 14-man roster
+    (9 starters + 5 bench), so the depth maths was measuring the gap against a
+    roster that cannot exist. Chris trimmed WR to 5 on 2026-09-02, which brings
+    the sum to 15 — still ONE over. The remaining overshoot is QB depth 2, i.e. a
+    backup QB in a single-QB 14-team league, which is a real question and NOT one
+    this change decided. Left at 2 deliberately; see the session log. The gap rule
+    below only reads RB and WR, so the overshoot does not distort it today. */
+ WR :{open:1,  by:10, depth:5},
  TE :{open:2,  by:7,  depth:1},
  K  :{open:10, by:14, depth:1},
  DEF:{open:10, by:13, depth:1}
 };
+/* Rounds 4-6: lean toward whichever of RB/WR sits furthest below its PLAN2 depth
+   target. Recomputed at every pick, so taking the lean shrinks its own gap and
+   the plan alternates instead of stacking one position — which is exactly what
+   the flat WR lean failed to do.
+
+   TIE GOES TO RB, deliberately. With equal gaps the deep-league argument is
+   one-sided: RB is the scarcer commodity in a 14-team full PPR, it is the
+   position whose floor this plan already gates on in R1-3, and the reported
+   failure was specifically that the build never came back to RB. Flip the two
+   lines below to make WR win a tie if that reads wrong at the table.
+
+   Returns null (falling through to the R7+ engine) when both are at depth or
+   neither has anyone left on the board. */
+function midDepthLean(){
+ const c=myPosCounts();
+ const gap=p=>Math.max(0,(PLAN2[p]?PLAN2[p].depth:0)-(c[p]||0));
+ const gRB=gap('RB'), gWR=gap('WR');
+ const canRB=!!bestAvailPos('RB'), canWR=!!bestAvailPos('WR');
+ let pos=null;
+ if(gRB>=gWR&&gRB>0&&canRB)pos='RB';                 // >= : the tie goes to RB
+ else if(gWR>0&&canWR)pos='WR';
+ else if(gRB>0&&canRB)pos='RB';                      // the other one had nobody left
+ if(!pos)return null;
+ const g=(pos==='RB')?gRB:gWR;
+ return{pos:pos,kind:'lean',why:'plan: '+pos+' depth ('+((c[pos]||0))+' of '+PLAN2[pos].depth+', biggest gap)',gap:g};
+}
 /* Still need a STARTER at this position? A dedicated slot is open, or (RB/WR only)
    an open FLEX we would fill with one. TE deliberately does not chase the FLEX --
    you draft an RB/WR into it, not a second TE. Reads the live optimal-fill need(). */
@@ -2483,10 +2577,10 @@ function bestAvailable(limit){
     eff+=_push;why.push('my fade +'+_push.toFixed(1));
    }
   }
-  // Positional build plan — the middle-rounds (4-6) soft WR lean. Small and flat,
+  // Positional build plan — the middle-rounds (4-6) depth-gap lean. Small and flat,
   // Joop-cockpit-only (pt is null everywhere else). The hard first-3 window is a
   // hero promotion after the sort, NOT an eff nudge, so it lives below, not here.
-  if(pt && pt.kind==='lean' && p.p===pt.pos){eff-=PLAN_WRLEAN_PTS;why.push(pt.why);}
+  if(pt && pt.kind==='lean' && p.p===pt.pos){eff-=PLAN_MIDLEAN_PTS;why.push(pt.why);}
   // Strength-of-schedule tilt — a small, capped, season-long tiebreaker on the
   // player's OWN position SoS (TEAMX, FFToolbox 2026, rank 1=easiest .. 32=toughest).
   // Favorable slate lowers eff (slight boost), tough raises it. Position-specific,
@@ -3515,11 +3609,49 @@ function viewRoom(){
    into one More drawer. It REUSES the engine's own data and math (bestAvailable,
    survivalNext, verdicts, goneBefore, runBlock, rosterPath, pass) — it only lays
    them out differently. Active only when body[data-view=cockpit]. */
+/* The "Needs" board chip and the scoop-watch rail both read this.
+
+   It used to be the raw open-lineup set, and in the rounds that matter most that
+   made it useless: at round 1 all nine slots are open, the FLEX alone expands to
+   RB/WR/TE, so "Needs" and "All" showed the same 384 names. Chris reported it on
+   2026-09-02 and chose "every position with an open or closing punt window".
+
+   So under planOn() this is now the PUNT-WINDOW set: a position counts when its
+   window has opened (rd >= PLAN2.open — the discipline that keeps K/DEF off the
+   board until R10) and it still has a real need, meaning either a dedicated
+   starting slot open or a roster count below its depth target. The live plan
+   target is always included even if the rules above would drop it, so the chip
+   can never hide the position the hero is being promoted from.
+
+   R1 -> {RB,WR} · R2 adds TE · R4 adds QB · R10 adds K/DEF. Off the cockpit
+   (public boards, superflex, season) planOn() is false and the raw set is
+   returned unchanged, so those builds are BEHAVIOURALLY identical — not
+   byte-identical, which an earlier draft of this comment claimed and the audit
+   disproved: every surface shares this template, so the 8-team artifact's file
+   size moves even though nothing it does changes. Verified 2026-09-02 by
+   rebuilding superflex-8 and the public joop board against both templates and
+   diffing MODE, planOn(), ckNeedSet(), planPick() and bestAvailable(12)
+   names+eff at four draft depths: identical in draft and season mode. */
 function ckNeedSet(){
  const n=need(), out=new Set(), map={QB:['QB'],RB:['RB'],WR:['WR'],TE:['TE'],K:['K'],DEF:['DEF'],
    FLEX:['RB','WR','TE'],SUPERFLEX:['QB','RB','WR','TE'],SUPER_FLEX:['QB','RB','WR','TE']};
  Object.keys(n).forEach(slot=>{(map[slot]||[slot]).forEach(p=>out.add(p));});
- return out;
+ if(!planOn())return out;
+ const cp=currentPick(), rd=Math.ceil((nextMyPick()||cp)/RS()), c=myPosCounts(), win=new Set();
+ ['QB','RB','WR','TE','K','DEF'].forEach(pos=>{
+  const cfg=PLAN2[pos]; if(!cfg||rd<cfg.open)return;              // window not open yet
+  if(!starterNeedFor(pos,n)&&(c[pos]||0)>=cfg.depth)return;       // starter filled AND at depth
+  win.add(pos);
+ });
+ const pt=planPick(cp); if(pt&&pt.pos)win.add(pt.pos);
+ /* Falls back to the raw lineup set rather than an empty window set. NOT a
+    guarantee of a non-empty board: with all 9 starters filled AND every depth
+    target met, `out` is empty too and this returns an empty Set, so the Needs
+    chip renders nothing. Pre-existing (the old code did the same) and unreachable
+    in a 14-round draft — the depth targets sum to 15, more picks than exist — but
+    the comment here used to promise "never hand back an empty board", which was
+    simply false. Recorded rather than fixed: the reachable case is zero. */
+ return win.size?win:out;
 }
 function ckRow(p){
  const s=survivalNext(p), v=s?(s.room!=null?s.room:s.nat):null;
@@ -3894,6 +4026,20 @@ function viewCockpit2(){
  const planned=ba.length&&ba[0].planHero;
  const urg=bvd.findIndex(v=>v&&v.k==='now');
  if(urg>0 && !planned){ order=[urg].concat(order.filter(i=>i!==urg)); }
+ /* ONE-AND-ONE (2026-09-02). Under a HARD plan hero the two runner-up rows were
+    pure value, and pure value in rounds 1-3 is nearly all WR: seat 5 round 1 put
+    McCaffrey on top and then Amon-Ra and Jaxon Smith-Njigba directly under him,
+    so the screen promoted one RB and then argued for wide receivers twice. The
+    rows now read one MORE at the plan position, then one off-plan — the real
+    alternative to the hero, not the third-best version of the thing he passed on.
+    Hard rounds only: on a lean the plan is not claiming the seat, so pure value
+    underneath it is the honest display (Chris, 2026-09-02). Falls back cleanly
+    when the shortlist has no second same-position or no off-position name. */
+ if(planned && order.length>2){
+  const hp=ba[order[0]].p.p, rest=order.slice(1);
+  const same=rest.filter(i=>ba[i].p.p===hp), other=rest.filter(i=>ba[i].p.p!==hp);
+  order=[order[0]].concat(same.slice(0,1),other.slice(0,1),same.slice(1),other.slice(1));
+ }
  if(!ba.length)h+='<div class="empty">Nothing left on the board.</div>';
  if(order.length){                                       /* Q2 */
   const hi=order[0], p=ba[hi].p, s=bsv[hi], v=bvd[hi];
@@ -5037,7 +5183,10 @@ async function seasonAutoLoad(){
  else if(window.innerWidth>=900)S.open={gone:1,runs:1,path:0,log:1,drift:0};
 
  // Mode defaults to the calendar but the badge always wins if the hash says so.
- MODE = (META.draft && new Date().toISOString().slice(0,10) > META.draft) ? 'season' : 'draft';
+ // seasonByCalendar() reads the LOCAL date and carries MODE_GRACE_DAYS past the
+ // recorded draft date — see the block at its definition for the two draft-day
+ // failures the old one-liner had.
+ MODE = seasonByCalendar() ? 'season' : 'draft';
  loadState();
  applyMode();
 
