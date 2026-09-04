@@ -1454,6 +1454,31 @@ body[data-view="compare"] .cmpmore>summary{cursor:pointer;color:var(--muted);fon
    below still ships for the surface that named it. */
 .cmptw{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;min-width:0}
 
+/* ===== "where the win comes from" (2026-09-04) ===========================
+   With the plan factor gone the score has four moving parts and one health
+   multiplier, which is few enough to SHOW rather than summarise. cmpDriver has
+   always computed each factor's share of the margin by equalising it and
+   re-running the kernel; until now that produced one sentence naming the top
+   one or two. The sentence stays -- it is the two-second read -- and these bars
+   are the rest of it, because "usage 54%, fallback 28%" is a different and more
+   useful fact than "driven by usage, then your fallback".
+
+   WHAT THE BARS ARE, precisely, because this is easy to overclaim: cmpDriver
+   measures each factor's INDEPENDENT sensitivity -- equalise that one factor
+   across the two men, see how much of the margin evaporates. Those numbers are
+   not a decomposition and need not sum to anything, so the bars normalise them
+   to 100% to be readable. That makes them RELATIVE INFLUENCE, not "this factor
+   contributed 46% of the gap". The heading says "what moves this most" rather
+   than naming a split, for exactly that reason. */
+.cmpattr{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.cmpattrr{display:grid;grid-template-columns:minmax(66px,auto) minmax(0,1fr) 34px;
+ gap:8px;align-items:center;margin-top:3px}
+.cmpattrl{font-size:var(--fs-body);color:var(--muted);white-space:nowrap}
+.cmpattrb{height:7px;border-radius:4px;background:var(--raised-hi);overflow:hidden}
+.cmpattrb>i{display:block;height:100%;background:var(--accent);border-radius:4px}
+.cmpattrp{font-size:var(--fs-body);color:var(--text-dim);text-align:right;
+ font-variant-numeric:tabular-nums}
+
 /* ===== the quick-add strip (2026-09-04) ==================================
    Unscoped for the same reason the cards are: cmpqs/cmpqc/cmpqm/cmpqlbl are new
    names, and the strip mounts on BOTH the standalone page and inside the ⚖ tray.
@@ -5400,13 +5425,14 @@ function openCompare(){
 const CMP_K = {
   VAL_C: 48, VAL_A0: 196,        // VAL(a) = VAL_C * ln(VAL_A0 / a), floored at 0
   U_GAIN: 40, U_CAP: 12,         // U = clamp(U_GAIN * delta, -U_CAP, +U_CAP)
-  M_SLOT_DED: 1.00,              // dedicated starter slot open
-  M_SLOT_FLEX: 0.90,             // fills only a multi-position slot
-  M_SLOT_DEPTH: 0.75,            // starters full, under PLAN2[pos].depth
-  M_SLOT_FULL: 0.55,             // starters full AND at depth
-  W_WINDOW: 0.30,                // m_window = 1 + W_WINDOW * u
-  M_WINDOW_HARD: 1.40,           // planPick() kind:'hard' AND pos matches
-  M_LO: 0.55, M_HI: 1.40,        // clamp on (m_slot * m_window), BEFORE m_status
+  /* THE PLAN FACTOR IS GONE (2026-09-04, Chris's call). M_SLOT_*, W_WINDOW,
+     M_WINDOW_HARD and the M_LO/M_HI clamp that bounded their product were the
+     whole of it, and they retired together -- m is m_status alone now. His
+     reason, recorded because it is the kind of decision that gets re-litigated:
+     he has time between picks to decide what the plan calls for, and he wants
+     this screen to answer the narrower question of who is actually better.
+     Roster fit was the one input he already had in his head.
+     Rollback: artifact_template.html.bak-2026-09-04-pre-noplan. */
   M_STATUS: 0.35,                // p.st in CMP_STATUS_OUT
   BAND_CLEAR: 0.50,              // margin / roundStake >= this  -> CLEAR
   BAND_LEAN: 0.15,               //                             -> LEAN, else COIN FLIP
@@ -5533,35 +5559,29 @@ function cmpVR(row){
     carry *= (1-pool[i].s);
   }
   names.sort(function(a,b){return b.w-a.w;});
-  return {vr:vr, names:names.slice(0,3)};
+  /* FLOORED AT REPLACEMENT (2026-09-04, audit D1). V = VAL + U, and VAL is
+     already floored at 0 by cmpVal because 0 IS replacement level -- but U can
+     go as low as -U_CAP, so V and therefore V_R could turn negative whenever a
+     whole positional pool was priced above its usage. A negative V_R made
+     gap = V - V_R LARGER than V, which is wrong on its own terms (it says your
+     fallback is worse than a free waiver body, when you would just take the free
+     body) and it broke the bound cmpQuick's prefilter rests on. Measured on the
+     live board the day this shipped: the lowest V was +0.56, so a ~2-pick ADP
+     drift on one tight end was all that stood between this and a wrong
+     shortlist. Flooring is the principled fix, not a patch: it makes V_R agree
+     with cmpVal about where zero is. */
+  return {vr:Math.max(0,vr), names:names.slice(0,3)};
 }
 
-/* --- §3.5 the three multipliers ------------------------------------------ */
-/* Mirrors bestAvailable's own dedicated/flexible split (:2546-2551) exactly,
-   so "fills a slot" means the same thing on both screens. */
-function cmpSlotMult(row){
-  const n=need(), MS=multiSlots(), st=Object.keys(n);
-  const ded=st.filter(function(s){return MS.indexOf(s)<0 && slotTakes(s,row.pos);});
-  if(ded.length) return {m:CMP_K.M_SLOT_DED, fills:ded[0], why:'fills '+ded[0]};
-  const flx=st.filter(function(s){return MS.indexOf(s)>=0 && slotTakes(s,row.pos);});
-  if(flx.length) return {m:CMP_K.M_SLOT_FLEX, fills:flx[0], why:'fills '+flx[0]};
-  const c=myPosCounts(), cfg=PLAN2[row.pos], depth=cfg?cfg.depth:0;
-  return (c[row.pos]||0)<depth
-    ? {m:CMP_K.M_SLOT_DEPTH, fills:null, why:row.pos+' depth '+((c[row.pos]||0)+1)+' of '+depth}
-    : {m:CMP_K.M_SLOT_FULL, fills:null, why:'starters full, at '+row.pos+' depth'};
-}
-/* The 1.40 is POSITION-MATCHED (T1 gives Chase 1.00 under a hard-RB plan).
-   planNeedTilt returns ADP spots (0..NEED_TILT_MAX=6), not the 0..1 ramp, so it
-   is divided by NEED_TILT_MAX -- used VERBATIM per spec §9.1, which flags the
-   doc/engine ramp disagreement as deliberately unresolved. Do not change
-   planNeedTilt. The mustTakeKDef clause is dropped: it is a local inside
-   bestAvailable (:2511) and only fires for K/DEF, which never enter the tray. */
-function cmpWindowMult(row, cp){
-  const pt=planPick(cp);
-  if(pt && pt.kind==='hard' && pt.pos===row.pos) return CMP_K.M_WINDOW_HARD;
-  const u=NEED_TILT_MAX ? planNeedTilt(row._pl, cp)/NEED_TILT_MAX : 0;
-  return 1 + CMP_K.W_WINDOW*Math.max(0,Math.min(1,u));
-}
+/* --- §3.5 the multiplier (one, now) --------------------------------------
+   cmpSlotMult and cmpWindowMult lived here. They read need(), multiSlots(),
+   PLAN2 depth, planPick() and planNeedTilt -- roster construction, all of it --
+   and they were the plan factor. Removed 2026-09-04; see the CMP_K note.
+
+   What is deliberately NOT removed, because it is not plan: m_status (health),
+   s (survival -- whether he lasts to the next pick) and V_R (the fallback at
+   that pick, which is POSITION-MATCHED, so it is what makes a QB and an RB
+   comparable at all rather than a roster preference). */
 function cmpStatusMult(row){ return cmpIsOut(row) ? CMP_K.M_STATUS : 1; }
 
 /* --- §3.6 one round of draft capital, in board points -------------------- */
@@ -5572,14 +5592,30 @@ function cmpRoundStake(cp){
 
 /* --- §3.7 the pure kernel. Every Tier-A acceptance test calls THIS. ------- */
 /* Numbers in, numbers out -- it cannot go stale when the ADP board refreshes.
-   Note the clamp order: clamp (m_slot * m_window) FIRST, then multiply by
-   m_status. m_status is deliberately outside the clamp so an OUT player can
-   fall below M_LO. */
+   Four inputs and one multiplier, which is the whole point of dropping the plan
+   factor: the score is now legible end to end.
+
+       V    = VAL + U          what he is worth at his price
+       gap  = V - V_R          ...over the man you would take instead at his
+                               position at your next pick
+       pick = (1 - s) * m * gap   discounted by the chance he lasts that long,
+                               and by m = m_status (health) alone.
+
+   There is no clamp any more: it existed only to bound m_slot * m_window. */
 function cmpPickFromParts(o){
   const V   = o.VAL + o.U;
   const gap = V - o.VR;
-  const m   = Math.max(CMP_K.M_LO, Math.min(CMP_K.M_HI, o.mSlot*o.mWindow)) * o.mStatus;
-  return {V:V, gap:gap, m:m, pick:(1-o.s)*m*gap};
+  const m   = o.mStatus;
+  /* HEALTH ONLY EVER DISCOUNTS (2026-09-04, audit judgment 1). m multiplied the
+     gap, so on a NEGATIVE gap it pulled a negative number toward zero and an
+     injured below-replacement player outscored a healthy one: Alexander Mattison
+     at gap -50.58 came out at -17.70 hurt against -50.58 fit. The inversion was
+     always in the arithmetic; what changed is that the new fold prints
+     "x Health x0.35" beside a rising number, which reads as injury helping. So m
+     applies to upside only. Confined to rows already below zero -- all of them
+     land in the PASS band, where the answer is "neither" either way -- but a
+     score that is visibly wrong in a printed breakdown is worth fixing. */
+  return {V:V, gap:gap, m:m, pick:(1-o.s)*(gap>0 ? m*gap : gap)};
 }
 
 /* --- §3.11 bestAvailable, memoized per render cycle ---------------------- */
@@ -5594,10 +5630,10 @@ function cmpBA(){ return rc('cmpBA', function(){
 /* --- §3.9 the assembled bundle ------------------------------------------- */
 function cmpScore(row, ctx){
   const VAL=cmpVal(row.adp), U=cmpU(row), vr=cmpVR(row);
-  const sl=cmpSlotMult(row), mW=cmpWindowMult(row, ctx.cp), mS=cmpStatusMult(row);
-  const k=cmpPickFromParts({VAL:VAL, U:U, VR:vr.vr, s:row.s, mSlot:sl.m, mWindow:mW, mStatus:mS});
+  const mS=cmpStatusMult(row);
+  const k=cmpPickFromParts({VAL:VAL, U:U, VR:vr.vr, s:row.s, mStatus:mS});
   return {VAL:VAL, U:U, V:k.V, VR:vr.vr, vrNames:vr.names, gap:k.gap, s:row.s, sv:row.surv,
-          mSlot:sl.m, mSlotWhy:sl.why, mFills:sl.fills, mWindow:mW, mStatus:mS, m:k.m, pick:k.pick,
+          mStatus:mS, m:k.m, pick:k.pick,
           reach:(row.adp==null?null:Math.round(row.adp-ctx.cp))};
 }
 
@@ -5660,29 +5696,27 @@ function cmpBand(rows, cp){
    lets the Tier-A fixtures drive it. */
 function cmpDriverParts(x){
   const o=(x && x.score) ? x.score : x;
-  return {VAL:o.VAL, U:o.U, VR:o.VR, s:o.s, mSlot:o.mSlot, mWindow:o.mWindow, mStatus:o.mStatus};
+  return {VAL:o.VAL, U:o.U, VR:o.VR, s:o.s, mStatus:o.mStatus};
 }
-const CMP_DRIVER_WHY={ s:"he won't be there", m:'roster fit', U:'usage',
+const CMP_DRIVER_WHY={ s:"he won't be there", m:'his injury status', U:'usage',
                        VR:'your fallback at #NP', VAL:'raw ADP value' };
 function cmpDriver(A,B,ctx){
   const a=cmpDriverParts(A), b=cmpDriverParts(B);
   const margin=Math.abs(cmpPickFromParts(a).pick - cmpPickFromParts(b).pick);
-  /* m is equalised on the COMPOSITE, not on its three factors: the clamp is
-     non-linear, so averaging mSlot and mWindow is not averaging m. Loading the
-     mean into mStatus with mSlot=mWindow=1 reproduces it exactly for any value,
-     clamp(1*1)=1 included. */
+  /* Four real levers plus health. The old 'm' clause equalised a COMPOSITE of
+     m_slot and m_window through m_status because the clamp made averaging the
+     two factors wrong; with the plan factor gone m IS m_status, so it equalises
+     directly and the label is honest ("his injury status", not "roster fit"). */
   const eq=[
    {id:'s',   f:function(x,y){ const m=(a.s+b.s)/2; x.s=m; y.s=m; }},
-   {id:'m',   f:function(x,y){ const m=(cmpPickFromParts(a).m+cmpPickFromParts(b).m)/2;
-                               x.mSlot=1; x.mWindow=1; x.mStatus=m;
-                               y.mSlot=1; y.mWindow=1; y.mStatus=m; }},
+   {id:'m',   f:function(x,y){ const m=(a.mStatus+b.mStatus)/2; x.mStatus=m; y.mStatus=m; }},
    {id:'U',   f:function(x,y){ x.U=0; y.U=0; }},
    {id:'VR',  f:function(x,y){ const m=(a.VR+b.VR)/2; x.VR=m; y.VR=m; }},
    {id:'VAL', f:function(x,y){ const m=(a.VAL+b.VAL)/2; x.VAL=m; y.VAL=m; }}
   ];
   const shares=eq.map(function(e){
-    const x={VAL:a.VAL,U:a.U,VR:a.VR,s:a.s,mSlot:a.mSlot,mWindow:a.mWindow,mStatus:a.mStatus};
-    const y={VAL:b.VAL,U:b.U,VR:b.VR,s:b.s,mSlot:b.mSlot,mWindow:b.mWindow,mStatus:b.mStatus};
+    const x={VAL:a.VAL,U:a.U,VR:a.VR,s:a.s,mStatus:a.mStatus};
+    const y={VAL:b.VAL,U:b.U,VR:b.VR,s:b.s,mStatus:b.mStatus};
     e.f(x,y);
     const m2=cmpPickFromParts(x).pick - cmpPickFromParts(y).pick;
     return {id:e.id, share:(margin>0 ? Math.abs(margin-Math.abs(m2))/margin : 0)};
@@ -5696,7 +5730,10 @@ function cmpDriver(A,B,ctx){
 function cmpCtx(){
   const cp=currentPick();
   return {cp:cp, np:myReturnPick(), stake:cmpRoundStake(cp),
-          plan:planPick(cp), need:ckNeedSet(), universe:cmpUniverse()};
+          /* ctx.plan (planPick(cp)) lived here and had no readers left once the
+             Plan row went -- the last live call from the compare into the plan
+             layer, running once per cmpPlanRows and feeding nothing. */
+          need:ckNeedSet(), universe:cmpUniverse()};
 }
 
 /* --- §2 the CmpRow data model. Plain data only -- no HTML, no DOM. ------- */
@@ -5732,10 +5769,12 @@ function cmpPlanRows(pids){
     /* Display only. The SCORE must not read ba -- bestAvailable omits drafted
        players, so a GONE row has no entry here. */
     row.ba      = BA[p.g]||null;
-    row.fills   = cmpSlotMult(row).fills;
+    /* row.fills / row.plan / row.tiltU lived here. They fed the Fills and Plan
+       rows, which retired with the plan factor -- a row that reads like a score
+       input while feeding nothing is worse than no row. row.inNeed stays: it is
+       read by nothing in the score and costs one Set lookup, but it is the one
+       hook a future "does this fit?" glance would need. */
     row.inNeed  = ctx.need.has(row.pos);
-    row.plan    = ctx.plan;
-    row.tiltU   = NEED_TILT_MAX ? planNeedTilt(p, ctx.cp)/NEED_TILT_MAX : 0;
     /* MYLIST must be reached through `typeof`, never a bare reference. hub.py
        STRIPS the whole /*MYLIST_START..MYLIST_END* / block out of the published
        dist copy (hub.py:247), so on the live site MYLIST is not merely undefined
@@ -5974,8 +6013,6 @@ function cmpPlanTable(rows){
               const nm=(r.score.vrNames||[]).slice(0,2).map(function(x){return x.n;});
               return cmpN(r.score.VR,1)+(nm.length?' — '+esc(cmpNameList(nm)):'');
             }), true, function(v){return v;}, {noHi:true, gone:gone});
-  h+=cmpRow('Fills', rows.map(function(r){return r.score.mSlotWhy||'—';}), true,
-            function(v){return esc(v);}, {noHi:true, gone:gone});
   h+=cmpRow('Injury / status', rows.map(function(r){return cmpStatus(r);}), true,
             function(v){return esc(v);}, {noHi:true, gone:gone});
 
@@ -6012,6 +6049,7 @@ function cmpTeamCtxText(r){
 
 function cmpFoldBlock(rows){
   if(!rows||!rows.length) return '';
+  const npf=myReturnPick();
   const N=rows.length, gone=rows.map(function(r){return !!r.taken;});
   const mixed=rows.some(function(r){return r.pos!==rows[0].pos;});
   const allRB=rows.every(function(r){return r.pos==='RB';});
@@ -6037,12 +6075,33 @@ function cmpFoldBlock(rows){
      copy they had above the fold -- demoted, not removed. The Usage rows are the
      raw shares behind the strip on the card: the strip says WHERE the score
      comes from, these say by how much. */
+  /* The arithmetic, in full, so the number on the card can be checked rather
+     than trusted. Every line is a term of pick = (1-s) * m * (VAL + U - V_R),
+     in the order the formula applies them; the two "=" lines are the running
+     result, not extra inputs. Signs are shown, because "fallback 41" and
+     "fallback -41" are opposite facts. */
+  h+=sec('How the pick score is built');
+  h+=cmpRow('Price value', rows.map(function(r){return r.score.VAL;}), true,
+            function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
+  h+=cmpRow('+ Usage edge', rows.map(function(r){return r.score.U;}), true,
+            function(v){return (v==null||!isFinite(v))?'—':((v>0?'+':'')+cmpN(v,1));},
+            {noHi:mixed, gone:gone});
+  h+=cmpRow(npf?('− Fallback at #'+npf):'− Fallback', rows.map(function(r){return r.score.VR;}), false,
+            function(v){return (v==null||!isFinite(v))?'—':('-'+cmpN(v,1));},
+            {noHi:mixed, gone:gone});
+  h+=cmpRow('= Edge over replacement', rows.map(function(r){return r.score.gap;}), true,
+            function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
+  h+=cmpRow('× Lasts to your next pick', rows.map(function(r){return r.score.s;}), false,
+            function(v){return (v==null||!isFinite(v))?'—':('×'+cmpN(1-v,2)+' ('+pct(v)+' survives)');},
+            {noHi:true, gone:gone});
+  h+=cmpRow('× Health', rows.map(function(r){return r.score.mStatus;}), true,
+            function(v,i){return (v==null||!isFinite(v))?'—'
+              :('×'+cmpN(v,2)+(v<1?' ('+esc(cmpStatus(rows[i]))+')':''));},
+            {noHi:true, gone:gone});
+  h+=cmpRow('= Pick score', rows.map(function(r){return r.score.pick;}), true,
+            function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
+
   h+=sec('The pick');
-  h+=cmpRow('Plan', rows.map(function(r){
-              const pl=r.plan;
-              const base=(pl&&pl.pos===r.pos&&pl.why)?pl.why:'off-plan';
-              return base+(r.score.mWindow>1?' · window ×'+cmpN(r.score.mWindow,2):'');
-            }), true, function(v){return esc(v);}, {noHi:true, gone:gone});
   h+=cmpRow('Room price', rows.map(function(r){
               return (r.al==null)?'national only'
                 : (cmpN(r.al,1)+(r.ls?' ('+r.ls+')':''));
@@ -6172,7 +6231,7 @@ function cmpUsageWinner(rows){
 function cmpDriverText(A,B,np){
   const fin=function(x){
     const o=x&&x.score; if(!o) return false;
-    return ['VAL','U','VR','s','mSlot','mWindow','mStatus'].every(function(k){
+    return ['VAL','U','VR','s','mStatus'].every(function(k){
       return typeof o[k]==='number' && isFinite(o[k]); });
   };
   if(!fin(A)||!fin(B)) return '';
@@ -6180,6 +6239,47 @@ function cmpDriverText(A,B,np){
   if(!d||!d.topWhy) return '';
   const sub=function(w){ return String(w).replace('#NP','#'+(np==null?'your next pick':np)); };
   return 'Driven by '+esc(sub(d.topWhy))+(d.second?', then '+esc(sub(d.secondWhy)):'')+'.';
+}
+
+/* The five factors, in the words the bars use. Deliberately NOT the same
+   strings as CMP_DRIVER_WHY: that map writes sentence fragments ("he won't be
+   there", "your fallback at #NP") and these are column labels. One concept, two
+   registers, and mixing them would make one of the two read badly. */
+const CMP_ATTR_LABEL={VAL:'Price', U:'Usage', VR:'Fallback', s:'Availability', m:'Health'};
+
+/* The margin, broken down. Returns '' rather than throwing on a hand-built
+   score (the Tier-A fixtures build three), which is also what keeps NaN out. */
+function cmpAttrBlock(A,B){
+  if(!A||!B) return '';
+  const fin=function(x){
+    const o=x&&x.score; if(!o) return false;
+    return ['VAL','U','VR','s','mStatus'].every(function(k){
+      return typeof o[k]==='number' && isFinite(o[k]); });
+  };
+  if(!fin(A)||!fin(B)) return '';
+  let d; try{ d=cmpDriver(A,B); }catch(e){ return ''; }
+  if(!d || !d.shares || !d.shares.length) return '';
+  /* Normalise. cmpDriver measures each factor independently -- equalise it,
+     see how much of the margin evaporates -- so the raw shares need not sum to
+     1 and printing one raw would be a percentage of nothing. */
+  /* share is |margin - |margin'||/margin, already a non-negative ratio, so the
+     Math.max(0, ...) guards that used to be here were dead. */
+  let tot=0;
+  d.shares.forEach(function(x){ tot+=x.share; });
+  if(!(tot>0)) return '';
+  const rows=d.shares.map(function(x){ return {id:x.id, pct:x.share/tot}; })
+                     .filter(function(x){ return x.pct>=0.01; });
+  if(!rows.length) return '';
+  return '<div class="cmpattr">'
+    +'<div class="cmpanslbl">What moves this most · '+esc(A.n)+' over '+esc(B.n)+'</div>'
+    +rows.map(function(x){
+        const w=Math.round(x.pct*100);
+        return '<div class="cmpattrr">'
+          +'<span class="cmpattrl">'+esc(CMP_ATTR_LABEL[x.id]||x.id)+'</span>'
+          +'<span class="cmpattrb"><i style="width:'+Math.max(1,w)+'%"></i></span>'
+          +'<span class="cmpattrp">'+w+'%</span></div>';
+      }).join('')
+    +'</div>';
 }
 
 /* §4.5 rebuilt (2026-09-04): ONE answer card, not two boxes and a banner.
@@ -6199,7 +6299,7 @@ function cmpDriverText(A,B,np){
    answer before it could read the answer. */
 function cmpVerdictBlock(rows, band){
   const np=myReturnPick();
-  let lbl='Take', name='', chip='', bits='', drv='', turn='', split=false;
+  let lbl='Take', name='', chip='', bits='', drv='', turn='', attr='', split=false;
 
   if(!band || band.kind==='ONE_LEFT'){
     const live=(band&&band.live)||rows.filter(function(r){return !r.taken;});
@@ -6232,6 +6332,7 @@ function cmpVerdictBlock(rows, band){
     if(band.bandDowngraded) b.push('confidence downgraded — the edge rests on a soft input');
     bits=b.join(' · ');
     drv=cmpDriverText(A,B,np);
+    attr=cmpAttrBlock(A,B);
     if(band.kind==='TURN'){
       /* "these", never "both" (N1): TURN fires when EVERY live row clears
          TURN_S and the tray holds up to 4, so this renders at 2, 3 and 4. */
@@ -6254,6 +6355,7 @@ function cmpVerdictBlock(rows, band){
     +'<div class="cmpansname">'+name+chip+'</div>'
     +(bits?'<div class="cmpansbits">'+bits+'</div>':'')
     +(drv?'<div class="cmpansdrv">'+drv+'</div>':'')
+    +attr
     +'<div class="cmpansu'+(split?' split':'')+'">'
       +'<b>'+(split?'Usage disagrees':'Best player (usage)')+'</b> · '+cmpUsageBlock(rows)
     +'</div>'
@@ -6316,43 +6418,29 @@ function cmpPlanMount(host, pids){
 }
 /* ===== end COMPARE REBUILD stage 3 ======================================== */
 
-/* ===== COMPARE REBUILD stage 5 — the seed (§5.x) ==========================
-   cmpSeed() fills the tray from the decision column's own ranking, so the
-   compare can never disagree with the screen it was launched from. Up to 3 --
-   the plan hero plus the top alternatives at OTHER positions -- leaving the
-   4th slot free for a manual ⚖.
+/* ===== COMPARE REBUILD stage 5 — the seed ================================
+   cmpSeed fills the tray with the opening three. It used to read bestAvailable
+   -- the plan hero plus the best alternative at each OTHER position -- so the
+   compare opened on the same three the decision column was showing.
 
-   ONE ok() predicate, applied to every candidate INCLUDING the hero. This is
-   audit D5: the earlier draft filtered K/DEF, empty sl and TAKEN only inside
-   the alternatives loop and pushed the hero unconditionally -- and the hero is
-   ba[0], which bestAvailable's mustTakeKDef (:2561) deliberately forces to a K
-   or DEF in the last two rounds. A kicker has no UB row, no cmpU and no
-   business in a compare. The fix is not a second guard on the hero; it is to
-   stop having a separate hero path at all. */
+   Re-pointed 2026-09-04 along with the plan factor: it takes the top three off
+   cmpQuick(), which is the compare's own score. Two consequences, both
+   deliberate:
+
+     - the opening three are no longer one-per-position. At a real pick they may
+       be three RBs, because on straight value that is what the top three are.
+       The old spread was a plan judgment wearing a display costume.
+     - the cockpit's ⚖ seed button opens on those three too. The BOARD still
+       ranks by bestAvailable and still tilts to the plan; only what the compare
+       opens HOLDING has changed.
+
+   Still "up to 3", not "exactly 3": late in a draft this can legitimately return
+   1 or 0, and openCompare's planOn() branch routes CMP.length<2 to
+   cmpTooFewBlock (S21) and shows the overlay anyway -- a dead button would be
+   the S15 failure reintroduced one function over. */
 function cmpSeed(){
-  const ok=function(q){
-    return !!q && q.p!=='K' && q.p!=='DEF' && q.sl!=null && q.sl!=='' && !TAKEN[q.g];
-  };
-  const ba=bestAvailable(PL.length);
-  const out=[], seen={};
-  /* planHero is only ever set on ba[0]: bestAvailable's own tail splices the
-     hard-plan row out, unshifts it to the front and flags it THERE. Not
-     fullPlanPick, which never touches planHero. So no .find(), and no risk of
-     picking up a flagged row that is no longer first. */
-  if(ba.length && ba[0].planHero && ok(ba[0].p)){ out.push(ba[0].p); seen[ba[0].p.p]=1; }
-  for(let i=0;i<ba.length && out.length<3;i++){
-    const q=ba[i].p;
-    if(!ok(q)) continue;
-    if(seen[q.p]) continue;
-    seen[q.p]=1; out.push(q);
-  }
-  return out.map(function(q){return String(q.sl);});
+  return cmpQuick().slice(0,3).map(function(q){ return String(q.sl); });
 }
-/* "Up to 3", not "exactly 3": late in a draft, with most positions filled and
-   K/DEF excluded, this can legitimately return 1 or 0. openCompare's planOn()
-   branch routes CMP.length<2 to cmpTooFewBlock (S21) and shows the overlay
-   anyway -- a dead button here would be the S15 failure reintroduced one
-   function over. */
 function cmpSeedOpen(){ CMP=cmpSeed(); render(); openCompare(); }
 /* ===== end COMPARE REBUILD stage 5 ======================================== */
 
@@ -6386,29 +6474,106 @@ function cmpSeedOpen(){ CMP=cmpSeed(); render(); openCompare(); }
    the handler name, because the two surfaces need different repaint behaviour
    (the page repaints panes, the tray re-mounts the overlay) and nothing else.
 
-   WHAT FEEDS IT. bestAvailable() -- the exact ranking the cockpit's decision
-   column already paints. Not ADP, and not a second opinion: if the strip and the
-   cockpit ever disagreed about who is worth looking at, one of them would be
-   lying, and the compare page is not the place to find that out. Filtered by
-   cmpSeed's own ok() rule, verbatim: no K, no DEF, a Sleeper id PRESENT (not
-   checked to RESOLVE -- identical to cmpSeed rather than stricter, so the strip
-   and the seed can never offer different sets), and not already drafted.
+   WHAT FEEDS IT: the compare's OWN score, not bestAvailable.
 
-   NOT deduped by position, unlike cmpSeed. The seed is building a balanced
-   opening compare and wants one man per position; the strip is answering "who is
-   even in the conversation", and at a real pick that is often three RBs. */
+   It used to be bestAvailable -- the cockpit decision column's ranking -- on the
+   reasoning that the strip and the cockpit must never disagree about who is
+   worth a look. That reasoning died with the plan factor (2026-09-04).
+   bestAvailable is plan-tilted by construction: planHero, planNeedTilt and the
+   need ordering are all inside it. Feeding plan-tilted candidates into a compare
+   that has deliberately stopped caring about the plan would be the exact
+   inconsistency the strip was built to avoid, just pointing the other way.
+
+   So the strip ranks by the compare's own score -- the same number the cards
+   print. The cockpit board still ranks by bestAvailable and still tilts to the
+   plan; that divergence is now the design (board suggests along the plan,
+   compare adjudicates straight up), not an accident.
+
+   TWO STAGES, because cmpVR filters and sorts PL once per row and this repaints
+   on the 3s poll -- scoring all ~330 in full would be ~330 filter+sorts a tick.
+
+   THE PREFILTER IS AN UPPER BOUND ON pick, AND IT CARRIES A PROOF.
+   The first version of this ranked stage 1 by V and truncated at 24, on the
+   reasoning that pick <= V so nobody below the 24th V could reach the top 8.
+   That reasoning is WRONG and the suite caught it: pick <= V bounds a man by the
+   24th V, but the EIGHTH-BEST PICK can sit far below the 24th V -- a top-V man
+   with a big V_R and a high survival scores almost nothing -- so a 30th-by-V man
+   could genuinely outscore him.
+
+   What is true: V_R >= 0 (asserted by B6), (1-s) <= 1 and m <= 1, so
+
+       bound = (1 - s) * m * V   >=   (1 - s) * m * (V - V_R)   =   pick
+
+   ...which needs V_R >= 0, and V_R >= 0 is now STRUCTURAL rather than merely
+   observed: cmpVR floors it (see the note there). Audit D1 built a board where
+   it was negative and this shortlist came out demonstrably wrong.
+
+   That bound needs only V, s and m, all of which are cheap -- no cmpVR. So
+   stage 1 ranks by the bound, stage 2 scores the leading block for real, and
+   then CHECKS ITS OWN WORK.
+
+   THE CERTIFICATE, stated precisely: cand is sorted by a bound that is >= each
+   man's true pick, so once the best bound among the UNSCORED is <= the 8th-best
+   pick found so far, no unscored man can beat the 8th and the list is final.
+   The <= accepts ties, so what is proven is "nobody left out is STRICTLY
+   better" -- not "this is the only such list". That distinction is real: with no
+   next pick to fall back to, V_R and s are both 0 and every candidate ties at
+   pick 0, and there the shortlist is an arbitrary tie-break among equals.
+
+   How many passes it takes varies with the board. The whole thing is memoised
+   per PICK by rc(), not per repaint. */
 const CMP_QUICK_N=8;
+const CMP_QUICK_BLOCK=32;
+/* The bound, as a named function ONLY so the suite can assert the shipped
+   expression instead of retyping it. A test that recomputes the formula it is
+   checking proves nothing about the formula in the build -- halving this in the
+   engine used to leave the suite green (audit follow-up). */
+function cmpQuickBound(s,m,V){ return (1-s)*m*V; }
 function cmpQuick(){
   /* rc() is the file's own per-recompute memo (:2231), busted by rcBust() on
-     every pick. bestAvailable sorts the whole pool, and this strip repaints on
-     the 3-second live poll -- without the memo that is a full sort every 3s for
-     a list that cannot change until somebody drafts. */
+     every pick, so this runs once per pick rather than once per repaint. */
   return rc('cmpQuickStrip', function(){
+    /* cmpSeed's ok() rule, verbatim: no K, no DEF, a Sleeper id PRESENT (not
+       checked to RESOLVE -- identical to the seed rather than stricter, so the
+       strip and the seed can never offer different sets), and not drafted. */
     const ok=function(q){ return !!q && q.p!=='K' && q.p!=='DEF'
                         && q.sl!=null && q.sl!=='' && !TAKEN[q.g]; };
-    const ba=bestAvailable(PL.length), out=[], seen={};
-    for(let i=0;i<ba.length && out.length<CMP_QUICK_N;i++){
-      const q=ba[i].p;
+    /* Stage 1 -- the bound. `r` is the shape cmpU and cmpStatusMult read;
+       cmpSurv takes the PL row itself, not `r`. */
+    const cand=[];
+    PL.forEach(function(q){
+      if(!ok(q)) return;
+      const r={g:q.g, pos:q.p, adp:q.adp, st:q.st,
+               ub:(q.sl!=null?UB.byId(String(q.sl)):null)};
+      const V=cmpVal(q.adp)+cmpU(r);
+      const s0=cmpSurv(q).s, m0=cmpStatusMult(r);
+      cand.push({sl:String(q.sl), _pl:q, bound:cmpQuickBound(s0,m0,V)});
+    });
+    cand.sort(function(a,b){ return b.bound-a.bound; });
+
+    /* Stage 2 -- score forward in blocks, ACCUMULATING. The first version
+       re-scored cand.slice(0, take) from scratch on every widen, which made a
+       full widen cost 32+64+...+n row-scores instead of n: measured at 10 passes
+       and 536ms on a slot-3 board against 95ms to simply score everything
+       (audit D2). Keeping what is already scored makes the worst case exactly
+       the cost of the exhaustive scan, and the common case 32 rows. */
+    const scored=[]; let take=0, best=[];
+    while(take<cand.length){
+      const next=Math.min(cand.length, take+CMP_QUICK_BLOCK);
+      cmpPlanRows(cand.slice(take,next).map(function(x){return x.sl;}))
+        .forEach(function(r){ if(r.score && typeof r.score.pick==='number'
+                                  && isFinite(r.score.pick)) scored.push(r); });
+      take=next;
+      scored.sort(function(a,b){ return b.score.pick-a.score.pick; });
+      best=scored;
+      if(take>=cand.length) break;
+      if(scored.length>=CMP_QUICK_N
+         && cand[take].bound <= scored[CMP_QUICK_N-1].score.pick) break;
+    }
+
+    const out=[], seen={};
+    for(let i=0;i<best.length && out.length<CMP_QUICK_N;i++){
+      const q=best[i]._pl;
       if(!ok(q)) continue;
       const sl=String(q.sl);
       if(seen[sl]) continue;
