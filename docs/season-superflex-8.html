@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>My Team — Ball Knowers United</title>
+<style>
+/* Navy & Gold, matching hub.py SKINS['navy']. Phone-first: the base rules ARE
+   the phone rules; the only desktop concession is a max-width so the column
+   does not stretch to 1500px on a laptop. Decided 2026-09-03 — Sunday lineup
+   calls and Tuesday waiver bids both happen on a phone. */
+:root{
+  --surface:#0A0F1A; --raised:#131B2E; --line-soft:#22304A;
+  --text:#EDF1F7; --text-mute:#93A0B8; --brand:#F5C451; --brand-fill:#43370F;
+  --positive:#5CE39B; --urgent:#FF6B6B; --warn:#F5A551;
+  --fs-body:13px; --fs-support:15px; --fs-head:17px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--surface); color:var(--text);
+  font:var(--fs-support)/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-text-size-adjust:100%;
+  padding:0 0 env(safe-area-inset-bottom);
+}
+.wrap{max-width:560px;margin:0 auto;padding:0 12px 40px}
+
+/* ---------- header ---------- */
+header{
+  position:sticky; top:0; z-index:20; background:var(--surface);
+  border-bottom:1px solid var(--line-soft);
+  padding:calc(10px + env(safe-area-inset-top)) 12px 10px;
+}
+.hrow{display:flex;align-items:baseline;gap:8px;max-width:560px;margin:0 auto}
+.lname{font-size:var(--fs-head);font-weight:700;letter-spacing:-.2px;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wk{margin-left:auto;flex:none;display:flex;align-items:center;gap:4px}
+.wk button{
+  background:var(--raised);color:var(--text);border:1px solid var(--line-soft);
+  border-radius:7px;font:600 var(--fs-body)/1 inherit;padding:7px 9px;cursor:pointer;
+  min-width:32px;min-height:32px;
+}
+.wk button:disabled{opacity:.35;cursor:default}
+.wk b{font-size:var(--fs-body);color:var(--brand);min-width:52px;text-align:center;
+  font-variant-numeric:tabular-nums}
+.sub{max-width:560px;margin:3px auto 0;font-size:var(--fs-body);color:var(--text-mute);
+  display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--text-mute);flex:none}
+.dot.ok{background:var(--positive)} .dot.bad{background:var(--urgent)}
+.dot.stale{background:var(--warn)}
+.sync{margin-left:auto;background:none;border:1px solid var(--line-soft);color:var(--text-mute);
+  border-radius:6px;font:600 11px/1 inherit;padding:6px 8px;cursor:pointer}
+
+/* ---------- alerts ---------- */
+.alerts{margin:12px 0 0;border:1px solid var(--line-soft);border-left:3px solid var(--warn);
+  border-radius:9px;background:var(--raised);padding:10px 12px}
+.alerts.crit{border-left-color:var(--urgent)}
+.alerts h3{margin:0 0 6px;font-size:var(--fs-body);letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-mute);font-weight:700}
+.alerts ul{margin:0;padding:0;list-style:none}
+.alerts li{padding:4px 0;font-size:var(--fs-body);display:flex;gap:7px;align-items:flex-start}
+.alerts li span:first-child{flex:none}
+
+/* ---------- section heads ---------- */
+.sec{margin:20px 0 7px;font-size:var(--fs-body);letter-spacing:.07em;text-transform:uppercase;
+  color:var(--text-mute);font-weight:700;display:flex;align-items:baseline;gap:8px}
+.sec i{font-style:normal;font-weight:500;color:var(--line-soft);margin-left:auto;
+  text-transform:none;letter-spacing:0}
+
+/* ---------- player rows ---------- */
+.row{display:flex;gap:10px;align-items:center;padding:9px 10px;border-radius:9px;
+  background:var(--raised);border:1px solid transparent;margin-bottom:5px;min-height:52px}
+.row.empty{background:none;border:1px dashed var(--line-soft)}
+.row.alert{border-color:var(--urgent)}
+.row.soft{border-color:var(--warn)}
+.slot{flex:none;width:38px;font-size:10px;font-weight:800;letter-spacing:.04em;
+  color:var(--brand);text-align:center;line-height:1.15}
+.slot.flex{color:var(--text-mute)}
+.body{min-width:0;flex:1}
+.nm{font-size:var(--fs-support);font-weight:650;line-height:1.25;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nm.dim{color:var(--text-mute);font-weight:500}
+.meta{font-size:var(--fs-body);color:var(--text-mute);margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.right{flex:none;text-align:right;font-size:11px;line-height:1.3;color:var(--text-mute);
+  font-variant-numeric:tabular-nums}
+.right b{display:block;font-size:var(--fs-body);color:var(--text);font-weight:600}
+.pill{display:inline-block;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:800;
+  letter-spacing:.04em;vertical-align:1px;margin-left:5px}
+.pill.out{background:#4A1416;color:#FFAFAF}
+.pill.doub{background:#4A2E14;color:#FFCB8F}
+.pill.q{background:#3A3416;color:#F0E08F}
+.pill.ir{background:#3A1440;color:#E0AFFF}
+.pill.bye{background:var(--brand-fill);color:var(--brand)}
+.pill.locked{background:#1B2436;color:var(--text-mute)}
+.pill.unconf{background:#3A2A16;color:var(--warn)}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--brand-fill);
+  color:var(--brand);border:none;border-radius:6px;font:700 11px/1 inherit;
+  padding:6px 8px;cursor:pointer;margin-left:auto}
+
+/* ---------- states ---------- */
+.msg{margin:16px 0;padding:14px;border:1px solid var(--line-soft);border-radius:9px;
+  background:var(--raised);font-size:var(--fs-body);line-height:1.55}
+.msg b{color:var(--text)}
+.msg.bad{border-left:3px solid var(--urgent)}
+.foot{margin:26px 0 0;padding-top:12px;border-top:1px solid var(--line-soft);
+  font-size:11px;color:var(--text-mute);line-height:1.6}
+.foot a{color:var(--text-mute)}
+.spin{padding:40px 12px;text-align:center;color:var(--text-mute);font-size:var(--fs-body)}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <div class="lname" id="lname">&nbsp;</div>
+    <div class="wk">
+      <button id="wkPrev" aria-label="Previous week">&#8249;</button>
+      <b id="wkNum">WK &ndash;</b>
+      <button id="wkNext" aria-label="Next week">&#8250;</button>
+    </div>
+  </div>
+  <div class="sub">
+    <span class="dot" id="statusDot"></span><span id="statusTxt">starting&hellip;</span>
+    <button class="sync" id="syncBtn">Refresh</button>
+  </div>
+</header>
+<div class="wrap"><div id="app"><div class="spin">Loading your roster&hellip;</div></div></div>
+
+<script>var SEASON={"leagueKey":"superflex-8","league":{"key":"superflex-8","name":"Ball Knowers United","teams":8,"lineup":["QB","RB","RB","WR","WR","TE","FLEX","FLEX","SUPER_FLEX","K","DEF"],"bench":7,"ir":1,"faab":100,"superflex":true,"leagueId":"1393723474328981504","sleeperUserId":"1135437440241680384","waiversNote":"Tue, 2-day clear (waiver_day_of_week 2, waiver_clear_days 2, Sleeper API 2026-08-15)"},"schedule":{"_meta":{"games":272,"kick_note":"kick is a UTC instant, converted here from nflverse's US/Eastern gametime with a real tz database (DST-correct across the Nov 1 changeover); 'et' is the same moment as Eastern wall clock, for reading only \u2014 never parse it","pulled":"2026-09-03","rejected_source":"api.sleeper.app/schedule \u2014 no kickoff time, and ships a status:canceled duplicate (DAL/SEA wk6) alongside the real game","season":"2026","source":"nflverse/nfldata data/games.csv (shallow sparse git clone)","source_url":"https://github.com/nflverse/nfldata"},"byes":{"ARI":14,"ATL":11,"BAL":13,"BUF":7,"CAR":5,"CHI":10,"CIN":6,"CLE":11,"DAL":14,"DEN":10,"DET":6,"GB":11,"HOU":8,"IND":13,"JAX":7,"KC":5,"LAC":7,"LAR":11,"LV":13,"MIA":6,"MIN":6,"NE":11,"NO":8,"NYG":8,"NYJ":13,"PHI":10,"PIT":9,"SEA":11,"SF":8,"TB":10,"TEN":9,"WAS":7},"weeks":{"1":{"ARI":{"day":"Sunday","et":"2026-09-13T16:25","home":false,"kick":"2026-09-13T20:25:00Z","opp":"LAC"},"ATL":{"day":"Sunday","et":"2026-09-13T13:00","home":false,"kick":"2026-09-13T17:00:00Z","opp":"PIT"},"BAL":{"day":"Sunday","et":"2026-09-13T13:00","home":false,"kick":"2026-09-13T17:00:00Z","opp":"IND"},"BUF":{"day":"Sunday","et":"2026-09-13T13:00","home":false,"kick":"2026-09-13T17:00:00Z","opp":"HOU"},"CAR":{"day":"Sunday","et":"2026-09-13T13:00","home":true,"kick":"2026-09-13T17:00:00Z","opp":"CHI"},"CHI":{"day":"Sunday","et":"2026-09-13T13:00","home":false,"kick":"2026-09-13T17:00:00Z","opp":"CAR"},"CIN":{"day":"Sunday","et":"2026-09-13T13:00","home":true,"kick":"2026-09-13T17:00:00Z","opp":"TB"},"CLE":{"day":"Sunday","et":"2026-09-13T13:00","home":false,"kick":"2026-09-13T17:00:00Z","opp":"JAX"},"DAL":{"day":"Sunday","et":"2026-09-13T20:20","home":false,"kick":"2026-09-14T00:20:00Z","opp":"NYG"},"DEN":{"day":"Monday","et":"2026-09-14T20:15","home":false,"kick":"2026-09-15T00:15:00Z","opp":"KC"},"DET":{"day":"Sunday","et":"2026-09-13T13:00","home":true,"kick":"2026-09-13T17:00:00Z","opp":"NO"},"GB":{"day":"Sunday","et":"2026-09-13T16:25","home":false,"kick":"2026-09-13T20:25:00Z","opp":"MIN"},"HOU":{"day":"Sunday","et":"2026-09-13T13:00","home":true,"kick":"2026-09-13T17:00:00Z","opp":"BUF"},"IND":{"day":"Sunday","et":"2026-09-13T13:00","home":true,"kick":"2026-09-13T17:00:00Z","opp":"BAL"},"JAX":{"day":"Sunday","et":"2026-09-13T13:00","home":true,"kick":"2026-09-13T17:00:00Z","opp":"CLE"},"KC":{"day":"Monday","et":"2026-09-14T20:15","home":true,"kick":"2026-09-15T00:15:00Z","opp":"DEN"},"LAC":{"day":"Sunday","et":"2026-09-13T16:25","home":true,"kick":"2026-09-13T20:25:00Z","opp":"ARI"},"LAR":{"day":"Thursday","et":"2026-09-10T20:35","home":true,"kick":"2026-09-11T00:35:00Z","opp":"SF"},"LV":{"day":"Sunday","et":"2026-09-13T16:25","home":true,"kick":"2026-09-13T20:25:00Z","opp":"MIA"},"MIA":{"day":"Sunday","et":"2026-09-13T16:25","home":false,"kick":"2026-09-13T20:25:00Z","opp":"LV"},"MIN":{"day":"Sunday","et":"2026-09-13T16:25","home":true,"kick":"2026-09-13T20:25:00Z","opp":"GB"},"NE":{"day":"Wednesday","et":"2026-09-09T20:20","home":false,"kick":"2026-09-10T00:20:00Z","opp":"SEA"},"NO":{"day":"Sunday","et":"2026-09-13T13:00","home":false,"kick":"2026-09-13T17:00:00Z","opp":"DET"},"NYG":{"day":"Sunday","et":"2026-09-13T20:20","home":true,"kick":"2026-09-14T00:20:00Z","opp":"DAL"},"NYJ":{"day":"Sunday","et":"2026-09-13T13:00","home":false,"kick":"2026-09-13T17:00:00Z","opp":"TEN"},"PHI":{"day":"Sunday","et":"2026-09-13T16:25","home":true,"kick":"2026-09-13T20:25:00Z","opp":"WAS"},"PIT":{"day":"Sunday","et":"2026-09-13T13:00","home":true,"kick":"2026-09-13T17:00:00Z","opp":"ATL"},"SEA":{"day":"Wednesday","et":"2026-09-09T20:20","home":true,"kick":"2026-09-10T00:20:00Z","opp":"NE"},"SF":{"day":"Thursday","et":"2026-09-10T20:35","home":false,"kick":"2026-09-11T00:35:00Z","opp":"LAR"},"TB":{"day":"Sunday","et":"2026-09-13T13:00","home":false,"kick":"2026-09-13T17:00:00Z","opp":"CIN"},"TEN":{"day":"Sunday","et":"2026-09-13T13:00","home":true,"kick":"2026-09-13T17:00:00Z","opp":"NYJ"},"WAS":{"day":"Sunday","et":"2026-09-13T16:25","home":false,"kick":"2026-09-13T20:25:00Z","opp":"PHI"}},"10":{"ARI":{"day":"Sunday","et":"2026-11-15T16:05","home":true,"kick":"2026-11-15T21:05:00Z","opp":"LAR"},"ATL":{"day":"Sunday","et":"2026-11-15T13:00","home":true,"kick":"2026-11-15T18:00:00Z","opp":"KC"},"BAL":{"day":"Monday","et":"2026-11-16T20:15","home":true,"kick":"2026-11-17T01:15:00Z","opp":"LAC"},"BUF":{"day":"Sunday","et":"2026-11-15T13:00","home":false,"kick":"2026-11-15T18:00:00Z","opp":"NYJ"},"CAR":{"day":"Sunday","et":"2026-11-15T13:00","home":false,"kick":"2026-11-15T18:00:00Z","opp":"NO"},"CIN":{"day":"Sunday","et":"2026-11-15T20:20","home":true,"kick":"2026-11-16T01:20:00Z","opp":"PIT"},"CLE":{"day":"Sunday","et":"2026-11-15T13:00","home":true,"kick":"2026-11-15T18:00:00Z","opp":"HOU"},"DAL":{"day":"Sunday","et":"2026-11-15T16:25","home":true,"kick":"2026-11-15T21:25:00Z","opp":"SF"},"DET":{"day":"Sunday","et":"2026-11-15T09:30","home":true,"kick":"2026-11-15T14:30:00Z","opp":"NE"},"GB":{"day":"Sunday","et":"2026-11-15T13:00","home":true,"kick":"2026-11-15T18:00:00Z","opp":"MIN"},"HOU":{"day":"Sunday","et":"2026-11-15T13:00","home":false,"kick":"2026-11-15T18:00:00Z","opp":"CLE"},"IND":{"day":"Sunday","et":"2026-11-15T13:00","home":true,"kick":"2026-11-15T18:00:00Z","opp":"MIA"},"JAX":{"day":"Sunday","et":"2026-11-15T13:00","home":false,"kick":"2026-11-15T18:00:00Z","opp":"TEN"},"KC":{"day":"Sunday","et":"2026-11-15T13:00","home":false,"kick":"2026-11-15T18:00:00Z","opp":"ATL"},"LAC":{"day":"Monday","et":"2026-11-16T20:15","home":false,"kick":"2026-11-17T01:15:00Z","opp":"BAL"},"LAR":{"day":"Sunday","et":"2026-11-15T16:05","home":false,"kick":"2026-11-15T21:05:00Z","opp":"ARI"},"LV":{"day":"Sunday","et":"2026-11-15T16:05","home":true,"kick":"2026-11-15T21:05:00Z","opp":"SEA"},"MIA":{"day":"Sunday","et":"2026-11-15T13:00","home":false,"kick":"2026-11-15T18:00:00Z","opp":"IND"},"MIN":{"day":"Sunday","et":"2026-11-15T13:00","home":false,"kick":"2026-11-15T18:00:00Z","opp":"GB"},"NE":{"day":"Sunday","et":"2026-11-15T09:30","home":false,"kick":"2026-11-15T14:30:00Z","opp":"DET"},"NO":{"day":"Sunday","et":"2026-11-15T13:00","home":true,"kick":"2026-11-15T18:00:00Z","opp":"CAR"},"NYG":{"day":"Thursday","et":"2026-11-12T20:15","home":true,"kick":"2026-11-13T01:15:00Z","opp":"WAS"},"NYJ":{"day":"Sunday","et":"2026-11-15T13:00","home":true,"kick":"2026-11-15T18:00:00Z","opp":"BUF"},"PIT":{"day":"Sunday","et":"2026-11-15T20:20","home":false,"kick":"2026-11-16T01:20:00Z","opp":"CIN"},"SEA":{"day":"Sunday","et":"2026-11-15T16:05","home":false,"kick":"2026-11-15T21:05:00Z","opp":"LV"},"SF":{"day":"Sunday","et":"2026-11-15T16:25","home":false,"kick":"2026-11-15T21:25:00Z","opp":"DAL"},"TEN":{"day":"Sunday","et":"2026-11-15T13:00","home":true,"kick":"2026-11-15T18:00:00Z","opp":"JAX"},"WAS":{"day":"Thursday","et":"2026-11-12T20:15","home":false,"kick":"2026-11-13T01:15:00Z","opp":"NYG"}},"11":{"ARI":{"day":"Sunday","et":"2026-11-22T13:00","home":false,"kick":"2026-11-22T18:00:00Z","opp":"KC"},"BAL":{"day":"Sunday","et":"2026-11-22T13:00","home":false,"kick":"2026-11-22T18:00:00Z","opp":"CAR"},"BUF":{"day":"Sunday","et":"2026-11-22T13:00","home":true,"kick":"2026-11-22T18:00:00Z","opp":"MIA"},"CAR":{"day":"Sunday","et":"2026-11-22T13:00","home":true,"kick":"2026-11-22T18:00:00Z","opp":"BAL"},"CHI":{"day":"Sunday","et":"2026-11-22T13:00","home":true,"kick":"2026-11-22T18:00:00Z","opp":"NO"},"CIN":{"day":"Monday","et":"2026-11-23T20:15","home":false,"kick":"2026-11-24T01:15:00Z","opp":"WAS"},"DAL":{"day":"Sunday","et":"2026-11-22T13:00","home":true,"kick":"2026-11-22T18:00:00Z","opp":"TEN"},"DEN":{"day":"Sunday","et":"2026-11-22T16:25","home":true,"kick":"2026-11-22T21:25:00Z","opp":"LV"},"DET":{"day":"Sunday","et":"2026-11-22T13:00","home":true,"kick":"2026-11-22T18:00:00Z","opp":"TB"},"HOU":{"day":"Thursday","et":"2026-11-19T20:15","home":true,"kick":"2026-11-20T01:15:00Z","opp":"IND"},"IND":{"day":"Thursday","et":"2026-11-19T20:15","home":false,"kick":"2026-11-20T01:15:00Z","opp":"HOU"},"JAX":{"day":"Sunday","et":"2026-11-22T13:00","home":false,"kick":"2026-11-22T18:00:00Z","opp":"NYG"},"KC":{"day":"Sunday","et":"2026-11-22T13:00","home":true,"kick":"2026-11-22T18:00:00Z","opp":"ARI"},"LAC":{"day":"Sunday","et":"2026-11-22T16:05","home":true,"kick":"2026-11-22T21:05:00Z","opp":"NYJ"},"LV":{"day":"Sunday","et":"2026-11-22T16:25","home":false,"kick":"2026-11-22T21:25:00Z","opp":"DEN"},"MIA":{"day":"Sunday","et":"2026-11-22T13:00","home":false,"kick":"2026-11-22T18:00:00Z","opp":"BUF"},"MIN":{"day":"Sunday","et":"2026-11-22T20:20","home":false,"kick":"2026-11-23T01:20:00Z","opp":"SF"},"NO":{"day":"Sunday","et":"2026-11-22T13:00","home":false,"kick":"2026-11-22T18:00:00Z","opp":"CHI"},"NYG":{"day":"Sunday","et":"2026-11-22T13:00","home":true,"kick":"2026-11-22T18:00:00Z","opp":"JAX"},"NYJ":{"day":"Sunday","et":"2026-11-22T16:05","home":false,"kick":"2026-11-22T21:05:00Z","opp":"LAC"},"PHI":{"day":"Sunday","et":"2026-11-22T16:25","home":true,"kick":"2026-11-22T21:25:00Z","opp":"PIT"},"PIT":{"day":"Sunday","et":"2026-11-22T16:25","home":false,"kick":"2026-11-22T21:25:00Z","opp":"PHI"},"SF":{"day":"Sunday","et":"2026-11-22T20:20","home":true,"kick":"2026-11-23T01:20:00Z","opp":"MIN"},"TB":{"day":"Sunday","et":"2026-11-22T13:00","home":false,"kick":"2026-11-22T18:00:00Z","opp":"DET"},"TEN":{"day":"Sunday","et":"2026-11-22T13:00","home":false,"kick":"2026-11-22T18:00:00Z","opp":"DAL"},"WAS":{"day":"Monday","et":"2026-11-23T20:15","home":true,"kick":"2026-11-24T01:15:00Z","opp":"CIN"}},"12":{"ARI":{"day":"Sunday","et":"2026-11-29T16:25","home":true,"kick":"2026-11-29T21:25:00Z","opp":"WAS"},"ATL":{"day":"Sunday","et":"2026-11-29T13:00","home":false,"kick":"2026-11-29T18:00:00Z","opp":"MIN"},"BAL":{"day":"Sunday","et":"2026-11-29T13:00","home":false,"kick":"2026-11-29T18:00:00Z","opp":"HOU"},"BUF":{"day":"Thursday","et":"2026-11-26T20:20","home":true,"kick":"2026-11-27T01:20:00Z","opp":"KC"},"CAR":{"day":"Monday","et":"2026-11-30T20:15","home":false,"kick":"2026-12-01T01:15:00Z","opp":"TB"},"CHI":{"day":"Thursday","et":"2026-11-26T13:00","home":false,"kick":"2026-11-26T18:00:00Z","opp":"DET"},"CIN":{"day":"Sunday","et":"2026-11-29T13:00","home":true,"kick":"2026-11-29T18:00:00Z","opp":"NO"},"CLE":{"day":"Sunday","et":"2026-11-29T13:00","home":true,"kick":"2026-11-29T18:00:00Z","opp":"LV"},"DAL":{"day":"Thursday","et":"2026-11-26T16:30","home":true,"kick":"2026-11-26T21:30:00Z","opp":"PHI"},"DEN":{"day":"Friday","et":"2026-11-27T15:00","home":false,"kick":"2026-11-27T20:00:00Z","opp":"PIT"},"DET":{"day":"Thursday","et":"2026-11-26T13:00","home":true,"kick":"2026-11-26T18:00:00Z","opp":"CHI"},"GB":{"day":"Wednesday","et":"2026-11-25T20:00","home":false,"kick":"2026-11-26T01:00:00Z","opp":"LAR"},"HOU":{"day":"Sunday","et":"2026-11-29T13:00","home":true,"kick":"2026-11-29T18:00:00Z","opp":"BAL"},"IND":{"day":"Sunday","et":"2026-11-29T13:00","home":true,"kick":"2026-11-29T18:00:00Z","opp":"NYG"},"JAX":{"day":"Sunday","et":"2026-11-29T16:05","home":true,"kick":"2026-11-29T21:05:00Z","opp":"TEN"},"KC":{"day":"Thursday","et":"2026-11-26T20:20","home":false,"kick":"2026-11-27T01:20:00Z","opp":"BUF"},"LAC":{"day":"Sunday","et":"2026-11-29T20:20","home":true,"kick":"2026-11-30T01:20:00Z","opp":"NE"},"LAR":{"day":"Wednesday","et":"2026-11-25T20:00","home":true,"kick":"2026-11-26T01:00:00Z","opp":"GB"},"LV":{"day":"Sunday","et":"2026-11-29T13:00","home":false,"kick":"2026-11-29T18:00:00Z","opp":"CLE"},"MIA":{"day":"Sunday","et":"2026-11-29T13:00","home":true,"kick":"2026-11-29T18:00:00Z","opp":"NYJ"},"MIN":{"day":"Sunday","et":"2026-11-29T13:00","home":true,"kick":"2026-11-29T18:00:00Z","opp":"ATL"},"NE":{"day":"Sunday","et":"2026-11-29T20:20","home":false,"kick":"2026-11-30T01:20:00Z","opp":"LAC"},"NO":{"day":"Sunday","et":"2026-11-29T13:00","home":false,"kick":"2026-11-29T18:00:00Z","opp":"CIN"},"NYG":{"day":"Sunday","et":"2026-11-29T13:00","home":false,"kick":"2026-11-29T18:00:00Z","opp":"IND"},"NYJ":{"day":"Sunday","et":"2026-11-29T13:00","home":false,"kick":"2026-11-29T18:00:00Z","opp":"MIA"},"PHI":{"day":"Thursday","et":"2026-11-26T16:30","home":false,"kick":"2026-11-26T21:30:00Z","opp":"DAL"},"PIT":{"day":"Friday","et":"2026-11-27T15:00","home":true,"kick":"2026-11-27T20:00:00Z","opp":"DEN"},"SEA":{"day":"Sunday","et":"2026-11-29T16:25","home":false,"kick":"2026-11-29T21:25:00Z","opp":"SF"},"SF":{"day":"Sunday","et":"2026-11-29T16:25","home":true,"kick":"2026-11-29T21:25:00Z","opp":"SEA"},"TB":{"day":"Monday","et":"2026-11-30T20:15","home":true,"kick":"2026-12-01T01:15:00Z","opp":"CAR"},"TEN":{"day":"Sunday","et":"2026-11-29T16:05","home":false,"kick":"2026-11-29T21:05:00Z","opp":"JAX"},"WAS":{"day":"Sunday","et":"2026-11-29T16:25","home":false,"kick":"2026-11-29T21:25:00Z","opp":"ARI"}},"13":{"ARI":{"day":"Sunday","et":"2026-12-06T16:05","home":true,"kick":"2026-12-06T21:05:00Z","opp":"PHI"},"ATL":{"day":"Sunday","et":"2026-12-06T13:00","home":true,"kick":"2026-12-06T18:00:00Z","opp":"DET"},"BUF":{"day":"Sunday","et":"2026-12-06T16:25","home":false,"kick":"2026-12-06T21:25:00Z","opp":"NE"},"CAR":{"day":"Sunday","et":"2026-12-06T16:25","home":false,"kick":"2026-12-06T21:25:00Z","opp":"MIN"},"CHI":{"day":"Sunday","et":"2026-12-06T13:00","home":true,"kick":"2026-12-06T18:00:00Z","opp":"JAX"},"CIN":{"day":"Sunday","et":"2026-12-06T13:00","home":false,"kick":"2026-12-06T18:00:00Z","opp":"CLE"},"CLE":{"day":"Sunday","et":"2026-12-06T13:00","home":true,"kick":"2026-12-06T18:00:00Z","opp":"CIN"},"DAL":{"day":"Monday","et":"2026-12-07T20:15","home":false,"kick":"2026-12-08T01:15:00Z","opp":"SEA"},"DEN":{"day":"Sunday","et":"2026-12-06T16:05","home":true,"kick":"2026-12-06T21:05:00Z","opp":"MIA"},"DET":{"day":"Sunday","et":"2026-12-06T13:00","home":false,"kick":"2026-12-06T18:00:00Z","opp":"ATL"},"GB":{"day":"Sunday","et":"2026-12-06T13:00","home":false,"kick":"2026-12-06T18:00:00Z","opp":"NO"},"HOU":{"day":"Sunday","et":"2026-12-06T20:20","home":false,"kick":"2026-12-07T01:20:00Z","opp":"PIT"},"JAX":{"day":"Sunday","et":"2026-12-06T13:00","home":false,"kick":"2026-12-06T18:00:00Z","opp":"CHI"},"KC":{"day":"Thursday","et":"2026-12-03T20:15","home":false,"kick":"2026-12-04T01:15:00Z","opp":"LAR"},"LAC":{"day":"Sunday","et":"2026-12-06T13:00","home":false,"kick":"2026-12-06T18:00:00Z","opp":"TB"},"LAR":{"day":"Thursday","et":"2026-12-03T20:15","home":true,"kick":"2026-12-04T01:15:00Z","opp":"KC"},"MIA":{"day":"Sunday","et":"2026-12-06T16:05","home":false,"kick":"2026-12-06T21:05:00Z","opp":"DEN"},"MIN":{"day":"Sunday","et":"2026-12-06T16:25","home":true,"kick":"2026-12-06T21:25:00Z","opp":"CAR"},"NE":{"day":"Sunday","et":"2026-12-06T16:25","home":true,"kick":"2026-12-06T21:25:00Z","opp":"BUF"},"NO":{"day":"Sunday","et":"2026-12-06T13:00","home":true,"kick":"2026-12-06T18:00:00Z","opp":"GB"},"NYG":{"day":"Sunday","et":"2026-12-06T13:00","home":true,"kick":"2026-12-06T18:00:00Z","opp":"SF"},"PHI":{"day":"Sunday","et":"2026-12-06T16:05","home":false,"kick":"2026-12-06T21:05:00Z","opp":"ARI"},"PIT":{"day":"Sunday","et":"2026-12-06T20:20","home":true,"kick":"2026-12-07T01:20:00Z","opp":"HOU"},"SEA":{"day":"Monday","et":"2026-12-07T20:15","home":true,"kick":"2026-12-08T01:15:00Z","opp":"DAL"},"SF":{"day":"Sunday","et":"2026-12-06T13:00","home":false,"kick":"2026-12-06T18:00:00Z","opp":"NYG"},"TB":{"day":"Sunday","et":"2026-12-06T13:00","home":true,"kick":"2026-12-06T18:00:00Z","opp":"LAC"},"TEN":{"day":"Sunday","et":"2026-12-06T13:00","home":true,"kick":"2026-12-06T18:00:00Z","opp":"WAS"},"WAS":{"day":"Sunday","et":"2026-12-06T13:00","home":false,"kick":"2026-12-06T18:00:00Z","opp":"TEN"}},"14":{"ATL":{"day":"Sunday","et":"2026-12-13T13:00","home":false,"kick":"2026-12-13T18:00:00Z","opp":"CLE"},"BAL":{"day":"Sunday","et":"2026-12-13T13:00","home":true,"kick":"2026-12-13T18:00:00Z","opp":"TB"},"BUF":{"day":"Sunday","et":"2026-12-13T20:20","home":false,"kick":"2026-12-14T01:20:00Z","opp":"GB"},"CAR":{"day":"Sunday","et":"2026-12-13T13:00","home":true,"kick":"2026-12-13T18:00:00Z","opp":"NO"},"CHI":{"day":"Sunday","et":"2026-12-13T13:00","home":false,"kick":"2026-12-13T18:00:00Z","opp":"MIA"},"CIN":{"day":"Sunday","et":"2026-12-13T16:25","home":true,"kick":"2026-12-13T21:25:00Z","opp":"KC"},"CLE":{"day":"Sunday","et":"2026-12-13T13:00","home":true,"kick":"2026-12-13T18:00:00Z","opp":"ATL"},"DEN":{"day":"Sunday","et":"2026-12-13T13:00","home":false,"kick":"2026-12-13T18:00:00Z","opp":"NYJ"},"DET":{"day":"Sunday","et":"2026-12-13T13:00","home":true,"kick":"2026-12-13T18:00:00Z","opp":"TEN"},"GB":{"day":"Sunday","et":"2026-12-13T20:20","home":true,"kick":"2026-12-14T01:20:00Z","opp":"BUF"},"HOU":{"day":"Sunday","et":"2026-12-13T13:00","home":false,"kick":"2026-12-13T18:00:00Z","opp":"WAS"},"IND":{"day":"Sunday","et":"2026-12-13T13:00","home":false,"kick":"2026-12-13T18:00:00Z","opp":"PHI"},"JAX":{"day":"Monday","et":"2026-12-14T20:15","home":true,"kick":"2026-12-15T01:15:00Z","opp":"PIT"},"KC":{"day":"Sunday","et":"2026-12-13T16:25","home":false,"kick":"2026-12-13T21:25:00Z","opp":"CIN"},"LAC":{"day":"Sunday","et":"2026-12-13T16:05","home":false,"kick":"2026-12-13T21:05:00Z","opp":"LV"},"LAR":{"day":"Sunday","et":"2026-12-13T16:25","home":false,"kick":"2026-12-13T21:25:00Z","opp":"SF"},"LV":{"day":"Sunday","et":"2026-12-13T16:05","home":true,"kick":"2026-12-13T21:05:00Z","opp":"LAC"},"MIA":{"day":"Sunday","et":"2026-12-13T13:00","home":true,"kick":"2026-12-13T18:00:00Z","opp":"CHI"},"MIN":{"day":"Thursday","et":"2026-12-10T20:15","home":false,"kick":"2026-12-11T01:15:00Z","opp":"NE"},"NE":{"day":"Thursday","et":"2026-12-10T20:15","home":true,"kick":"2026-12-11T01:15:00Z","opp":"MIN"},"NO":{"day":"Sunday","et":"2026-12-13T13:00","home":false,"kick":"2026-12-13T18:00:00Z","opp":"CAR"},"NYG":{"day":"Sunday","et":"2026-12-13T16:25","home":false,"kick":"2026-12-13T21:25:00Z","opp":"SEA"},"NYJ":{"day":"Sunday","et":"2026-12-13T13:00","home":true,"kick":"2026-12-13T18:00:00Z","opp":"DEN"},"PHI":{"day":"Sunday","et":"2026-12-13T13:00","home":true,"kick":"2026-12-13T18:00:00Z","opp":"IND"},"PIT":{"day":"Monday","et":"2026-12-14T20:15","home":false,"kick":"2026-12-15T01:15:00Z","opp":"JAX"},"SEA":{"day":"Sunday","et":"2026-12-13T16:25","home":true,"kick":"2026-12-13T21:25:00Z","opp":"NYG"},"SF":{"day":"Sunday","et":"2026-12-13T16:25","home":true,"kick":"2026-12-13T21:25:00Z","opp":"LAR"},"TB":{"day":"Sunday","et":"2026-12-13T13:00","home":false,"kick":"2026-12-13T18:00:00Z","opp":"BAL"},"TEN":{"day":"Sunday","et":"2026-12-13T13:00","home":false,"kick":"2026-12-13T18:00:00Z","opp":"DET"},"WAS":{"day":"Sunday","et":"2026-12-13T13:00","home":true,"kick":"2026-12-13T18:00:00Z","opp":"HOU"}},"15":{"ARI":{"day":"Sunday","et":"2026-12-20T16:05","home":true,"kick":"2026-12-20T21:05:00Z","opp":"NYJ"},"ATL":{"day":"Sunday","et":"2026-12-20T13:00","home":false,"kick":"2026-12-20T18:00:00Z","opp":"WAS"},"BAL":{"day":"Sunday","et":"2026-12-20T13:00","home":false,"kick":"2026-12-20T18:00:00Z","opp":"PIT"},"BUF":{"day":"Saturday","et":"2026-12-19T20:20","home":true,"kick":"2026-12-20T01:20:00Z","opp":"CHI"},"CAR":{"day":"Sunday","et":"2026-12-20T13:00","home":true,"kick":"2026-12-20T18:00:00Z","opp":"CIN"},"CHI":{"day":"Saturday","et":"2026-12-19T20:20","home":false,"kick":"2026-12-20T01:20:00Z","opp":"BUF"},"CIN":{"day":"Sunday","et":"2026-12-20T13:00","home":false,"kick":"2026-12-20T18:00:00Z","opp":"CAR"},"CLE":{"day":"Sunday","et":"2026-12-20T13:00","home":false,"kick":"2026-12-20T18:00:00Z","opp":"NYG"},"DAL":{"day":"Sunday","et":"2026-12-20T16:25","home":false,"kick":"2026-12-20T21:25:00Z","opp":"LAR"},"DEN":{"day":"Sunday","et":"2026-12-20T16:25","home":false,"kick":"2026-12-20T21:25:00Z","opp":"LV"},"DET":{"day":"Sunday","et":"2026-12-20T20:20","home":false,"kick":"2026-12-21T01:20:00Z","opp":"MIN"},"GB":{"day":"Sunday","et":"2026-12-20T13:00","home":true,"kick":"2026-12-20T18:00:00Z","opp":"MIA"},"HOU":{"day":"Sunday","et":"2026-12-20T13:00","home":true,"kick":"2026-12-20T18:00:00Z","opp":"JAX"},"IND":{"day":"Sunday","et":"2026-12-20T13:00","home":false,"kick":"2026-12-20T18:00:00Z","opp":"TEN"},"JAX":{"day":"Sunday","et":"2026-12-20T13:00","home":false,"kick":"2026-12-20T18:00:00Z","opp":"HOU"},"KC":{"day":"Monday","et":"2026-12-21T20:15","home":true,"kick":"2026-12-22T01:15:00Z","opp":"NE"},"LAC":{"day":"Thursday","et":"2026-12-17T20:15","home":true,"kick":"2026-12-18T01:15:00Z","opp":"SF"},"LAR":{"day":"Sunday","et":"2026-12-20T16:25","home":true,"kick":"2026-12-20T21:25:00Z","opp":"DAL"},"LV":{"day":"Sunday","et":"2026-12-20T16:25","home":true,"kick":"2026-12-20T21:25:00Z","opp":"DEN"},"MIA":{"day":"Sunday","et":"2026-12-20T13:00","home":false,"kick":"2026-12-20T18:00:00Z","opp":"GB"},"MIN":{"day":"Sunday","et":"2026-12-20T20:20","home":true,"kick":"2026-12-21T01:20:00Z","opp":"DET"},"NE":{"day":"Monday","et":"2026-12-21T20:15","home":false,"kick":"2026-12-22T01:15:00Z","opp":"KC"},"NO":{"day":"Sunday","et":"2026-12-20T13:00","home":false,"kick":"2026-12-20T18:00:00Z","opp":"TB"},"NYG":{"day":"Sunday","et":"2026-12-20T13:00","home":true,"kick":"2026-12-20T18:00:00Z","opp":"CLE"},"NYJ":{"day":"Sunday","et":"2026-12-20T16:05","home":false,"kick":"2026-12-20T21:05:00Z","opp":"ARI"},"PHI":{"day":"Saturday","et":"2026-12-19T17:00","home":true,"kick":"2026-12-19T22:00:00Z","opp":"SEA"},"PIT":{"day":"Sunday","et":"2026-12-20T13:00","home":true,"kick":"2026-12-20T18:00:00Z","opp":"BAL"},"SEA":{"day":"Saturday","et":"2026-12-19T17:00","home":false,"kick":"2026-12-19T22:00:00Z","opp":"PHI"},"SF":{"day":"Thursday","et":"2026-12-17T20:15","home":false,"kick":"2026-12-18T01:15:00Z","opp":"LAC"},"TB":{"day":"Sunday","et":"2026-12-20T13:00","home":true,"kick":"2026-12-20T18:00:00Z","opp":"NO"},"TEN":{"day":"Sunday","et":"2026-12-20T13:00","home":true,"kick":"2026-12-20T18:00:00Z","opp":"IND"},"WAS":{"day":"Sunday","et":"2026-12-20T13:00","home":true,"kick":"2026-12-20T18:00:00Z","opp":"ATL"}},"16":{"ARI":{"day":"Sunday","et":"2026-12-27T13:00","home":false,"kick":"2026-12-27T18:00:00Z","opp":"NO"},"ATL":{"day":"Sunday","et":"2026-12-27T13:00","home":true,"kick":"2026-12-27T18:00:00Z","opp":"TB"},"BAL":{"day":"Sunday","et":"2026-12-27T13:00","home":true,"kick":"2026-12-27T18:00:00Z","opp":"CLE"},"BUF":{"day":"Friday","et":"2026-12-25T16:30","home":false,"kick":"2026-12-25T21:30:00Z","opp":"DEN"},"CAR":{"day":"Sunday","et":"2026-12-27T13:00","home":false,"kick":"2026-12-27T18:00:00Z","opp":"PIT"},"CHI":{"day":"Friday","et":"2026-12-25T13:00","home":true,"kick":"2026-12-25T18:00:00Z","opp":"GB"},"CIN":{"day":"Sunday","et":"2026-12-27T13:00","home":false,"kick":"2026-12-27T18:00:00Z","opp":"IND"},"CLE":{"day":"Sunday","et":"2026-12-27T13:00","home":false,"kick":"2026-12-27T18:00:00Z","opp":"BAL"},"DAL":{"day":"Sunday","et":"2026-12-27T20:20","home":true,"kick":"2026-12-28T01:20:00Z","opp":"JAX"},"DEN":{"day":"Friday","et":"2026-12-25T16:30","home":true,"kick":"2026-12-25T21:30:00Z","opp":"BUF"},"DET":{"day":"Monday","et":"2026-12-28T20:15","home":true,"kick":"2026-12-29T01:15:00Z","opp":"NYG"},"GB":{"day":"Friday","et":"2026-12-25T13:00","home":false,"kick":"2026-12-25T18:00:00Z","opp":"CHI"},"HOU":{"day":"Thursday","et":"2026-12-24T20:15","home":false,"kick":"2026-12-25T01:15:00Z","opp":"PHI"},"IND":{"day":"Sunday","et":"2026-12-27T13:00","home":true,"kick":"2026-12-27T18:00:00Z","opp":"CIN"},"JAX":{"day":"Sunday","et":"2026-12-27T20:20","home":false,"kick":"2026-12-28T01:20:00Z","opp":"DAL"},"KC":{"day":"Sunday","et":"2026-12-27T16:25","home":true,"kick":"2026-12-27T21:25:00Z","opp":"SF"},"LAC":{"day":"Sunday","et":"2026-12-27T13:00","home":false,"kick":"2026-12-27T18:00:00Z","opp":"MIA"},"LAR":{"day":"Friday","et":"2026-12-25T20:15","home":false,"kick":"2026-12-26T01:15:00Z","opp":"SEA"},"LV":{"day":"Sunday","et":"2026-12-27T16:05","home":true,"kick":"2026-12-27T21:05:00Z","opp":"TEN"},"MIA":{"day":"Sunday","et":"2026-12-27T13:00","home":true,"kick":"2026-12-27T18:00:00Z","opp":"LAC"},"MIN":{"day":"Sunday","et":"2026-12-27T13:00","home":true,"kick":"2026-12-27T18:00:00Z","opp":"WAS"},"NE":{"day":"Sunday","et":"2026-12-27T13:00","home":false,"kick":"2026-12-27T18:00:00Z","opp":"NYJ"},"NO":{"day":"Sunday","et":"2026-12-27T13:00","home":true,"kick":"2026-12-27T18:00:00Z","opp":"ARI"},"NYG":{"day":"Monday","et":"2026-12-28T20:15","home":false,"kick":"2026-12-29T01:15:00Z","opp":"DET"},"NYJ":{"day":"Sunday","et":"2026-12-27T13:00","home":true,"kick":"2026-12-27T18:00:00Z","opp":"NE"},"PHI":{"day":"Thursday","et":"2026-12-24T20:15","home":true,"kick":"2026-12-25T01:15:00Z","opp":"HOU"},"PIT":{"day":"Sunday","et":"2026-12-27T13:00","home":true,"kick":"2026-12-27T18:00:00Z","opp":"CAR"},"SEA":{"day":"Friday","et":"2026-12-25T20:15","home":true,"kick":"2026-12-26T01:15:00Z","opp":"LAR"},"SF":{"day":"Sunday","et":"2026-12-27T16:25","home":false,"kick":"2026-12-27T21:25:00Z","opp":"KC"},"TB":{"day":"Sunday","et":"2026-12-27T13:00","home":false,"kick":"2026-12-27T18:00:00Z","opp":"ATL"},"TEN":{"day":"Sunday","et":"2026-12-27T16:05","home":false,"kick":"2026-12-27T21:05:00Z","opp":"LV"},"WAS":{"day":"Sunday","et":"2026-12-27T13:00","home":false,"kick":"2026-12-27T18:00:00Z","opp":"MIN"}},"17":{"ARI":{"day":"Sunday","et":"2027-01-03T16:05","home":true,"kick":"2027-01-03T21:05:00Z","opp":"LV"},"ATL":{"day":"Sunday","et":"2027-01-03T13:00","home":true,"kick":"2027-01-03T18:00:00Z","opp":"NO"},"BAL":{"day":"Thursday","et":"2026-12-31T20:15","home":false,"kick":"2027-01-01T01:15:00Z","opp":"CIN"},"BUF":{"day":"Sunday","et":"2027-01-03T13:00","home":false,"kick":"2027-01-03T18:00:00Z","opp":"MIA"},"CAR":{"day":"Sunday","et":"2027-01-03T13:00","home":true,"kick":"2027-01-03T18:00:00Z","opp":"SEA"},"CHI":{"day":"Sunday","et":"2027-01-03T16:25","home":true,"kick":"2027-01-03T21:25:00Z","opp":"DET"},"CIN":{"day":"Thursday","et":"2026-12-31T20:15","home":true,"kick":"2027-01-01T01:15:00Z","opp":"BAL"},"CLE":{"day":"Sunday","et":"2027-01-03T13:00","home":true,"kick":"2027-01-03T18:00:00Z","opp":"IND"},"DAL":{"day":"Sunday","et":"2027-01-03T13:00","home":true,"kick":"2027-01-03T18:00:00Z","opp":"NYG"},"DEN":{"day":"Sunday","et":"2027-01-03T13:00","home":false,"kick":"2027-01-03T18:00:00Z","opp":"NE"},"DET":{"day":"Sunday","et":"2027-01-03T16:25","home":false,"kick":"2027-01-03T21:25:00Z","opp":"CHI"},"GB":{"day":"Monday","et":"2027-01-04T20:15","home":true,"kick":"2027-01-05T01:15:00Z","opp":"HOU"},"HOU":{"day":"Monday","et":"2027-01-04T20:15","home":false,"kick":"2027-01-05T01:15:00Z","opp":"GB"},"IND":{"day":"Sunday","et":"2027-01-03T13:00","home":false,"kick":"2027-01-03T18:00:00Z","opp":"CLE"},"JAX":{"day":"Sunday","et":"2027-01-03T13:00","home":true,"kick":"2027-01-03T18:00:00Z","opp":"WAS"},"KC":{"day":"Sunday","et":"2027-01-03T13:00","home":false,"kick":"2027-01-03T18:00:00Z","opp":"LAC"},"LAC":{"day":"Sunday","et":"2027-01-03T13:00","home":true,"kick":"2027-01-03T18:00:00Z","opp":"KC"},"LAR":{"day":"Sunday","et":"2027-01-03T13:00","home":false,"kick":"2027-01-03T18:00:00Z","opp":"TB"},"LV":{"day":"Sunday","et":"2027-01-03T16:05","home":false,"kick":"2027-01-03T21:05:00Z","opp":"ARI"},"MIA":{"day":"Sunday","et":"2027-01-03T13:00","home":true,"kick":"2027-01-03T18:00:00Z","opp":"BUF"},"MIN":{"day":"Sunday","et":"2027-01-03T13:00","home":false,"kick":"2027-01-03T18:00:00Z","opp":"NYJ"},"NE":{"day":"Sunday","et":"2027-01-03T13:00","home":true,"kick":"2027-01-03T18:00:00Z","opp":"DEN"},"NO":{"day":"Sunday","et":"2027-01-03T13:00","home":false,"kick":"2027-01-03T18:00:00Z","opp":"ATL"},"NYG":{"day":"Sunday","et":"2027-01-03T13:00","home":false,"kick":"2027-01-03T18:00:00Z","opp":"DAL"},"NYJ":{"day":"Sunday","et":"2027-01-03T13:00","home":true,"kick":"2027-01-03T18:00:00Z","opp":"MIN"},"PHI":{"day":"Sunday","et":"2027-01-03T20:20","home":false,"kick":"2027-01-04T01:20:00Z","opp":"SF"},"PIT":{"day":"Sunday","et":"2027-01-03T13:00","home":false,"kick":"2027-01-03T18:00:00Z","opp":"TEN"},"SEA":{"day":"Sunday","et":"2027-01-03T13:00","home":false,"kick":"2027-01-03T18:00:00Z","opp":"CAR"},"SF":{"day":"Sunday","et":"2027-01-03T20:20","home":true,"kick":"2027-01-04T01:20:00Z","opp":"PHI"},"TB":{"day":"Sunday","et":"2027-01-03T13:00","home":true,"kick":"2027-01-03T18:00:00Z","opp":"LAR"},"TEN":{"day":"Sunday","et":"2027-01-03T13:00","home":true,"kick":"2027-01-03T18:00:00Z","opp":"PIT"},"WAS":{"day":"Sunday","et":"2027-01-03T13:00","home":false,"kick":"2027-01-03T18:00:00Z","opp":"JAX"}},"18":{"ARI":{"day":"Sunday","et":"2027-01-10T13:00","home":true,"kick":"2027-01-10T18:00:00Z","opp":"SF"},"ATL":{"day":"Sunday","et":"2027-01-10T13:00","home":false,"kick":"2027-01-10T18:00:00Z","opp":"CAR"},"BAL":{"day":"Sunday","et":"2027-01-10T13:00","home":true,"kick":"2027-01-10T18:00:00Z","opp":"PIT"},"BUF":{"day":"Sunday","et":"2027-01-10T13:00","home":true,"kick":"2027-01-10T18:00:00Z","opp":"NYJ"},"CAR":{"day":"Sunday","et":"2027-01-10T13:00","home":true,"kick":"2027-01-10T18:00:00Z","opp":"ATL"},"CHI":{"day":"Sunday","et":"2027-01-10T13:00","home":false,"kick":"2027-01-10T18:00:00Z","opp":"MIN"},"CIN":{"day":"Sunday","et":"2027-01-10T13:00","home":true,"kick":"2027-01-10T18:00:00Z","opp":"CLE"},"CLE":{"day":"Sunday","et":"2027-01-10T13:00","home":false,"kick":"2027-01-10T18:00:00Z","opp":"CIN"},"DAL":{"day":"Sunday","et":"2027-01-10T13:00","home":false,"kick":"2027-01-10T18:00:00Z","opp":"WAS"},"DEN":{"day":"Sunday","et":"2027-01-10T13:00","home":true,"kick":"2027-01-10T18:00:00Z","opp":"LAC"},"DET":{"day":"Sunday","et":"2027-01-10T13:00","home":false,"kick":"2027-01-10T18:00:00Z","opp":"GB"},"GB":{"day":"Sunday","et":"2027-01-10T13:00","home":true,"kick":"2027-01-10T18:00:00Z","opp":"DET"},"HOU":{"day":"Sunday","et":"2027-01-10T13:00","home":true,"kick":"2027-01-10T18:00:00Z","opp":"TEN"},"IND":{"day":"Sunday","et":"2027-01-10T13:00","home":true,"kick":"2027-01-10T18:00:00Z","opp":"JAX"},"JAX":{"day":"Sunday","et":"2027-01-10T13:00","home":false,"kick":"2027-01-10T18:00:00Z","opp":"IND"},"KC":{"day":"Sunday","et":"2027-01-10T13:00","home":true,"kick":"2027-01-10T18:00:00Z","opp":"LV"},"LAC":{"day":"Sunday","et":"2027-01-10T13:00","home":false,"kick":"2027-01-10T18:00:00Z","opp":"DEN"},"LAR":{"day":"Sunday","et":"2027-01-10T13:00","home":true,"kick":"2027-01-10T18:00:00Z","opp":"SEA"},"LV":{"day":"Sunday","et":"2027-01-10T13:00","home":false,"kick":"2027-01-10T18:00:00Z","opp":"KC"},"MIA":{"day":"Sunday","et":"2027-01-10T13:00","home":false,"kick":"2027-01-10T18:00:00Z","opp":"NE"},"MIN":{"day":"Sunday","et":"2027-01-10T13:00","home":true,"kick":"2027-01-10T18:00:00Z","opp":"CHI"},"NE":{"day":"Sunday","et":"2027-01-10T13:00","home":true,"kick":"2027-01-10T18:00:00Z","opp":"MIA"},"NO":{"day":"Sunday","et":"2027-01-10T13:00","home":true,"kick":"2027-01-10T18:00:00Z","opp":"TB"},"NYG":{"day":"Sunday","et":"2027-01-10T13:00","home":true,"kick":"2027-01-10T18:00:00Z","opp":"PHI"},"NYJ":{"day":"Sunday","et":"2027-01-10T13:00","home":false,"kick":"2027-01-10T18:00:00Z","opp":"BUF"},"PHI":{"day":"Sunday","et":"2027-01-10T13:00","home":false,"kick":"2027-01-10T18:00:00Z","opp":"NYG"},"PIT":{"day":"Sunday","et":"2027-01-10T13:00","home":false,"kick":"2027-01-10T18:00:00Z","opp":"BAL"},"SEA":{"day":"Sunday","et":"2027-01-10T13:00","home":false,"kick":"2027-01-10T18:00:00Z","opp":"LAR"},"SF":{"day":"Sunday","et":"2027-01-10T13:00","home":false,"kick":"2027-01-10T18:00:00Z","opp":"ARI"},"TB":{"day":"Sunday","et":"2027-01-10T13:00","home":false,"kick":"2027-01-10T18:00:00Z","opp":"NO"},"TEN":{"day":"Sunday","et":"2027-01-10T13:00","home":false,"kick":"2027-01-10T18:00:00Z","opp":"HOU"},"WAS":{"day":"Sunday","et":"2027-01-10T13:00","home":true,"kick":"2027-01-10T18:00:00Z","opp":"DAL"}},"2":{"ARI":{"day":"Sunday","et":"2026-09-20T16:25","home":true,"kick":"2026-09-20T20:25:00Z","opp":"SEA"},"ATL":{"day":"Sunday","et":"2026-09-20T13:00","home":true,"kick":"2026-09-20T17:00:00Z","opp":"CAR"},"BAL":{"day":"Sunday","et":"2026-09-20T13:00","home":true,"kick":"2026-09-20T17:00:00Z","opp":"NO"},"BUF":{"day":"Thursday","et":"2026-09-17T20:15","home":true,"kick":"2026-09-18T00:15:00Z","opp":"DET"},"CAR":{"day":"Sunday","et":"2026-09-20T13:00","home":false,"kick":"2026-09-20T17:00:00Z","opp":"ATL"},"CHI":{"day":"Sunday","et":"2026-09-20T13:00","home":true,"kick":"2026-09-20T17:00:00Z","opp":"MIN"},"CIN":{"day":"Sunday","et":"2026-09-20T13:00","home":false,"kick":"2026-09-20T17:00:00Z","opp":"HOU"},"CLE":{"day":"Sunday","et":"2026-09-20T13:00","home":false,"kick":"2026-09-20T17:00:00Z","opp":"TB"},"DAL":{"day":"Sunday","et":"2026-09-20T16:25","home":true,"kick":"2026-09-20T20:25:00Z","opp":"WAS"},"DEN":{"day":"Sunday","et":"2026-09-20T16:05","home":true,"kick":"2026-09-20T20:05:00Z","opp":"JAX"},"DET":{"day":"Thursday","et":"2026-09-17T20:15","home":false,"kick":"2026-09-18T00:15:00Z","opp":"BUF"},"GB":{"day":"Sunday","et":"2026-09-20T13:00","home":false,"kick":"2026-09-20T17:00:00Z","opp":"NYJ"},"HOU":{"day":"Sunday","et":"2026-09-20T13:00","home":true,"kick":"2026-09-20T17:00:00Z","opp":"CIN"},"IND":{"day":"Sunday","et":"2026-09-20T20:20","home":false,"kick":"2026-09-21T00:20:00Z","opp":"KC"},"JAX":{"day":"Sunday","et":"2026-09-20T16:05","home":false,"kick":"2026-09-20T20:05:00Z","opp":"DEN"},"KC":{"day":"Sunday","et":"2026-09-20T20:20","home":true,"kick":"2026-09-21T00:20:00Z","opp":"IND"},"LAC":{"day":"Sunday","et":"2026-09-20T16:05","home":true,"kick":"2026-09-20T20:05:00Z","opp":"LV"},"LAR":{"day":"Monday","et":"2026-09-21T20:15","home":true,"kick":"2026-09-22T00:15:00Z","opp":"NYG"},"LV":{"day":"Sunday","et":"2026-09-20T16:05","home":false,"kick":"2026-09-20T20:05:00Z","opp":"LAC"},"MIA":{"day":"Sunday","et":"2026-09-20T16:25","home":false,"kick":"2026-09-20T20:25:00Z","opp":"SF"},"MIN":{"day":"Sunday","et":"2026-09-20T13:00","home":false,"kick":"2026-09-20T17:00:00Z","opp":"CHI"},"NE":{"day":"Sunday","et":"2026-09-20T13:00","home":true,"kick":"2026-09-20T17:00:00Z","opp":"PIT"},"NO":{"day":"Sunday","et":"2026-09-20T13:00","home":false,"kick":"2026-09-20T17:00:00Z","opp":"BAL"},"NYG":{"day":"Monday","et":"2026-09-21T20:15","home":false,"kick":"2026-09-22T00:15:00Z","opp":"LAR"},"NYJ":{"day":"Sunday","et":"2026-09-20T13:00","home":true,"kick":"2026-09-20T17:00:00Z","opp":"GB"},"PHI":{"day":"Sunday","et":"2026-09-20T13:00","home":false,"kick":"2026-09-20T17:00:00Z","opp":"TEN"},"PIT":{"day":"Sunday","et":"2026-09-20T13:00","home":false,"kick":"2026-09-20T17:00:00Z","opp":"NE"},"SEA":{"day":"Sunday","et":"2026-09-20T16:25","home":false,"kick":"2026-09-20T20:25:00Z","opp":"ARI"},"SF":{"day":"Sunday","et":"2026-09-20T16:25","home":true,"kick":"2026-09-20T20:25:00Z","opp":"MIA"},"TB":{"day":"Sunday","et":"2026-09-20T13:00","home":true,"kick":"2026-09-20T17:00:00Z","opp":"CLE"},"TEN":{"day":"Sunday","et":"2026-09-20T13:00","home":true,"kick":"2026-09-20T17:00:00Z","opp":"PHI"},"WAS":{"day":"Sunday","et":"2026-09-20T16:25","home":false,"kick":"2026-09-20T20:25:00Z","opp":"DAL"}},"3":{"ARI":{"day":"Sunday","et":"2026-09-27T16:05","home":false,"kick":"2026-09-27T20:05:00Z","opp":"SF"},"ATL":{"day":"Thursday","et":"2026-09-24T20:15","home":false,"kick":"2026-09-25T00:15:00Z","opp":"GB"},"BAL":{"day":"Sunday","et":"2026-09-27T16:25","home":false,"kick":"2026-09-27T20:25:00Z","opp":"DAL"},"BUF":{"day":"Sunday","et":"2026-09-27T13:00","home":true,"kick":"2026-09-27T17:00:00Z","opp":"LAC"},"CAR":{"day":"Sunday","et":"2026-09-27T13:00","home":false,"kick":"2026-09-27T17:00:00Z","opp":"CLE"},"CHI":{"day":"Monday","et":"2026-09-28T20:15","home":true,"kick":"2026-09-29T00:15:00Z","opp":"PHI"},"CIN":{"day":"Sunday","et":"2026-09-27T13:00","home":false,"kick":"2026-09-27T17:00:00Z","opp":"PIT"},"CLE":{"day":"Sunday","et":"2026-09-27T13:00","home":true,"kick":"2026-09-27T17:00:00Z","opp":"CAR"},"DAL":{"day":"Sunday","et":"2026-09-27T16:25","home":true,"kick":"2026-09-27T20:25:00Z","opp":"BAL"},"DEN":{"day":"Sunday","et":"2026-09-27T20:20","home":true,"kick":"2026-09-28T00:20:00Z","opp":"LAR"},"DET":{"day":"Sunday","et":"2026-09-27T13:00","home":true,"kick":"2026-09-27T17:00:00Z","opp":"NYJ"},"GB":{"day":"Thursday","et":"2026-09-24T20:15","home":true,"kick":"2026-09-25T00:15:00Z","opp":"ATL"},"HOU":{"day":"Sunday","et":"2026-09-27T13:00","home":false,"kick":"2026-09-27T17:00:00Z","opp":"IND"},"IND":{"day":"Sunday","et":"2026-09-27T13:00","home":true,"kick":"2026-09-27T17:00:00Z","opp":"HOU"},"JAX":{"day":"Sunday","et":"2026-09-27T13:00","home":true,"kick":"2026-09-27T17:00:00Z","opp":"NE"},"KC":{"day":"Sunday","et":"2026-09-27T13:00","home":false,"kick":"2026-09-27T17:00:00Z","opp":"MIA"},"LAC":{"day":"Sunday","et":"2026-09-27T13:00","home":false,"kick":"2026-09-27T17:00:00Z","opp":"BUF"},"LAR":{"day":"Sunday","et":"2026-09-27T20:20","home":false,"kick":"2026-09-28T00:20:00Z","opp":"DEN"},"LV":{"day":"Sunday","et":"2026-09-27T16:25","home":false,"kick":"2026-09-27T20:25:00Z","opp":"NO"},"MIA":{"day":"Sunday","et":"2026-09-27T13:00","home":true,"kick":"2026-09-27T17:00:00Z","opp":"KC"},"MIN":{"day":"Sunday","et":"2026-09-27T16:05","home":false,"kick":"2026-09-27T20:05:00Z","opp":"TB"},"NE":{"day":"Sunday","et":"2026-09-27T13:00","home":false,"kick":"2026-09-27T17:00:00Z","opp":"JAX"},"NO":{"day":"Sunday","et":"2026-09-27T16:25","home":true,"kick":"2026-09-27T20:25:00Z","opp":"LV"},"NYG":{"day":"Sunday","et":"2026-09-27T13:00","home":true,"kick":"2026-09-27T17:00:00Z","opp":"TEN"},"NYJ":{"day":"Sunday","et":"2026-09-27T13:00","home":false,"kick":"2026-09-27T17:00:00Z","opp":"DET"},"PHI":{"day":"Monday","et":"2026-09-28T20:15","home":false,"kick":"2026-09-29T00:15:00Z","opp":"CHI"},"PIT":{"day":"Sunday","et":"2026-09-27T13:00","home":true,"kick":"2026-09-27T17:00:00Z","opp":"CIN"},"SEA":{"day":"Sunday","et":"2026-09-27T13:00","home":false,"kick":"2026-09-27T17:00:00Z","opp":"WAS"},"SF":{"day":"Sunday","et":"2026-09-27T16:05","home":true,"kick":"2026-09-27T20:05:00Z","opp":"ARI"},"TB":{"day":"Sunday","et":"2026-09-27T16:05","home":true,"kick":"2026-09-27T20:05:00Z","opp":"MIN"},"TEN":{"day":"Sunday","et":"2026-09-27T13:00","home":false,"kick":"2026-09-27T17:00:00Z","opp":"NYG"},"WAS":{"day":"Sunday","et":"2026-09-27T13:00","home":true,"kick":"2026-09-27T17:00:00Z","opp":"SEA"}},"4":{"ARI":{"day":"Sunday","et":"2026-10-04T13:00","home":false,"kick":"2026-10-04T17:00:00Z","opp":"NYG"},"ATL":{"day":"Monday","et":"2026-10-05T20:15","home":false,"kick":"2026-10-06T00:15:00Z","opp":"NO"},"BAL":{"day":"Sunday","et":"2026-10-04T13:00","home":true,"kick":"2026-10-04T17:00:00Z","opp":"TEN"},"BUF":{"day":"Sunday","et":"2026-10-04T13:00","home":true,"kick":"2026-10-04T17:00:00Z","opp":"NE"},"CAR":{"day":"Sunday","et":"2026-10-04T20:20","home":true,"kick":"2026-10-05T00:20:00Z","opp":"DET"},"CHI":{"day":"Sunday","et":"2026-10-04T13:00","home":true,"kick":"2026-10-04T17:00:00Z","opp":"NYJ"},"CIN":{"day":"Sunday","et":"2026-10-04T13:00","home":true,"kick":"2026-10-04T17:00:00Z","opp":"JAX"},"CLE":{"day":"Thursday","et":"2026-10-01T20:15","home":true,"kick":"2026-10-02T00:15:00Z","opp":"PIT"},"DAL":{"day":"Sunday","et":"2026-10-04T13:00","home":false,"kick":"2026-10-04T17:00:00Z","opp":"HOU"},"DEN":{"day":"Sunday","et":"2026-10-04T16:25","home":false,"kick":"2026-10-04T20:25:00Z","opp":"SF"},"DET":{"day":"Sunday","et":"2026-10-04T20:20","home":false,"kick":"2026-10-05T00:20:00Z","opp":"CAR"},"GB":{"day":"Sunday","et":"2026-10-04T13:00","home":false,"kick":"2026-10-04T17:00:00Z","opp":"TB"},"HOU":{"day":"Sunday","et":"2026-10-04T13:00","home":true,"kick":"2026-10-04T17:00:00Z","opp":"DAL"},"IND":{"day":"Sunday","et":"2026-10-04T09:30","home":false,"kick":"2026-10-04T13:30:00Z","opp":"WAS"},"JAX":{"day":"Sunday","et":"2026-10-04T13:00","home":false,"kick":"2026-10-04T17:00:00Z","opp":"CIN"},"KC":{"day":"Sunday","et":"2026-10-04T16:25","home":false,"kick":"2026-10-04T20:25:00Z","opp":"LV"},"LAC":{"day":"Sunday","et":"2026-10-04T16:25","home":false,"kick":"2026-10-04T20:25:00Z","opp":"SEA"},"LAR":{"day":"Sunday","et":"2026-10-04T13:00","home":false,"kick":"2026-10-04T17:00:00Z","opp":"PHI"},"LV":{"day":"Sunday","et":"2026-10-04T16:25","home":true,"kick":"2026-10-04T20:25:00Z","opp":"KC"},"MIA":{"day":"Sunday","et":"2026-10-04T16:05","home":false,"kick":"2026-10-04T20:05:00Z","opp":"MIN"},"MIN":{"day":"Sunday","et":"2026-10-04T16:05","home":true,"kick":"2026-10-04T20:05:00Z","opp":"MIA"},"NE":{"day":"Sunday","et":"2026-10-04T13:00","home":false,"kick":"2026-10-04T17:00:00Z","opp":"BUF"},"NO":{"day":"Monday","et":"2026-10-05T20:15","home":true,"kick":"2026-10-06T00:15:00Z","opp":"ATL"},"NYG":{"day":"Sunday","et":"2026-10-04T13:00","home":true,"kick":"2026-10-04T17:00:00Z","opp":"ARI"},"NYJ":{"day":"Sunday","et":"2026-10-04T13:00","home":false,"kick":"2026-10-04T17:00:00Z","opp":"CHI"},"PHI":{"day":"Sunday","et":"2026-10-04T13:00","home":true,"kick":"2026-10-04T17:00:00Z","opp":"LAR"},"PIT":{"day":"Thursday","et":"2026-10-01T20:15","home":false,"kick":"2026-10-02T00:15:00Z","opp":"CLE"},"SEA":{"day":"Sunday","et":"2026-10-04T16:25","home":true,"kick":"2026-10-04T20:25:00Z","opp":"LAC"},"SF":{"day":"Sunday","et":"2026-10-04T16:25","home":true,"kick":"2026-10-04T20:25:00Z","opp":"DEN"},"TB":{"day":"Sunday","et":"2026-10-04T13:00","home":true,"kick":"2026-10-04T17:00:00Z","opp":"GB"},"TEN":{"day":"Sunday","et":"2026-10-04T13:00","home":false,"kick":"2026-10-04T17:00:00Z","opp":"BAL"},"WAS":{"day":"Sunday","et":"2026-10-04T09:30","home":true,"kick":"2026-10-04T13:30:00Z","opp":"IND"}},"5":{"ARI":{"day":"Sunday","et":"2026-10-11T16:25","home":true,"kick":"2026-10-11T20:25:00Z","opp":"DET"},"ATL":{"day":"Sunday","et":"2026-10-11T20:20","home":true,"kick":"2026-10-12T00:20:00Z","opp":"BAL"},"BAL":{"day":"Sunday","et":"2026-10-11T20:20","home":false,"kick":"2026-10-12T00:20:00Z","opp":"ATL"},"BUF":{"day":"Monday","et":"2026-10-12T20:15","home":false,"kick":"2026-10-13T00:15:00Z","opp":"LAR"},"CHI":{"day":"Sunday","et":"2026-10-11T16:25","home":false,"kick":"2026-10-11T20:25:00Z","opp":"GB"},"CIN":{"day":"Sunday","et":"2026-10-11T13:00","home":false,"kick":"2026-10-11T17:00:00Z","opp":"MIA"},"CLE":{"day":"Sunday","et":"2026-10-11T13:00","home":false,"kick":"2026-10-11T17:00:00Z","opp":"NYJ"},"DAL":{"day":"Thursday","et":"2026-10-08T20:15","home":true,"kick":"2026-10-09T00:15:00Z","opp":"TB"},"DEN":{"day":"Sunday","et":"2026-10-11T16:05","home":false,"kick":"2026-10-11T20:05:00Z","opp":"LAC"},"DET":{"day":"Sunday","et":"2026-10-11T16:25","home":false,"kick":"2026-10-11T20:25:00Z","opp":"ARI"},"GB":{"day":"Sunday","et":"2026-10-11T16:25","home":true,"kick":"2026-10-11T20:25:00Z","opp":"CHI"},"HOU":{"day":"Sunday","et":"2026-10-11T13:00","home":false,"kick":"2026-10-11T17:00:00Z","opp":"TEN"},"IND":{"day":"Sunday","et":"2026-10-11T13:00","home":false,"kick":"2026-10-11T17:00:00Z","opp":"PIT"},"JAX":{"day":"Sunday","et":"2026-10-11T09:30","home":true,"kick":"2026-10-11T13:30:00Z","opp":"PHI"},"LAC":{"day":"Sunday","et":"2026-10-11T16:05","home":true,"kick":"2026-10-11T20:05:00Z","opp":"DEN"},"LAR":{"day":"Monday","et":"2026-10-12T20:15","home":true,"kick":"2026-10-13T00:15:00Z","opp":"BUF"},"LV":{"day":"Sunday","et":"2026-10-11T13:00","home":false,"kick":"2026-10-11T17:00:00Z","opp":"NE"},"MIA":{"day":"Sunday","et":"2026-10-11T13:00","home":true,"kick":"2026-10-11T17:00:00Z","opp":"CIN"},"MIN":{"day":"Sunday","et":"2026-10-11T13:00","home":false,"kick":"2026-10-11T17:00:00Z","opp":"NO"},"NE":{"day":"Sunday","et":"2026-10-11T13:00","home":true,"kick":"2026-10-11T17:00:00Z","opp":"LV"},"NO":{"day":"Sunday","et":"2026-10-11T13:00","home":true,"kick":"2026-10-11T17:00:00Z","opp":"MIN"},"NYG":{"day":"Sunday","et":"2026-10-11T13:00","home":false,"kick":"2026-10-11T17:00:00Z","opp":"WAS"},"NYJ":{"day":"Sunday","et":"2026-10-11T13:00","home":true,"kick":"2026-10-11T17:00:00Z","opp":"CLE"},"PHI":{"day":"Sunday","et":"2026-10-11T09:30","home":false,"kick":"2026-10-11T13:30:00Z","opp":"JAX"},"PIT":{"day":"Sunday","et":"2026-10-11T13:00","home":true,"kick":"2026-10-11T17:00:00Z","opp":"IND"},"SEA":{"day":"Sunday","et":"2026-10-11T16:25","home":true,"kick":"2026-10-11T20:25:00Z","opp":"SF"},"SF":{"day":"Sunday","et":"2026-10-11T16:25","home":false,"kick":"2026-10-11T20:25:00Z","opp":"SEA"},"TB":{"day":"Thursday","et":"2026-10-08T20:15","home":false,"kick":"2026-10-09T00:15:00Z","opp":"DAL"},"TEN":{"day":"Sunday","et":"2026-10-11T13:00","home":true,"kick":"2026-10-11T17:00:00Z","opp":"HOU"},"WAS":{"day":"Sunday","et":"2026-10-11T13:00","home":true,"kick":"2026-10-11T17:00:00Z","opp":"NYG"}},"6":{"ARI":{"day":"Sunday","et":"2026-10-18T16:05","home":false,"kick":"2026-10-18T20:05:00Z","opp":"LAR"},"ATL":{"day":"Sunday","et":"2026-10-18T13:00","home":true,"kick":"2026-10-18T17:00:00Z","opp":"CHI"},"BAL":{"day":"Sunday","et":"2026-10-18T13:00","home":false,"kick":"2026-10-18T17:00:00Z","opp":"CLE"},"BUF":{"day":"Sunday","et":"2026-10-18T16:25","home":false,"kick":"2026-10-18T20:25:00Z","opp":"LV"},"CAR":{"day":"Sunday","et":"2026-10-18T13:00","home":false,"kick":"2026-10-18T17:00:00Z","opp":"PHI"},"CHI":{"day":"Sunday","et":"2026-10-18T13:00","home":false,"kick":"2026-10-18T17:00:00Z","opp":"ATL"},"CLE":{"day":"Sunday","et":"2026-10-18T13:00","home":true,"kick":"2026-10-18T17:00:00Z","opp":"BAL"},"DAL":{"day":"Sunday","et":"2026-10-18T20:20","home":false,"kick":"2026-10-19T00:20:00Z","opp":"GB"},"DEN":{"day":"Thursday","et":"2026-10-15T20:15","home":true,"kick":"2026-10-16T00:15:00Z","opp":"SEA"},"GB":{"day":"Sunday","et":"2026-10-18T20:20","home":true,"kick":"2026-10-19T00:20:00Z","opp":"DAL"},"HOU":{"day":"Sunday","et":"2026-10-18T09:30","home":false,"kick":"2026-10-18T13:30:00Z","opp":"JAX"},"IND":{"day":"Sunday","et":"2026-10-18T13:00","home":true,"kick":"2026-10-18T17:00:00Z","opp":"TEN"},"JAX":{"day":"Sunday","et":"2026-10-18T09:30","home":true,"kick":"2026-10-18T13:30:00Z","opp":"HOU"},"KC":{"day":"Sunday","et":"2026-10-18T16:25","home":true,"kick":"2026-10-18T20:25:00Z","opp":"LAC"},"LAC":{"day":"Sunday","et":"2026-10-18T16:25","home":false,"kick":"2026-10-18T20:25:00Z","opp":"KC"},"LAR":{"day":"Sunday","et":"2026-10-18T16:05","home":true,"kick":"2026-10-18T20:05:00Z","opp":"ARI"},"LV":{"day":"Sunday","et":"2026-10-18T16:25","home":true,"kick":"2026-10-18T20:25:00Z","opp":"BUF"},"NE":{"day":"Sunday","et":"2026-10-18T13:00","home":true,"kick":"2026-10-18T17:00:00Z","opp":"NYJ"},"NO":{"day":"Sunday","et":"2026-10-18T13:00","home":false,"kick":"2026-10-18T17:00:00Z","opp":"NYG"},"NYG":{"day":"Sunday","et":"2026-10-18T13:00","home":true,"kick":"2026-10-18T17:00:00Z","opp":"NO"},"NYJ":{"day":"Sunday","et":"2026-10-18T13:00","home":false,"kick":"2026-10-18T17:00:00Z","opp":"NE"},"PHI":{"day":"Sunday","et":"2026-10-18T13:00","home":true,"kick":"2026-10-18T17:00:00Z","opp":"CAR"},"PIT":{"day":"Sunday","et":"2026-10-18T13:00","home":false,"kick":"2026-10-18T17:00:00Z","opp":"TB"},"SEA":{"day":"Thursday","et":"2026-10-15T20:15","home":false,"kick":"2026-10-16T00:15:00Z","opp":"DEN"},"SF":{"day":"Monday","et":"2026-10-19T20:15","home":true,"kick":"2026-10-20T00:15:00Z","opp":"WAS"},"TB":{"day":"Sunday","et":"2026-10-18T13:00","home":true,"kick":"2026-10-18T17:00:00Z","opp":"PIT"},"TEN":{"day":"Sunday","et":"2026-10-18T13:00","home":false,"kick":"2026-10-18T17:00:00Z","opp":"IND"},"WAS":{"day":"Monday","et":"2026-10-19T20:15","home":false,"kick":"2026-10-20T00:15:00Z","opp":"SF"}},"7":{"ARI":{"day":"Sunday","et":"2026-10-25T16:05","home":true,"kick":"2026-10-25T20:05:00Z","opp":"DEN"},"ATL":{"day":"Sunday","et":"2026-10-25T13:00","home":true,"kick":"2026-10-25T17:00:00Z","opp":"SF"},"BAL":{"day":"Sunday","et":"2026-10-25T13:00","home":true,"kick":"2026-10-25T17:00:00Z","opp":"CIN"},"CAR":{"day":"Sunday","et":"2026-10-25T13:00","home":true,"kick":"2026-10-25T17:00:00Z","opp":"TB"},"CHI":{"day":"Thursday","et":"2026-10-22T20:15","home":true,"kick":"2026-10-23T00:15:00Z","opp":"NE"},"CIN":{"day":"Sunday","et":"2026-10-25T13:00","home":false,"kick":"2026-10-25T17:00:00Z","opp":"BAL"},"CLE":{"day":"Sunday","et":"2026-10-25T13:00","home":false,"kick":"2026-10-25T17:00:00Z","opp":"TEN"},"DAL":{"day":"Monday","et":"2026-10-26T20:15","home":false,"kick":"2026-10-27T00:15:00Z","opp":"PHI"},"DEN":{"day":"Sunday","et":"2026-10-25T16:05","home":false,"kick":"2026-10-25T20:05:00Z","opp":"ARI"},"DET":{"day":"Sunday","et":"2026-10-25T16:25","home":true,"kick":"2026-10-25T20:25:00Z","opp":"GB"},"GB":{"day":"Sunday","et":"2026-10-25T16:25","home":false,"kick":"2026-10-25T20:25:00Z","opp":"DET"},"HOU":{"day":"Sunday","et":"2026-10-25T13:00","home":true,"kick":"2026-10-25T17:00:00Z","opp":"NYG"},"IND":{"day":"Sunday","et":"2026-10-25T13:00","home":false,"kick":"2026-10-25T17:00:00Z","opp":"MIN"},"KC":{"day":"Sunday","et":"2026-10-25T20:20","home":false,"kick":"2026-10-26T00:20:00Z","opp":"SEA"},"LAR":{"day":"Sunday","et":"2026-10-25T16:25","home":false,"kick":"2026-10-25T20:25:00Z","opp":"LV"},"LV":{"day":"Sunday","et":"2026-10-25T16:25","home":true,"kick":"2026-10-25T20:25:00Z","opp":"LAR"},"MIA":{"day":"Sunday","et":"2026-10-25T13:00","home":false,"kick":"2026-10-25T17:00:00Z","opp":"NYJ"},"MIN":{"day":"Sunday","et":"2026-10-25T13:00","home":true,"kick":"2026-10-25T17:00:00Z","opp":"IND"},"NE":{"day":"Thursday","et":"2026-10-22T20:15","home":false,"kick":"2026-10-23T00:15:00Z","opp":"CHI"},"NO":{"day":"Sunday","et":"2026-10-25T09:30","home":true,"kick":"2026-10-25T13:30:00Z","opp":"PIT"},"NYG":{"day":"Sunday","et":"2026-10-25T13:00","home":false,"kick":"2026-10-25T17:00:00Z","opp":"HOU"},"NYJ":{"day":"Sunday","et":"2026-10-25T13:00","home":true,"kick":"2026-10-25T17:00:00Z","opp":"MIA"},"PHI":{"day":"Monday","et":"2026-10-26T20:15","home":true,"kick":"2026-10-27T00:15:00Z","opp":"DAL"},"PIT":{"day":"Sunday","et":"2026-10-25T09:30","home":false,"kick":"2026-10-25T13:30:00Z","opp":"NO"},"SEA":{"day":"Sunday","et":"2026-10-25T20:20","home":true,"kick":"2026-10-26T00:20:00Z","opp":"KC"},"SF":{"day":"Sunday","et":"2026-10-25T13:00","home":false,"kick":"2026-10-25T17:00:00Z","opp":"ATL"},"TB":{"day":"Sunday","et":"2026-10-25T13:00","home":false,"kick":"2026-10-25T17:00:00Z","opp":"CAR"},"TEN":{"day":"Sunday","et":"2026-10-25T13:00","home":true,"kick":"2026-10-25T17:00:00Z","opp":"CLE"}},"8":{"ARI":{"day":"Sunday","et":"2026-11-01T13:00","home":false,"kick":"2026-11-01T18:00:00Z","opp":"DAL"},"ATL":{"day":"Sunday","et":"2026-11-01T13:00","home":false,"kick":"2026-11-01T18:00:00Z","opp":"TB"},"BAL":{"day":"Sunday","et":"2026-11-01T13:00","home":false,"kick":"2026-11-01T18:00:00Z","opp":"BUF"},"BUF":{"day":"Sunday","et":"2026-11-01T13:00","home":true,"kick":"2026-11-01T18:00:00Z","opp":"BAL"},"CAR":{"day":"Thursday","et":"2026-10-29T20:15","home":false,"kick":"2026-10-30T00:15:00Z","opp":"GB"},"CHI":{"day":"Monday","et":"2026-11-02T20:15","home":false,"kick":"2026-11-03T01:15:00Z","opp":"SEA"},"CIN":{"day":"Sunday","et":"2026-11-01T13:00","home":true,"kick":"2026-11-01T18:00:00Z","opp":"TEN"},"CLE":{"day":"Sunday","et":"2026-11-01T13:00","home":false,"kick":"2026-11-01T18:00:00Z","opp":"PIT"},"DAL":{"day":"Sunday","et":"2026-11-01T13:00","home":true,"kick":"2026-11-01T18:00:00Z","opp":"ARI"},"DEN":{"day":"Sunday","et":"2026-11-01T16:25","home":true,"kick":"2026-11-01T21:25:00Z","opp":"KC"},"DET":{"day":"Sunday","et":"2026-11-01T13:00","home":true,"kick":"2026-11-01T18:00:00Z","opp":"MIN"},"GB":{"day":"Thursday","et":"2026-10-29T20:15","home":true,"kick":"2026-10-30T00:15:00Z","opp":"CAR"},"IND":{"day":"Sunday","et":"2026-11-01T13:00","home":false,"kick":"2026-11-01T18:00:00Z","opp":"JAX"},"JAX":{"day":"Sunday","et":"2026-11-01T13:00","home":true,"kick":"2026-11-01T18:00:00Z","opp":"IND"},"KC":{"day":"Sunday","et":"2026-11-01T16:25","home":false,"kick":"2026-11-01T21:25:00Z","opp":"DEN"},"LAC":{"day":"Sunday","et":"2026-11-01T16:05","home":false,"kick":"2026-11-01T21:05:00Z","opp":"LAR"},"LAR":{"day":"Sunday","et":"2026-11-01T16:05","home":true,"kick":"2026-11-01T21:05:00Z","opp":"LAC"},"LV":{"day":"Sunday","et":"2026-11-01T13:00","home":false,"kick":"2026-11-01T18:00:00Z","opp":"NYJ"},"MIA":{"day":"Sunday","et":"2026-11-01T16:25","home":true,"kick":"2026-11-01T21:25:00Z","opp":"NE"},"MIN":{"day":"Sunday","et":"2026-11-01T13:00","home":false,"kick":"2026-11-01T18:00:00Z","opp":"DET"},"NE":{"day":"Sunday","et":"2026-11-01T16:25","home":false,"kick":"2026-11-01T21:25:00Z","opp":"MIA"},"NYJ":{"day":"Sunday","et":"2026-11-01T13:00","home":true,"kick":"2026-11-01T18:00:00Z","opp":"LV"},"PHI":{"day":"Sunday","et":"2026-11-01T20:20","home":false,"kick":"2026-11-02T01:20:00Z","opp":"WAS"},"PIT":{"day":"Sunday","et":"2026-11-01T13:00","home":true,"kick":"2026-11-01T18:00:00Z","opp":"CLE"},"SEA":{"day":"Monday","et":"2026-11-02T20:15","home":true,"kick":"2026-11-03T01:15:00Z","opp":"CHI"},"TB":{"day":"Sunday","et":"2026-11-01T13:00","home":true,"kick":"2026-11-01T18:00:00Z","opp":"ATL"},"TEN":{"day":"Sunday","et":"2026-11-01T13:00","home":false,"kick":"2026-11-01T18:00:00Z","opp":"CIN"},"WAS":{"day":"Sunday","et":"2026-11-01T20:20","home":true,"kick":"2026-11-02T01:20:00Z","opp":"PHI"}},"9":{"ARI":{"day":"Sunday","et":"2026-11-08T16:25","home":false,"kick":"2026-11-08T21:25:00Z","opp":"SEA"},"ATL":{"day":"Sunday","et":"2026-11-08T09:30","home":true,"kick":"2026-11-08T14:30:00Z","opp":"CIN"},"BAL":{"day":"Thursday","et":"2026-11-05T20:15","home":true,"kick":"2026-11-06T01:15:00Z","opp":"JAX"},"BUF":{"day":"Monday","et":"2026-11-09T20:15","home":false,"kick":"2026-11-10T01:15:00Z","opp":"MIN"},"CAR":{"day":"Sunday","et":"2026-11-08T13:00","home":true,"kick":"2026-11-08T18:00:00Z","opp":"DEN"},"CHI":{"day":"Sunday","et":"2026-11-08T20:20","home":true,"kick":"2026-11-09T01:20:00Z","opp":"TB"},"CIN":{"day":"Sunday","et":"2026-11-08T09:30","home":false,"kick":"2026-11-08T14:30:00Z","opp":"ATL"},"CLE":{"day":"Sunday","et":"2026-11-08T13:00","home":false,"kick":"2026-11-08T18:00:00Z","opp":"NO"},"DAL":{"day":"Sunday","et":"2026-11-08T13:00","home":false,"kick":"2026-11-08T18:00:00Z","opp":"IND"},"DEN":{"day":"Sunday","et":"2026-11-08T13:00","home":false,"kick":"2026-11-08T18:00:00Z","opp":"CAR"},"DET":{"day":"Sunday","et":"2026-11-08T13:00","home":false,"kick":"2026-11-08T18:00:00Z","opp":"MIA"},"GB":{"day":"Sunday","et":"2026-11-08T16:25","home":false,"kick":"2026-11-08T21:25:00Z","opp":"NE"},"HOU":{"day":"Sunday","et":"2026-11-08T16:05","home":false,"kick":"2026-11-08T21:05:00Z","opp":"LAC"},"IND":{"day":"Sunday","et":"2026-11-08T13:00","home":true,"kick":"2026-11-08T18:00:00Z","opp":"DAL"},"JAX":{"day":"Thursday","et":"2026-11-05T20:15","home":false,"kick":"2026-11-06T01:15:00Z","opp":"BAL"},"KC":{"day":"Sunday","et":"2026-11-08T13:00","home":true,"kick":"2026-11-08T18:00:00Z","opp":"NYJ"},"LAC":{"day":"Sunday","et":"2026-11-08T16:05","home":true,"kick":"2026-11-08T21:05:00Z","opp":"HOU"},"LAR":{"day":"Sunday","et":"2026-11-08T13:00","home":false,"kick":"2026-11-08T18:00:00Z","opp":"WAS"},"LV":{"day":"Sunday","et":"2026-11-08T16:05","home":false,"kick":"2026-11-08T21:05:00Z","opp":"SF"},"MIA":{"day":"Sunday","et":"2026-11-08T13:00","home":true,"kick":"2026-11-08T18:00:00Z","opp":"DET"},"MIN":{"day":"Monday","et":"2026-11-09T20:15","home":true,"kick":"2026-11-10T01:15:00Z","opp":"BUF"},"NE":{"day":"Sunday","et":"2026-11-08T16:25","home":true,"kick":"2026-11-08T21:25:00Z","opp":"GB"},"NO":{"day":"Sunday","et":"2026-11-08T13:00","home":true,"kick":"2026-11-08T18:00:00Z","opp":"CLE"},"NYG":{"day":"Sunday","et":"2026-11-08T13:00","home":false,"kick":"2026-11-08T18:00:00Z","opp":"PHI"},"NYJ":{"day":"Sunday","et":"2026-11-08T13:00","home":false,"kick":"2026-11-08T18:00:00Z","opp":"KC"},"PHI":{"day":"Sunday","et":"2026-11-08T13:00","home":true,"kick":"2026-11-08T18:00:00Z","opp":"NYG"},"SEA":{"day":"Sunday","et":"2026-11-08T16:25","home":true,"kick":"2026-11-08T21:25:00Z","opp":"ARI"},"SF":{"day":"Sunday","et":"2026-11-08T16:05","home":true,"kick":"2026-11-08T21:05:00Z","opp":"LV"},"TB":{"day":"Sunday","et":"2026-11-08T20:20","home":false,"kick":"2026-11-09T01:20:00Z","opp":"CHI"},"WAS":{"day":"Sunday","et":"2026-11-08T13:00","home":true,"kick":"2026-11-08T18:00:00Z","opp":"LAR"}}}},"players":{"4984":{"n":"Josh Allen","p":"QB","tm":"BUF","adp":1.7,"tr":1,"lean":"FADE"},"9221":{"n":"Jahmyr Gibbs","p":"RB","tm":"DET","adp":1.8,"tr":1,"lean":"BUY"},"9509":{"n":"Bijan Robinson","p":"RB","tm":"ATL","adp":2.6,"tr":1,"lean":"WATCH"},"9493":{"n":"Puka Nacua","p":"WR","tm":"LAR","adp":4.8,"tr":1,"lean":"FADE"},"6813":{"n":"Jonathan Taylor","p":"RB","tm":"IND","adp":5.6,"tr":1,"lean":"FADE"},"11564":{"n":"Drake Maye","p":"QB","tm":"NE","adp":6.9,"tr":1,"lean":"FADE"},"7564":{"n":"Ja'Marr Chase","p":"WR","tm":"CIN","adp":7.4,"tr":1,"lean":"BUY"},"4881":{"n":"Lamar Jackson","p":"QB","tm":"BAL","adp":8.1,"tr":1,"lean":"BUY"},"6770":{"n":"Joe Burrow","p":"QB","tm":"CIN","adp":9.0,"tr":1,"lean":"BUY"},"9488":{"n":"Jaxon Smith-Njigba","p":"WR","tm":"SEA","adp":9.2,"tr":1,"lean":"WATCH"},"4034":{"n":"Christian McCaffrey","p":"RB","tm":"SF","adp":10.3,"tr":1,"lean":"BUY"},"3198":{"n":"Derrick Henry","p":"RB","tm":"BAL","adp":10.8,"tr":1,"lean":"BUY"},"3294":{"n":"Dak Prescott","p":"QB","tm":"DAL","adp":13.4,"tr":1,"lean":"WATCH"},"11566":{"n":"Jayden Daniels","p":"QB","tm":"WAS","adp":13.7,"tr":1,"lean":"FADE"},"7547":{"n":"Amon-Ra St. Brown","p":"WR","tm":"DET","adp":14.0,"tr":1,"lean":"BUY"},"8138":{"n":"James Cook","p":"RB","tm":"BUF","adp":16.1,"tr":1,"lean":"BUY"},"6904":{"n":"Jalen Hurts","p":"QB","tm":"PHI","adp":16.9,"tr":1,"lean":"BUY"},"421":{"n":"Matthew Stafford","p":"QB","tm":"LAR","adp":17.1,"tr":1,"lean":"BUY"},"8183":{"n":"Brock Purdy","p":"QB","tm":"SF","adp":18.9,"tr":1,"lean":"BUY"},"7523":{"n":"Trevor Lawrence","p":"QB","tm":"JAX","adp":19.3,"tr":1,"lean":"BUY"},"9226":{"n":"De'Von Achane","p":"RB","tm":"MIA","adp":21.5,"tr":1,"lean":"FADE"},"11560":{"n":"Caleb Williams","p":"QB","tm":"CHI","adp":21.8,"tr":1,"lean":"WATCH"},"4046":{"n":"Patrick Mahomes","p":"QB","tm":"KC","adp":23.5,"tr":1,"lean":"FADE"},"8112":{"n":"Drake London","p":"WR","tm":"ATL","adp":24.4,"tr":2,"lean":"BUY"},"3163":{"n":"Jared Goff","p":"QB","tm":"DET","adp":24.8,"tr":1,"lean":"WATCH"},"4866":{"n":"Saquon Barkley","p":"RB","tm":"PHI","adp":25.1,"tr":1,"lean":"BUY"},"6786":{"n":"CeeDee Lamb","p":"WR","tm":"DAL","adp":25.4,"tr":2,"lean":"BUY"},"6797":{"n":"Justin Herbert","p":"QB","tm":"LAC","adp":25.7,"tr":1,"lean":"WATCH"},"12527":{"n":"Ashton Jeanty","p":"RB","tm":"LV","adp":28.6,"tr":1,"lean":"FADE"},"6794":{"n":"Justin Jefferson","p":"WR","tm":"MIN","adp":28.8,"tr":2,"lean":"BUY"},"12508":{"n":"Jaxson Dart","p":"QB","tm":"NYG","adp":30.4,"tr":1,"lean":"FADE"},"11563":{"n":"Bo Nix","p":"QB","tm":"DEN","adp":30.6,"tr":1,"lean":"BUY"},"9224":{"n":"Chase Brown","p":"RB","tm":"CIN","adp":31.1,"tr":1,"lean":"BUY"},"10229":{"n":"Rashee Rice","p":"WR","tm":"KC","adp":31.5,"tr":2,"lean":"FADE"},"8137":{"n":"George Pickens","p":"WR","tm":"DAL","adp":33.4,"tr":2,"lean":"WATCH"},"5850":{"n":"Josh Jacobs","p":"RB","tm":"GB","adp":34.6,"tr":1,"lean":"FADE"},"5859":{"n":"A.J. Brown","p":"WR","tm":"NE","adp":34.9,"tr":2,"lean":"BUY"},"7569":{"n":"Nico Collins","p":"WR","tm":"HOU","adp":36.4,"tr":2,"lean":"BUY"},"12507":{"n":"Omarion Hampton","p":"RB","tm":"LAC","adp":38.8,"tr":1,"lean":"FADE"},"8151":{"n":"Kenneth Walker III","p":"RB","tm":"KC","adp":39.1,"tr":1,"lean":"BUY"},"8150":{"n":"Kyren Williams","p":"RB","tm":"LAR","adp":40.7,"tr":1,"lean":"WATCH"},"8144":{"n":"Chris Olave","p":"WR","tm":"NO","adp":41.8,"tr":2,"lean":"BUY"},"4892":{"n":"Baker Mayfield","p":"QB","tm":"TB","adp":41.9,"tr":2,"lean":"BUY"},"9997":{"n":"Zay Flowers","p":"WR","tm":"BAL","adp":42.2,"tr":2,"lean":"BUY"},"7588":{"n":"Javonte Williams","p":"RB","tm":"DAL","adp":46.9,"tr":2,"lean":"FADE"},"12545":{"n":"Tyler Shough","p":"QB","tm":"NO","adp":48.1,"tr":3,"lean":"WATCH"},"8155":{"n":"Breece Hall","p":"RB","tm":"NYJ","adp":48.7,"tr":2,"lean":"BUY"},"13287":{"n":"Jeremiyah Love","p":"RB","tm":"ARI","adp":48.7,"tr":2,"lean":"WATCH"},"11632":{"n":"Malik Nabers","p":"WR","tm":"NYG","adp":49.1,"tr":3,"lean":"BUY"},"12514":{"n":"Emeka Egbuka","p":"WR","tm":"TB","adp":50.5,"tr":3,"lean":"WATCH"},"6801":{"n":"Tee Higgins","p":"WR","tm":"CIN","adp":51.7,"tr":3,"lean":"BUY"},"2133":{"n":"Davante Adams","p":"WR","tm":"LAR","adp":52.0,"tr":3,"lean":"FADE"},"12481":{"n":"Cam Skattebo","p":"RB","tm":"NYG","adp":52.3,"tr":2,"lean":"BUY"},"5849":{"n":"Kyler Murray","p":"QB","tm":"MIN","adp":52.8,"tr":3,"lean":"BUY"},"12526":{"n":"Tetairoa McMillan","p":"WR","tm":"CAR","adp":52.9,"tr":3,"lean":"BUY"},"8148":{"n":"Jameson Williams","p":"WR","tm":"DET","adp":53.0,"tr":3,"lean":"BUY"},"7525":{"n":"DeVonta Smith","p":"WR","tm":"PHI","adp":55.7,"tr":3,"lean":"BUY"},"4943":{"n":"Sam Darnold","p":"QB","tm":"SEA","adp":57.3,"tr":3,"lean":"NEUTRAL"},"7543":{"n":"Travis Etienne","p":"RB","tm":"NO","adp":58.2,"tr":2,"lean":"BUY"},"6804":{"n":"Jordan Love","p":"QB","tm":"GB","adp":58.7,"tr":3,"lean":"WATCH"},"6790":{"n":"D'Andre Swift","p":"RB","tm":"CHI","adp":58.8,"tr":2,"lean":"BUY"},"8146":{"n":"Garrett Wilson","p":"WR","tm":"NYJ","adp":59.1,"tr":3,"lean":"FADE"},"11604":{"n":"Brock Bowers","p":"TE","tm":"LV","adp":61.0,"tr":1,"lean":"BUY"},"11620":{"n":"Rome Odunze","p":"WR","tm":"CHI","adp":61.2,"tr":3,"lean":"BUY"},"5927":{"n":"Terry McLaurin","p":"WR","tm":"WAS","adp":63.9,"tr":3,"lean":"FADE"},"11584":{"n":"Bucky Irving","p":"RB","tm":"TB","adp":64.3,"tr":2,"lean":"FADE"},"8130":{"n":"Trey McBride","p":"TE","tm":"ARI","adp":64.7,"tr":1,"lean":"FADE"},"11635":{"n":"Ladd McConkey","p":"WR","tm":"LAC","adp":66.5,"tr":3,"lean":"BUY"},"12490":{"n":"Bhayshul Tuten","p":"RB","tm":"JAX","adp":66.6,"tr":2,"lean":"FADE"},"12512":{"n":"Quinshon Judkins","p":"RB","tm":"CLE","adp":66.6,"tr":2,"lean":"WATCH"},"8142":{"n":"Alec Pierce","p":"WR","tm":"IND","adp":69.7,"tr":3,"lean":"FADE"},"4983":{"n":"DJ Moore","p":"WR","tm":"BUF","adp":69.9,"tr":3,"lean":"FADE"},"9758":{"n":"C.J. Stroud","p":"QB","tm":"HOU","adp":72.2,"tr":4,"lean":"BUY"},"5892":{"n":"David Montgomery","p":"RB","tm":"HOU","adp":72.9,"tr":3,"lean":"BUY"},"5870":{"n":"Daniel Jones","p":"QB","tm":"IND","adp":73.2,"tr":4,"lean":"BUY"},"7526":{"n":"Jaylen Waddle","p":"WR","tm":"DEN","adp":73.4,"tr":3,"lean":"WATCH"},"12529":{"n":"TreVeyon Henderson","p":"RB","tm":"NE","adp":74.9,"tr":3,"lean":"FADE"},"8167":{"n":"Christian Watson","p":"WR","tm":"GB","adp":75.1,"tr":3,"lean":"BUY"},"2216":{"n":"Mike Evans","p":"WR","tm":"SF","adp":75.8,"tr":3,"lean":"FADE"},"5045":{"n":"Courtland Sutton","p":"WR","tm":"DEN","adp":79.3,"tr":3,"lean":"FADE"},"12519":{"n":"Luther Burden III","p":"WR","tm":"CHI","adp":79.8,"tr":3,"lean":"WATCH"},"8161":{"n":"Malik Willis","p":"QB","tm":"MIA","adp":81.5,"tr":5,"lean":"BUY"},"5846":{"n":"DK Metcalf","p":"WR","tm":"PIT","adp":82.1,"tr":3,"lean":"BUY"},"12517":{"n":"Colston Loveland","p":"TE","tm":"CHI","adp":82.2,"tr":2,"lean":"BUY"},"5967":{"n":"Tony Pollard","p":"RB","tm":"TEN","adp":82.7,"tr":4,"lean":"FADE"},"11628":{"n":"Marvin Harrison Jr.","p":"WR","tm":"ARI","adp":84.7,"tr":3,"lean":"FADE"},"13286":{"n":"Jadarian Price","p":"RB","tm":"SEA","adp":86.0,"tr":4,"lean":"WATCH"},"9487":{"n":"Parker Washington","p":"WR","tm":"JAX","adp":86.3,"tr":3,"lean":"BUY"},"11631":{"n":"Brian Thomas Jr.","p":"WR","tm":"JAX","adp":89.2,"tr":3,"lean":"FADE"},"7611":{"n":"Rhamondre Stevenson","p":"RB","tm":"NE","adp":89.3,"tr":4,"lean":"BUY"},"9228":{"n":"Bryce Young","p":"QB","tm":"CAR","adp":89.5,"tr":6,"lean":"FADE"},"12518":{"n":"Tyler Warren","p":"TE","tm":"IND","adp":89.7,"tr":2,"lean":"BUY"},"7021":{"n":"Rico Dowdle","p":"RB","tm":"PIT","adp":91.0,"tr":4,"lean":"BUY"},"13279":{"n":"Carnell Tate","p":"WR","tm":"TEN","adp":92.0,"tr":3,"lean":"BUY"},"8228":{"n":"Jaylen Warren","p":"RB","tm":"PIT","adp":94.3,"tr":4,"lean":"BUY"},"6806":{"n":"J.K. Dobbins","p":"RB","tm":"DEN","adp":95.2,"tr":4,"lean":"FADE"},"9754":{"n":"Quentin Johnston","p":"WR","tm":"LAC","adp":95.6,"tr":3,"lean":"FADE"},"7594":{"n":"Chuba Hubbard","p":"RB","tm":"CAR","adp":96.9,"tr":4,"lean":"FADE"},"12522":{"n":"Cam Ward","p":"QB","tm":"TEN","adp":99.0,"tr":7,"lean":"WATCH"},"10232":{"n":"Michael Wilson","p":"WR","tm":"ARI","adp":100.0,"tr":3,"lean":"FADE"},"9756":{"n":"Jordan Addison","p":"WR","tm":"MIN","adp":100.8,"tr":3,"lean":"BUY"},"9484":{"n":"Tucker Kraft","p":"TE","tm":"GB","adp":101.5,"tr":3,"lean":"BUY"},"4037":{"n":"Chris Godwin Jr.","p":"WR","tm":"TB","adp":101.8,"tr":3,"lean":"BUY"},"5947":{"n":"Jakobi Meyers","p":"WR","tm":"JAX","adp":101.9,"tr":3,"lean":"NEUTRAL"},"10222":{"n":"Jayden Reed","p":"WR","tm":"GB","adp":104.5,"tr":3,"lean":"BUY"},"12506":{"n":"Harold Fannin Jr.","p":"TE","tm":"CLE","adp":107.0,"tr":3,"lean":"FADE"},"11624":{"n":"Xavier Worthy","p":"WR","tm":"KC","adp":107.2,"tr":3,"lean":"FADE"},"DEN":{"n":"DEN DEF","p":"DEF","tm":"DEN","adp":108.3,"tr":1},"12533":{"n":"Jacory Croskey-Merritt","p":"RB","tm":"WAS","adp":108.3,"tr":5,"lean":"FADE"},"SEA":{"n":"SEA DEF","p":"DEF","tm":"SEA","adp":108.4,"tr":1},"6819":{"n":"Michael Pittman","p":"WR","tm":"PIT","adp":108.7,"tr":3,"lean":"BUY"},"3257":{"n":"Jacoby Brissett","p":"QB","tm":"ARI","adp":109.8,"tr":8,"lean":"FADE"},"7553":{"n":"Kyle Pitts","p":"TE","tm":"ATL","adp":110.8,"tr":3,"lean":"FADE"},"13281":{"n":"Jordyn Tyson","p":"WR","tm":"NO","adp":112.4,"tr":3,"lean":"WATCH"},"12534":{"n":"Kyle Monangai","p":"RB","tm":"CHI","adp":113.0,"tr":5,"lean":"FADE"},"96":{"n":"Aaron Rodgers","p":"QB","tm":"PIT","adp":113.2,"tr":8,"lean":"FADE"},"5022":{"n":"Dallas Goedert","p":"TE","tm":"PHI","adp":114.1,"tr":3,"lean":"BUY"},"10859":{"n":"Sam LaPorta","p":"TE","tm":"DET","adp":114.1,"tr":3,"lean":"FADE"},"5872":{"n":"Deebo Samuel Sr.","p":"WR","tm":"SF","adp":115.9,"tr":3,"lean":"FADE"},"2449":{"n":"Stefon Diggs","p":"WR","tm":"WAS","adp":116.2,"tr":3,"lean":"BUY"},"12489":{"n":"RJ Harvey","p":"RB","tm":"DEN","adp":116.7,"tr":5,"lean":"BUY"},"HOU":{"n":"HOU DEF","p":"DEF","tm":"HOU","adp":117.7,"tr":1},"1373":{"n":"Geno Smith","p":"QB","tm":"NYJ","adp":118.8,"tr":8,"lean":"WATCH"},"13294":{"n":"Makai Lemon","p":"WR","tm":"PHI","adp":118.8,"tr":3,"lean":"WATCH"},"11583":{"n":"Jonathon Brooks","p":"RB","tm":"CAR","adp":120.2,"tr":5,"lean":"FADE"},"8408":{"n":"Jordan Mason","p":"RB","tm":"MIN","adp":121.4,"tr":5,"lean":"BUY"},"SF":{"n":"SF DEF","p":"DEF","tm":"SF","adp":121.5,"tr":1},"9500":{"n":"Josh Downs","p":"WR","tm":"IND","adp":121.5,"tr":3,"lean":"BUY"},"11638":{"n":"Ricky Pearsall","p":"WR","tm":"SF","adp":121.7,"tr":3,"lean":"WATCH"},"11586":{"n":"Blake Corum","p":"RB","tm":"LAR","adp":122.5,"tr":5,"lean":"WATCH"},"12501":{"n":"Matthew Golden","p":"WR","tm":"GB","adp":123.1,"tr":3,"lean":"BUY"},"8126":{"n":"Wan'Dale Robinson","p":"WR","tm":"TEN","adp":123.6,"tr":3,"lean":"BUY"},"4199":{"n":"Aaron Jones","p":"RB","tm":"MIN","adp":123.7,"tr":5,"lean":"FADE"},"8121":{"n":"Romeo Doubs","p":"WR","tm":"NE","adp":124.2,"tr":3,"lean":"BUY"},"5012":{"n":"Mark Andrews","p":"TE","tm":"BAL","adp":124.9,"tr":4,"lean":"FADE"},"12540":{"n":"Chimere Dike","p":"WR","tm":"TEN","adp":126.0,"tr":3},"11533":{"n":"Brandon Aubrey","p":"K","tm":"DAL","adp":127.6,"tr":1},"8136":{"n":"Rachaad White","p":"RB","tm":"WAS","adp":128.5,"tr":5,"lean":"FADE"},"MIN":{"n":"MIN DEF","p":"DEF","tm":"MIN","adp":129.4,"tr":1},"4217":{"n":"George Kittle","p":"TE","tm":"SF","adp":129.5,"tr":4,"lean":"FADE"},"8676":{"n":"Rashid Shaheed","p":"WR","tm":"SEA","adp":129.9,"tr":3,"lean":"BUY"},"LAR":{"n":"LAR DEF","p":"DEF","tm":"LAR","adp":130.0,"tr":1},"13269":{"n":"Fernando Mendoza","p":"QB","tm":"LV","adp":130.2,"tr":9,"lean":"WATCH"},"13330":{"n":"Kenyon Sadiq","p":"TE","tm":"NYJ","adp":131.0,"tr":4,"lean":"BUY"},"7567":{"n":"Kenneth Gainwell","p":"RB","tm":"TB","adp":131.2,"tr":5,"lean":"WATCH"},"2747":{"n":"Jason Myers","p":"K","tm":"SEA","adp":133.2,"tr":1},"12493":{"n":"Oronde Gadsden II","p":"TE","tm":"LAC","adp":134.8,"tr":4,"lean":"FADE"},"6768":{"n":"Tua Tagovailoa","p":"QB","tm":"ATL","adp":135.2,"tr":9,"lean":"BUY"},"8134":{"n":"Khalil Shakir","p":"WR","tm":"BUF","adp":135.3,"tr":3,"lean":"FADE"},"13417":{"n":"De'Zhaun Stribling","p":"WR","tm":"SF","adp":135.5,"tr":3,"lean":"FADE"},"13298":{"n":"K.C. Concepcion","p":"WR","tm":"CLE","adp":135.7,"tr":3,"lean":"WATCH"},"11603":{"n":"AJ Barner","p":"TE","tm":"SEA","adp":136.2,"tr":4,"lean":"NEUTRAL"},"3451":{"n":"Ka'imi Fairbairn","p":"K","tm":"HOU","adp":136.5,"tr":1},"4017":{"n":"Deshaun Watson","p":"QB","tm":"CLE","adp":136.9,"tr":9,"lean":"NEUTRAL"},"11646":{"n":"Jalen Coker","p":"WR","tm":"CAR","adp":137.7,"tr":3,"lean":"BUY"},"1466":{"n":"Travis Kelce","p":"TE","tm":"KC","adp":138.1,"tr":4,"lean":"FADE"},"9480":{"n":"Brenton Strange","p":"TE","tm":"JAX","adp":138.1,"tr":4,"lean":"WATCH"},"13345":{"n":"Jonah Coleman","p":"RB","tm":"DEN","adp":138.6,"tr":6,"lean":"WATCH"},"NE":{"n":"NE DEF","p":"DEF","tm":"NE","adp":138.6,"tr":1},"DET":{"n":"DET DEF","p":"DEF","tm":"DET","adp":138.8,"tr":1},"4981":{"n":"Calvin Ridley","p":"WR","tm":"TEN","adp":139.0,"tr":3,"lean":"FADE"},"8259":{"n":"Cameron Dicker","p":"K","tm":"LAC","adp":139.1,"tr":1},"PHI":{"n":"PHI DEF","p":"DEF","tm":"PHI","adp":139.2,"tr":1,"lean":"BUY"},"10213":{"n":"Tre Tucker","p":"WR","tm":"LV","adp":139.3,"tr":3,"lean":"FADE"},"12524":{"n":"Shedeur Sanders","p":"QB","tm":"CLE","adp":139.4,"tr":9,"lean":"NEUTRAL"},"8110":{"n":"Jake Ferguson","p":"TE","tm":"DAL","adp":140.2,"tr":4,"lean":"FADE"},"9753":{"n":"Zach Charbonnet","p":"RB","tm":"SEA","adp":140.6,"tr":6,"lean":"WATCH"},"8131":{"n":"Isaiah Likely","p":"TE","tm":"NYG","adp":140.7,"tr":4,"lean":"BUY"},"9511":{"n":"Keaton Mitchell","p":"RB","tm":"LAC","adp":140.9,"tr":6,"lean":"BUY"},"PIT":{"n":"PIT DEF","p":"DEF","tm":"PIT","adp":141.8,"tr":1},"6783":{"n":"Jerry Jeudy","p":"WR","tm":"CLE","adp":142.2,"tr":3,"lean":"BUY"},"13272":{"n":"Carson Beck","p":"QB","tm":"ARI","adp":142.6,"tr":9,"lean":"FADE"},"10236":{"n":"Dalton Kincaid","p":"TE","tm":"BUF","adp":142.8,"tr":4,"lean":"BUY"},"11576":{"n":"Braelon Allen","p":"RB","tm":"NYJ","adp":143.3,"tr":6,"lean":"FADE"},"1166":{"n":"Kirk Cousins","p":"QB","tm":"LV","adp":143.5,"tr":9,"lean":"FADE"},"12860":{"n":"Theo Wease Jr.","p":"WR","tm":"MIA","adp":143.7,"tr":3},"11559":{"n":"Michael Penix Jr.","p":"QB","tm":"ATL","adp":143.8,"tr":9,"lean":"FADE"},"9508":{"n":"Tyjae Spears","p":"RB","tm":"TEN","adp":144.1,"tr":6,"lean":"WATCH"},"12015":{"n":"Harrison Mevis","p":"K","tm":"LAR","adp":144.6,"tr":1},"8147":{"n":"John Metchie III","p":"WR","tm":"CAR","adp":144.7,"tr":3},"LAC":{"n":"LAC DEF","p":"DEF","tm":"LAC","adp":144.7,"tr":1,"lean":"BUY"},"8210":{"n":"Chig Okonkwo","p":"TE","tm":"WAS","adp":144.8,"tr":4,"lean":"FADE"},"7571":{"n":"Rashod Bateman","p":"WR","tm":"BAL","adp":145.1,"tr":3},"12713":{"n":"Andy Borregales","p":"K","tm":"NE","adp":145.5,"tr":1},"11539":{"n":"Jake Bates","p":"K","tm":"DET","adp":145.5,"tr":1},"11565":{"n":"J.J. McCarthy","p":"QB","tm":"MIN","adp":146.2,"tr":9,"lean":"FADE"},"8205":{"n":"Isiah Pacheco","p":"RB","tm":"DET","adp":146.7,"tr":6,"lean":"WATCH"},"3214":{"n":"Hunter Henry","p":"TE","tm":"NE","adp":147.7,"tr":4,"lean":"NEUTRAL"},"11618":{"n":"Jalen McMillan","p":"WR","tm":"TB","adp":148.0,"tr":3,"lean":"WATCH"},"1945":{"n":"Chris Boswell","p":"K","tm":"PIT","adp":148.0,"tr":1},"DAL":{"n":"DAL DEF","p":"DEF","tm":"DAL","adp":148.7,"tr":1},"GB":{"n":"GB DEF","p":"DEF","tm":"GB","adp":148.9,"tr":1,"lean":"WATCH"},"7002":{"n":"Juwan Johnson","p":"TE","tm":"NO","adp":149.2,"tr":4,"lean":"BUY"},"TEN":{"n":"TEN DEF","p":"DEF","tm":"TEN","adp":150.4,"tr":1},"4035":{"n":"Alvin Kamara","p":"RB","tm":"NO","adp":150.6,"tr":6,"lean":"FADE"},"ATL":{"n":"ATL DEF","p":"DEF","tm":"ATL","adp":151.1,"tr":1},"6650":{"n":"Chase McLaughlin","p":"K","tm":"TB","adp":151.1,"tr":1},"12711":{"n":"Tyler Loop","p":"K","tm":"BAL","adp":151.2,"tr":1},"11786":{"n":"Cam Little","p":"K","tm":"JAX","adp":151.4,"tr":1},"12474":{"n":"Woody Marks","p":"RB","tm":"HOU","adp":151.7,"tr":6,"lean":"BUY"},"13293":{"n":"Ja'Kobi Lane","p":"WR","tm":"BAL","adp":152.2,"tr":3,"lean":"WATCH"},"8132":{"n":"Tyler Allgeier","p":"RB","tm":"ARI","adp":152.5,"tr":6,"lean":"WATCH"},"CHI":{"n":"CHI DEF","p":"DEF","tm":"CHI","adp":152.8,"tr":1},"JAX":{"n":"JAX DEF","p":"DEF","tm":"JAX","adp":153.0,"tr":1,"lean":"BUY"},"11783":{"n":"Ryan Flournoy","p":"WR","tm":"DAL","adp":153.2,"tr":3},"2020":{"n":"Cairo Santos","p":"K","tm":"CHI","adp":153.5,"tr":1},"7839":{"n":"Evan McPherson","p":"K","tm":"CIN","adp":153.9,"tr":1},"5189":{"n":"Eddy Pineiro","p":"K","tm":"SF","adp":153.9,"tr":1},"8180":{"n":"Jalen Nailor","p":"WR","tm":"LV","adp":154.1,"tr":3,"lean":"FADE"},"BAL":{"n":"BAL DEF","p":"DEF","tm":"BAL","adp":154.1,"tr":1},"12530":{"n":"Travis Hunter","p":"WR","tm":"JAX","adp":154.2,"tr":3,"lean":"WATCH"},"10219":{"n":"Chris Rodriguez Jr.","p":"RB","tm":"JAX","adp":154.4,"tr":6,"lean":"FADE"},"1479":{"n":"Keenan Allen","p":"WR","tm":"LAC","adp":154.6,"tr":3,"lean":"BUY"},"11792":{"n":"Will Reichard","p":"K","tm":"MIN","adp":155.4,"tr":1},"650":{"n":"Nick Folk","p":"K","tm":"ATL","adp":155.7,"tr":1},"CLE":{"n":"CLE DEF","p":"DEF","tm":"CLE","adp":155.9,"tr":1},"7049":{"n":"Jauan Jennings","p":"WR","tm":"MIN","adp":156.5,"tr":3,"lean":"FADE"},"9486":{"n":"Dontayvion Wicks","p":"WR","tm":"PHI","adp":157.8,"tr":3,"lean":"WATCH"},"13346":{"n":"Denzel Boston","p":"WR","tm":"CLE","adp":157.8,"tr":3,"lean":"FADE"},"11058":{"n":"Blake Grupe","p":"K","tm":"IND","adp":158.2,"tr":1},"4227":{"n":"Harrison Butker","p":"K","tm":"KC","adp":158.5,"tr":1},"11655":{"n":"Tyrone Tracy Jr.","p":"RB","tm":"NYG","adp":158.9,"tr":6,"lean":"WATCH"},"BUF":{"n":"BUF DEF","p":"DEF","tm":"BUF","adp":159.5,"tr":1},"4195":{"n":"Jake Elliott","p":"K","tm":"PHI","adp":159.5,"tr":1},"7042":{"n":"Tyler Bass","p":"K","tm":"BUF","adp":160.0,"tr":1},"12535":{"n":"Isaac TeSlaa","p":"WR","tm":"DET","adp":160.1,"tr":3},"9502":{"n":"Tank Dell","p":"WR","tm":"HOU","adp":160.6,"tr":3,"lean":"WATCH"},"13301":{"n":"Antonio Williams","p":"WR","tm":"WAS","adp":161.2,"tr":3,"lean":"BUY"},"3678":{"n":"Wil Lutz","p":"K","tm":"DEN","adp":161.3,"tr":1},"13276":{"n":"Omar Cooper","p":"WR","tm":"NYJ","adp":161.6,"tr":3,"lean":"FADE"},"8154":{"n":"Brian Robinson","p":"RB","tm":"ATL","adp":161.9,"tr":6,"lean":"WATCH"},"NA":{"n":"Trey Smack","p":"K","tm":"GB","adp":162.3,"tr":1},"9225":{"n":"Tank Bigsby","p":"RB","tm":"PHI","adp":163.1,"tr":6,"lean":"BUY"},"4039":{"n":"Cooper Kupp","p":"WR","tm":"SEA","adp":163.6,"tr":3,"lean":"FADE"},"13285":{"n":"Malachi Fields","p":"WR","tm":"NYG","adp":164.0,"tr":3,"lean":"FADE"},"12509":{"n":"Tre Harris","p":"WR","tm":"LAC","adp":165.0,"tr":3,"lean":"BUY"},"11610":{"n":"Malik Washington","p":"WR","tm":"MIA","adp":166.6,"tr":3,"lean":"FADE"},"NO":{"n":"NO DEF","p":"DEF","tm":"NO","adp":166.8,"tr":1},"13405":{"n":"Kaytron Allen","p":"RB","tm":"WAS","adp":168.6,"tr":6,"lean":"FADE"},"11625":{"n":"Adonai Mitchell","p":"WR","tm":"NYJ","adp":169.4,"tr":3,"lean":"BUY"},"11581":{"n":"MarShawn Lloyd","p":"RB","tm":"GB","adp":169.6,"tr":6,"lean":"BUY"},"9504":{"n":"Kayshon Boutte","p":"WR","tm":"NE","adp":169.6,"tr":3,"lean":"WATCH"}},"built":"2026-09-03T04:51:37Z"};</script>
+<script>
+"use strict";
+/* =====================================================================
+   SEASON PAGE — "My Team", the in-season half.
+   Session A (2026-09-03): the FACTS view. Live roster, per-player opponent,
+   kickoff/lock time, injury designation, bye flags. The decision layer
+   (close calls, disagreement with the lineup Chris set) lands in Session B.
+
+   ARCHITECTURE, and why it is not the draft template
+   --------------------------------------------------
+   The draft board answers "who should I pick from a static ADP board". This
+   answers "what is true about my roster THIS WEEK". Different question,
+   different data cadence, different device. Sharing one 500KB file would mean
+   threading week-awareness through draft logic two days before a live draft.
+
+   WHAT IS BAKED vs WHAT IS LIVE — the load-bearing rule
+   -----------------------------------------------------
+   BAKED (by season.py, changes ~weekly): league config, the 2026 schedule
+   (opponent/kickoff/bye), and a slim player index for instant first paint.
+   LIVE (fetched here, every load): the roster, the starters Chris actually
+   set, FAAB, and each player's CURRENT team + injury designation.
+
+   TEAM COMES FROM SLEEPER, NEVER FROM THE BAKED BOARD. This is not a
+   preference, it is a bug fix. Verified 2026-09-03: the baked board says
+   Keenan Allen is LAC; Sleeper says IND. He is ON CHRIS'S ROSTER, so trusting
+   the board would have shown him playing the Chargers' schedule all season —
+   wrong opponent, wrong kickoff, wrong bye week. Two of 243 board rows are
+   stale this way (Allen and Kayshon Boutte), and the count only grows as the
+   season churns. The board is authoritative for ADP, tier and podcast take;
+   it is authoritative for nothing that moves.
+   ===================================================================== */
+
+var S = SEASON;                 // baked: league, schedule, players, built
+var LG = S.league;
+var WEEK = null;                // week being VIEWED
+var NOW_WEEK = null;            // week the NFL is actually on
+var ROSTER = null;              // {players:[], starters:[], faab, rivals}
+var LIVE = {};                  // sleeperId -> live player facts
+var STATUS = {state:"boot", msg:"starting…", at:null};
+
+var API = "https://api.sleeper.app/v1/";
+var LSK = "lrtSeason." + S.leagueKey + ".v1";
+
+/* ---------- tiny helpers ---------- */
+function el(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]; }); }
+function ago(ts){
+  if(!ts) return "never";
+  var m = Math.round((Date.now()-ts)/60000);
+  if(m < 1) return "just now";
+  if(m < 60) return m + "m ago";
+  var h = Math.round(m/60);
+  if(h < 24) return h + "h ago";
+  return Math.round(h/24) + "d ago";
+}
+
+/* localStorage is a convenience cache only — every read is wrapped, and the
+   page renders correctly when it throws or returns nothing (private windows,
+   cleared site data, browsers set to block storage). */
+function lsGet(){
+  try{ var r = localStorage.getItem(LSK); return r ? JSON.parse(r) : null; }
+  catch(e){ return null; }
+}
+function lsSet(o){
+  try{ localStorage.setItem(LSK, JSON.stringify(o)); }catch(e){}
+}
+
+/* ---------- week resolution ----------
+   Sleeper's own state endpoint is the authority. If it cannot be reached the
+   schedule answers it: the current week is the last week whose first kickoff
+   has already passed. Falling back to "week 1" would silently show week-1
+   opponents in November, which is worse than showing nothing. */
+/* The current week is the last week whose games are OVER, plus one — not the
+   last week that has started. Those differ for the three days that matter
+   most: Tuesday through Thursday, when Chris is setting waiver claims. Taking
+   "last week whose first kickoff has passed" would call Tuesday of week 5
+   "week 4" and show him last week's opponents while he plans next week's
+   claims. Only reachable when Sleeper's state endpoint is unavailable. */
+var WEEK_ROLLOVER_MS = 4 * 3600 * 1000;   // grace after the last kickoff of a week
+function weekFromSchedule(){
+  var now = Date.now(), current = 1;
+  for(var w = 1; w <= 18; w++){
+    var teams = S.schedule.weeks[String(w)];
+    if(!teams) continue;
+    var first = null, last = null;
+    for(var t in teams){
+      var k = kickMs(teams[t].kick);
+      if(k === null) continue;
+      if(first === null || k < first) first = k;
+      if(last === null || k > last) last = k;
+    }
+    if(first === null) continue;
+    if(now >= first) current = w;                        // this week has begun
+    if(last !== null && now >= last + WEEK_ROLLOVER_MS && w < 18) current = w + 1;
+  }
+  return Math.max(1, Math.min(18, current));
+}
+
+/* ---------- kickoff / lock ----------
+   `kick` is a UTC instant, converted once in gen_season_schedule.py from
+   nflverse's US/Eastern gametime using a real tz database. Nothing here
+   applies an offset, because every fixed-offset scheme is wrong half the
+   season: a hardcoded -04:00 (which this file used to carry) runs an hour
+   early for all 164 games after DST ends on 2026-11-01, which is the entire
+   stretch run and both leagues' playoffs — and it made the LOCKED pill fire an
+   hour before kickoff, telling Chris he could not change a lineup he still
+   could.
+
+   Display is pinned to Eastern regardless of where the phone thinks it is,
+   because Chris's leagues, his waiver clears and every deadline he cares about
+   are Eastern. Formatting with getHours() would render the same game three
+   different ways on three devices — and on a UTC device it would print the
+   wrong DAY for every Sunday-night game. */
+function kickMs(kick){
+  if(!kick) return null;
+  var t = Date.parse(kick);
+  return isNaN(t) ? null : t;
+}
+
+var ET_FMT = null;
+function etFmt(){
+  if(ET_FMT !== null) return ET_FMT;
+  try{
+    ET_FMT = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York", weekday: "short",
+      hour: "numeric", minute: "2-digit", hour12: true
+    });
+  }catch(e){ ET_FMT = false; }   // no Intl / no tz data: fall back to the baked label
+  return ET_FMT;
+}
+
+function kickLabel(g){
+  if(!g) return null;
+  var ms = kickMs(g.kick);
+  var f = etFmt();
+  if(ms === null || !f){
+    // Fallback: the baked Eastern wall clock, formatted from the string.
+    if(!g.et) return g.day ? g.day.slice(0,3) : null;
+    var hm = g.et.split("T")[1] || "";
+    var hh = parseInt(hm.split(":")[0], 10), mm = hm.split(":")[1] || "00";
+    if(isNaN(hh)) return g.day ? g.day.slice(0,3) : null;
+    var ap0 = hh >= 12 ? "p" : "a"; var h0 = hh % 12 || 12;
+    return (g.day ? g.day.slice(0,3) : "") + " " + h0 + (mm !== "00" ? ":" + mm : "") + ap0 + " ET";
+  }
+  var parts = {};
+  f.formatToParts(new Date(ms)).forEach(function(p){ parts[p.type] = p.value; });
+  var mins = parts.minute && parts.minute !== "00" ? ":" + parts.minute : "";
+  var ap = (parts.dayPeriod || "").toLowerCase().charAt(0);
+  return parts.weekday + " " + parts.hour + mins + ap + " ET";
+}
+
+function isLocked(g){
+  var ms = g ? kickMs(g.kick) : null;
+  return ms !== null && Date.now() >= ms;
+}
+
+/* ---------- schedule join ---------- */
+function gameFor(team, week){
+  if(!team) return null;
+  var w = S.schedule.weeks[String(week)];
+  return (w && w[team]) || null;
+}
+function onBye(team, week){
+  return !!team && S.schedule.byes[team] === week && !gameFor(team, week);
+}
+
+/* ---------- player resolution ----------
+   Baked index gives an instant first paint; the live pull corrects it. Only
+   the live layer is trusted for team and injury status (see the header note).
+   DEF entries ("SEA") are their own team and never appear in players/nfl. */
+/* A Sleeper DEF id is the team abbreviation itself. Testing "2-3 capitals"
+   also matches junk keys that live in the baked index (e.g. "NA"), which would
+   silently turn a broken row into a phantom defence. Check membership in the
+   actual 32-team set the schedule was built from instead. */
+var NFL_TEAMS = (function(){
+  var s = {}, w = S.schedule.byes || {};
+  for(var t in w) s[t] = 1;
+  return s;
+})();
+function isDef(sid){ return NFL_TEAMS[String(sid)] === 1; }
+
+function facts(sid){
+  sid = String(sid);
+  var live = LIVE[sid] || null;
+  var baked = S.players[sid] || null;
+  if(isDef(sid)){
+    return {id:sid, name:(baked && baked.n) || (sid + " DEF"), pos:"DEF",
+            team:sid, status:null, stale:false};
+  }
+  return {
+    id: sid,
+    name: (live && live.name) || (baked && baked.n) || ("Sleeper #" + sid),
+    pos:  (live && live.pos)  || (baked && baked.p)  || "?",
+    /* TEAM: a live record wins OUTRIGHT, including when it says null.
+       `live.team || baked.tm` looks equivalent and is not: Sleeper reports
+       team:null for a cut or unsigned player, `||` reads that as "no answer",
+       and the page falls back to an August board value — resurrecting the exact
+       stale-team bug this rule exists to kill, in the one case where Sleeper is
+       authoritatively telling us the player has no game at all. */
+    team: live ? (live.team || null) : ((baked && baked.tm) || null),
+    status: live ? live.status : null,
+    /* UNCONFIRMED means "this row was not verified against Sleeper on the last
+       sync" — which covers TWO cases, not one:
+         (a) we have never fetched him, so `live` is missing entirely;
+         (b) this sync's fetch for him FAILED and loadPlayers fell back to the
+             cached record, so `live` is truthy but may be 90 minutes old.
+       Checking only (a) was the first version, and it made (b) invisible: the
+       footer announced "N players could not be confirmed — those rows are
+       marked ?" while no row carried the mark and no alert fired. That is the
+       10:00-load / 11:30-Refresh path on a Sunday, showing a stale injury
+       designation with nothing to say so. */
+    stale: !live || UNRESOLVED.indexOf(sid) >= 0
+  };
+}
+
+var STATUS_PILL = {
+  "Out":{c:"out",t:"OUT"}, "Doubtful":{c:"doub",t:"DOUB"},
+  "Questionable":{c:"q",t:"Q"}, "IR":{c:"ir",t:"IR"},
+  "PUP":{c:"ir",t:"PUP"}, "Sus":{c:"ir",t:"SUSP"}, "NA":{c:"ir",t:"NA"},
+  "COV":{c:"ir",t:"COV"}, "DNR":{c:"ir",t:"DNR"}
+};
+
+/* =====================================================================
+   FETCHES
+   ===================================================================== */
+function getJSON(url){
+  return fetch(url, {cache:"no-store"}).then(function(r){
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+  });
+}
+
+function loadState(){
+  return getJSON(API + "state/nfl").then(function(st){
+    var w = parseInt(st && (st.display_week || st.week), 10);
+    return (w >= 1 && w <= 18) ? w : weekFromSchedule();
+  }).catch(function(){ return weekFromSchedule(); });
+}
+
+/* Rosters. THE GUARD IS THE POINT.
+   Verified 2026-09-03: api.sleeper.app returned HTTP 200 with a complete,
+   well-formed rosters array in which EVERY players[] was empty — a stale edge
+   response, not an error. Rendered naively that is an empty roster and a
+   waiver wire containing the entire league. A sync that returns a league of
+   ghosts is a FAILED sync, and it must not overwrite good data. */
+/* League status, so an undrafted league reads as "not drafted yet" rather than
+   as the ghost-payload failure. Joop drafts 2026-09-06 and its rosters are
+   legitimately empty until then; without this the page would greet Chris with
+   a data-corruption warning for a league that is simply early. */
+var LEAGUE_STATUS = null;
+function loadLeagueStatus(){
+  return getJSON(API + "league/" + LG.leagueId).then(function(l){
+    LEAGUE_STATUS = (l && l.status) || null;
+    return LEAGUE_STATUS;
+  }).catch(function(){ return null; });
+}
+
+function loadRoster(){
+  return getJSON(API + "league/" + LG.leagueId + "/rosters").then(function(rs){
+    if(!Array.isArray(rs) || !rs.length) throw new Error("no rosters returned");
+
+    var withPlayers = rs.filter(function(r){ return (r.players || []).length; });
+    if(!withPlayers.length){
+      var e;
+      if(LEAGUE_STATUS === "pre_draft" || LEAGUE_STATUS === "drafting"){
+        e = new Error("This league has not drafted yet — there is no roster to show.");
+        e.predraft = true;
+      } else {
+        e = new Error("Sleeper returned " + rs.length + " rosters with no players on any of them");
+        e.ghost = true;
+      }
+      throw e;
+    }
+
+    var mine = rs.filter(function(r){ return r.owner_id === LG.sleeperUserId; })[0];
+    if(!mine) throw new Error("no roster in this league is owned by user " + LG.sleeperUserId);
+    if(!(mine.players || []).length){
+      var e2 = new Error("your roster came back empty"); e2.ghost = true; throw e2;
+    }
+
+    var rostered = {};
+    rs.forEach(function(r){ (r.players || []).forEach(function(p){ rostered[String(p)] = 1; }); });
+    var faabOf = function(r){ return LG.faab - ((r.settings && r.settings.waiver_budget_used) || 0); };
+    var rivals = rs.filter(function(r){ return r.roster_id !== mine.roster_id; })
+                   .map(faabOf).sort(function(a,b){ return a - b; });
+
+    return {
+      players: (mine.players || []).map(String),
+      starters: (mine.starters || []).map(String),
+      reserve: (mine.reserve || []).map(String),
+      faab: faabOf(mine),
+      maxRivalFaab: rivals.length ? rivals[rivals.length - 1] : LG.faab,
+      rostered: rostered,
+      rosterId: mine.roster_id
+    };
+  });
+}
+
+/* Per-player facts. One small request each (~1KB), for roster players only —
+   about 18 of them. The 5MB players/nfl dump is deliberately NOT used; it
+   would dominate load time on a phone to answer a question about 18 people.
+   Cached for CACHE_MIN so a page reopened during the same sitting is instant;
+   injury designations move fast enough that a long TTL would be a liar. */
+var CACHE_MIN = 90;
+var UNRESOLVED = [];   // ids whose live facts could not be fetched this sync
+
+/* force=true bypasses the TTL. The Refresh button MUST force.
+   Without it, tapping Refresh at 11:30 on a Sunday re-uses a 10:00 cache and
+   then reports "synced just now" — which is precisely when inactives drop and
+   precisely the moment the page would be lying. The cache exists to make a
+   page REOPENED in the same sitting instant, not to ignore a deliberate ask. */
+function loadPlayers(ids, force){
+  var cache = lsGet() || {};
+  var pc = cache.players || {};
+  var fresh = Date.now() - CACHE_MIN * 60000;
+  var need = [], out = {};
+
+  ids.forEach(function(sid){
+    sid = String(sid);
+    if(isDef(sid)) return;
+    var hit = pc[sid];
+    if(!force && hit && hit.at > fresh){ out[sid] = hit; } else { need.push(sid); }
+  });
+
+  if(!need.length){ LIVE = out; UNRESOLVED = []; return Promise.resolve(out); }
+
+  return Promise.all(need.map(function(sid){
+    return getJSON(API + "players/nfl/" + sid).then(function(p){
+      return {sid:sid, v:{
+        name: ((p.first_name || "") + " " + (p.last_name || "")).trim() || null,
+        pos: p.position || null,
+        team: p.team || null,
+        status: p.injury_status || null,
+        depth: (p.depth_chart_order == null ? null : p.depth_chart_order),
+        at: Date.now()
+      }};
+    }).catch(function(){ return {sid:sid, v:null}; });
+  })).then(function(res){
+    var failed = [];
+    res.forEach(function(r){
+      if(r && r.v){ out[r.sid] = r.v; }
+      else if(r){
+        // Keep a previous good record rather than dropping the player entirely,
+        // but remember that we did not confirm it this time round.
+        if(pc[r.sid]) out[r.sid] = pc[r.sid];
+        failed.push(r.sid);
+      }
+    });
+    LIVE = out;
+    UNRESOLVED = failed;
+    cache.players = out;
+    cache.at = Date.now();
+    lsSet(cache);
+    return out;
+  });
+}
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+function setStatus(state, msg){
+  STATUS.state = state; STATUS.msg = msg;
+  var d = el("statusDot"), t = el("statusTxt");
+  d.className = "dot" + (state === "ok" ? " ok" : state === "bad" ? " bad" : state === "stale" ? " stale" : "");
+  t.textContent = msg;
+}
+
+function rowHTML(slotLabel, sid, opts){
+  opts = opts || {};
+  if(!sid || sid === "0"){
+    return '<div class="row empty"><div class="slot">' + esc(slotLabel) + '</div>'
+         + '<div class="body"><div class="nm dim">empty</div>'
+         + '<div class="meta">nothing set in Sleeper</div></div></div>';
+  }
+  var f = facts(sid);
+  var bye = onBye(f.team, WEEK);
+  var g = bye ? null : gameFor(f.team, WEEK);
+  var locked = g && isLocked(g);
+
+  var pills = "";
+  var sp = f.status && STATUS_PILL[f.status];
+  if(sp) pills += '<span class="pill ' + sp.c + '">' + sp.t + '</span>';
+  if(bye) pills += '<span class="pill bye">BYE</span>';
+  if(locked) pills += '<span class="pill locked">LOCKED</span>';
+  // An unconfirmed row is marked ON THE ROW. Computing a staleness flag and
+  // then rendering the row identically is the same as not computing it.
+  if(f.stale) pills += '<span class="pill unconf" title="not confirmed with Sleeper">?</span>';
+
+  var line;
+  if(bye){
+    line = esc(f.team || "?") + " · on bye";
+  } else if(g){
+    line = esc(f.team) + " " + (g.home ? "vs " : "@ ") + esc(g.opp);
+  } else if(f.team){
+    line = esc(f.team) + " · no game this week";
+  } else if(f.stale){
+    line = "team not confirmed";
+  } else {
+    line = "no NFL team";
+  }
+  if(f.stale && f.team) line += " · unconfirmed";
+  if(f.pos && f.pos !== "DEF") line = esc(f.pos) + " · " + line;
+
+  var right = "";
+  if(!bye && g){
+    right = '<div class="right"><b>' + esc(kickLabel(g) || "") + '</b></div>';
+  }
+
+  var cls = "row";
+  if(opts.starter && (bye || f.status === "Out" || f.status === "IR")) cls += " alert";
+  else if(opts.starter && (f.status === "Doubtful")) cls += " soft";
+
+  return '<div class="' + cls + '">'
+       + '<div class="slot' + (opts.flex ? " flex" : "") + '">' + esc(slotLabel) + '</div>'
+       + '<div class="body"><div class="nm">' + esc(f.name) + pills + '</div>'
+       + '<div class="meta">' + line + '</div></div>'
+       + right + '</div>';
+}
+
+/* Alerts: only things that need a decision. An empty list renders nothing at
+   all rather than a reassuring green box — silence is the signal that the
+   lineup is fine, which is the whole "stay quiet unless it matters" stance. */
+function alertList(){
+  var out = [];
+  var st = ROSTER.starters || [];
+  LG.lineup.forEach(function(slot, i){
+    var sid = String(st[i] || "0");
+    if(sid === "0"){
+      out.push({crit:true, icon:"●", txt:"<b>" + esc(slot) + " is empty</b> — no player set in Sleeper"});
+      return;
+    }
+    var f = facts(sid);
+    if(onBye(f.team, WEEK)){
+      out.push({crit:true, icon:"●", txt:"<b>" + esc(f.name) + "</b> is on bye (" + esc(f.team) + ") but is in your " + esc(slot)});
+    } else if(f.status === "Out" || f.status === "IR"){
+      out.push({crit:true, icon:"●", txt:"<b>" + esc(f.name) + "</b> is " + esc(f.status) + " and is in your " + esc(slot)});
+    } else if(f.status === "Doubtful"){
+      out.push({crit:false, icon:"○", txt:"<b>" + esc(f.name) + "</b> is Doubtful in your " + esc(slot)});
+    } else if(f.status === "Questionable"){
+      out.push({crit:false, icon:"○", txt:"<b>" + esc(f.name) + "</b> is Questionable in your " + esc(slot)});
+    } else if(f.stale || !f.team){
+      // A starter the page could not verify is worth saying out loud. Silence
+      // here reads as "all clear", and the one row we know nothing about is the
+      // last row that should be silently reassuring.
+      out.push({crit:false, icon:"○", txt:"<b>" + esc(f.name) + "</b> in your " + esc(slot)
+        + " could not be confirmed with Sleeper — check him yourself"});
+    } else if(!gameFor(f.team, WEEK)){
+      out.push({crit:true, icon:"●", txt:"<b>" + esc(f.name) + "</b> (" + esc(f.team)
+        + ") has no game in week " + WEEK + " but is in your " + esc(slot)});
+    }
+  });
+  return out;
+}
+
+function render(){
+  var app = el("app");
+
+  if(!ROSTER && STATUS.state === "stale" && /not drafted/.test(STATUS.msg)){
+    app.innerHTML = '<div class="msg"><b>' + esc(LG.name) + ' has not drafted yet.</b><br><br>'
+      + 'This page comes alive the moment the draft finishes — it reads your roster '
+      + 'straight from Sleeper, so there is nothing to set up. Until then the draft '
+      + 'tools are the ones you want.</div>' + footHTML();
+    return;
+  }
+
+  if(!ROSTER){
+    app.innerHTML = '<div class="msg bad"><b>No roster loaded.</b><br><br>'
+      + esc(STATUS.msg) + '<br><br>'
+      + 'Tap <b>Refresh</b> to try again. If this page was opened from a saved file '
+      + 'rather than the published hub, the browser may be blocking the call to Sleeper '
+      + '— open it from the hub link instead.</div>' + footHTML();
+    return;
+  }
+
+  var h = "";
+
+  /* Viewing a week that is not the current one. Without this the page shows
+     week-3 opponents next to THIS week's injury pills and an alerts panel
+     announcing byes that have not happened, distinguished only by "WK 3" in
+     the corner. Two taps of the arrow is all it takes to get there. */
+  if(NOW_WEEK && WEEK !== NOW_WEEK){
+    h += '<div class="msg"><b>You are looking at week ' + WEEK + '.</b> '
+       + 'The NFL is on week ' + NOW_WEEK + ', and the injury designations below are '
+       + 'today’s — not week ' + WEEK + '’s. '
+       + '<button class="chip" onclick="setWeek(' + NOW_WEEK + ')">Back to week '
+       + NOW_WEEK + '</button></div>';
+  }
+
+  /* A schedule that has quietly aged. Flex scheduling moves Sunday 1:00pm games
+     to 8:20pm all through weeks 5–17; a stale bake would show "Sun 1p" and a
+     LOCKED pill for a game that has not kicked off. */
+  var age = scheduleAgeDays();
+  if(age !== null && age > 7){
+    h += '<div class="msg bad"><b>This schedule is ' + age + ' days old.</b> '
+       + 'Kickoff times move when the NFL flexes a game, so the times and LOCKED '
+       + 'marks below may be wrong. Ask Claude to re-run the weekly refresh.</div>';
+  }
+
+  var al = alertList();
+  if(al.length){
+    var crit = al.some(function(a){ return a.crit; });
+    h += '<div class="alerts' + (crit ? " crit" : "") + '"><h3>Needs you · ' + al.length + '</h3><ul>'
+       + al.map(function(a){ return '<li><span>' + a.icon + '</span><span>' + a.txt + '</span></li>'; }).join("")
+       + '</ul></div>';
+  }
+
+  var st = ROSTER.starters || [];
+  h += '<div class="sec">Starters <i>as set in Sleeper</i></div>';
+  LG.lineup.forEach(function(slot, i){
+    var flex = (slot === "FLEX" || slot === "SUPER_FLEX");
+    h += rowHTML(slot === "SUPER_FLEX" ? "SFLX" : slot, st[i], {starter:true, flex:flex});
+  });
+
+  var inLineup = {};
+  st.forEach(function(s){ if(s && s !== "0") inLineup[String(s)] = 1; });
+  var res = {}; (ROSTER.reserve || []).forEach(function(s){ res[String(s)] = 1; });
+  var bench = ROSTER.players.filter(function(p){ return !inLineup[p] && !res[p]; });
+  var ir = ROSTER.players.filter(function(p){ return res[p]; });
+
+  h += '<div class="sec">Bench <i>' + bench.length + " of " + LG.bench + '</i></div>';
+  bench.forEach(function(p){ h += rowHTML("BN", p, {}); });
+  if(!bench.length) h += '<div class="row empty"><div class="slot">BN</div><div class="body">'
+    + '<div class="nm dim">nobody on the bench</div></div></div>';
+
+  if(LG.ir){
+    h += '<div class="sec">IR <i>' + ir.length + " of " + LG.ir + '</i></div>';
+    if(ir.length) ir.forEach(function(p){ h += rowHTML("IR", p, {}); });
+    else h += '<div class="row empty"><div class="slot">IR</div><div class="body">'
+      + '<div class="nm dim">empty</div></div></div>';
+  }
+
+  h += footHTML();
+  app.innerHTML = h;
+}
+
+function scheduleAgeDays(){
+  var p = (S.schedule._meta || {}).pulled;
+  if(!p) return null;
+  var t = Date.parse(p + "T12:00:00Z");
+  if(isNaN(t)) return null;
+  return Math.max(0, Math.floor((Date.now() - t) / 86400000));
+}
+
+function footHTML(){
+  var sch = S.schedule._meta || {};
+  var age = scheduleAgeDays();
+  return '<div class="foot">'
+    + '<b>Where these numbers come from.</b><br>'
+    + 'Roster, starters, FAAB and every player’s team and injury designation are pulled '
+    + 'live from Sleeper each time this page loads — nothing about them is baked in. '
+    + 'Opponents, kickoff times and byes come from the ' + esc(sch.season || "2026")
+    + ' schedule (' + esc(sch.source_url || "nflverse") + ', pulled ' + esc(sch.pulled || "?")
+    + (age === null ? '' : ', ' + age + ' day' + (age === 1 ? '' : 's') + ' ago') + ').<br><br>'
+    + 'All kickoff times are Eastern. Page built ' + esc(S.built) + '.'
+    + (STATUS.at ? '<br>Last successful sync ' + esc(ago(STATUS.at)) + '.' : '')
+    + (UNRESOLVED.length ? '<br><b>' + UNRESOLVED.length + ' player(s) could not be '
+        + 'confirmed with Sleeper on the last sync</b> — those rows are marked “?”.' : '')
+    + '</div>';
+}
+
+/* =====================================================================
+   WEEK NAV + BOOT
+   ===================================================================== */
+function paintWeek(){
+  el("wkNum").textContent = "WK " + WEEK;
+  el("wkPrev").disabled = (WEEK <= 1);
+  el("wkNext").disabled = (WEEK >= 18);
+}
+function setWeek(w){
+  w = Math.max(1, Math.min(18, w));
+  if(w === WEEK) return;
+  WEEK = w; paintWeek(); render();
+}
+
+function sync(force){
+  setStatus("boot", "syncing…");
+  return loadLeagueStatus().then(loadRoster).then(function(r){
+    ROSTER = r;
+    return loadPlayers(r.players, force);
+  }).then(function(){
+    STATUS.at = Date.now();
+    // A sync that could not confirm every player is NOT a clean sync, and must
+    // not present itself as one.
+    if(UNRESOLVED.length){
+      setStatus("stale", UNRESOLVED.length + " player(s) unconfirmed · $" + ROSTER.faab + " FAAB");
+    } else {
+      setStatus("ok", "$" + ROSTER.faab + " FAAB · synced " + ago(STATUS.at));
+    }
+    render();
+  }).catch(function(e){
+    // A sync that died before reaching loadPlayers confirmed nothing, so a
+    // previous run's count must not keep being reported as this run's.
+    UNRESOLVED = [];
+    // A ghost payload must not clobber a roster we already have on screen.
+    if(e && e.ghost && ROSTER){
+      setStatus("stale", "Sleeper returned an empty roster — keeping the last good one");
+    } else if(e && e.predraft){
+      setStatus("stale", "not drafted yet");
+      if(!ROSTER) render();
+    } else {
+      setStatus("bad", e && e.message ? e.message : "sync failed");
+      if(!ROSTER) render();
+    }
+  });
+}
+
+(function boot(){
+  el("lname").textContent = LG.name;
+  el("wkPrev").onclick = function(){ setWeek(WEEK - 1); };
+  el("wkNext").onclick = function(){ setWeek(WEEK + 1); };
+  // Refresh FORCES a re-fetch past the cache — see loadPlayers().
+  el("syncBtn").onclick = function(){ sync(true); };
+
+  loadState().then(function(w){
+    NOW_WEEK = w; WEEK = w; paintWeek();
+    return sync();
+  });
+})();
+</script>
+</body>
+</html>
