@@ -811,8 +811,6 @@ body[data-view="cockpit"] .cmph2h td.best{color:var(--positive);font-weight:var(
 
 body[data-view="cockpit"] .cmpcol.gone{opacity:.45}
 body[data-view="cockpit"] .cmpcol.gone .gonebadge{color:var(--urgent);font-weight:var(--w-bold);font-size:var(--fs-meta)}
-body[data-view="cockpit"] td.cmppick{font-weight:var(--w-bold)}
-body[data-view="cockpit"] td.cmppick.gone{text-decoration:line-through}
 
 body[data-view="cockpit"] .cmpmore{margin-top:10px;border-top:1px solid var(--line);padding-top:6px}
 body[data-view="cockpit"] .cmpmore>summary{cursor:pointer;color:var(--muted);font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps)}
@@ -1121,8 +1119,6 @@ body[data-view="cockpit2"] .cmph2h td.best{color:var(--positive);font-weight:var
 
 body[data-view="cockpit2"] .cmpcol.gone{opacity:.45}
 body[data-view="cockpit2"] .cmpcol.gone .gonebadge{color:var(--urgent);font-weight:var(--w-bold);font-size:var(--fs-meta)}
-body[data-view="cockpit2"] td.cmppick{font-weight:var(--w-bold)}
-body[data-view="cockpit2"] td.cmppick.gone{text-decoration:line-through}
 
 body[data-view="cockpit2"] .cmpmore{margin-top:10px;border-top:1px solid var(--line);padding-top:6px}
 body[data-view="cockpit2"] .cmpmore>summary{cursor:pointer;color:var(--muted);font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps)}
@@ -1315,63 +1311,194 @@ body[data-view="compare"] .cmptcap{color:var(--caution);font-size:var(--fs-body)
 /* --- the table: label on its own line, values in an N-column grid --- */
 body[data-view="compare"] .cmptw{overflow-x:auto;-webkit-overflow-scrolling:touch}
 body[data-view="compare"] .cmph2h{display:block;width:100%;border-collapse:collapse;font-size:var(--fs-body)}
-body[data-view="compare"] .cmph2h thead,body[data-view="compare"] .cmph2h tbody{display:block}
+body[data-view="compare"] .cmph2h tbody{display:block}
 body[data-view="compare"] .cmph2h tr{display:grid;
  grid-template-columns:repeat(var(--cmpn,2),minmax(72px,1fr));
  border-bottom:1px solid var(--line);padding:6px 0}
 body[data-view="compare"] .cmph2h th,
 body[data-view="compare"] .cmph2h td{border:0;padding:1px var(--s2);text-align:left;
  vertical-align:top;overflow-wrap:anywhere}
-/* --- defect 2, seen live at 375x812 (2026-09-04): at 3-4 columns the rule
-   directly above was splitting player NAMES mid-word -- "Jahmy/r Gibbs",
-   "Christi/an McCaf/frey". `anywhere` is right for data cells (a long fallback
-   string must be allowed to shrink its track) and wrong for the one cell whose
-   job is to say who this column is.
-
-   The name is emitted by cmpHeadCell, which cmpPlanTable calls -- engine, shared
-   verbatim with the cockpit's compare tray -- so this is fixed HERE, in the
-   compare-scoped stylesheet, and nowhere else. Two halves, both needed:
-
-   (a) break-word (not anywhere) + hyphens:auto: a word is broken only as a LAST
-       RESORT, and the UA prefers a real boundary. html carries lang="en" (:1),
-       so hyphens:auto has a dictionary to work from.
-   (b) the last resort is then never reached, because the name scales with the
-       column count. At 4 columns a 375px screen gives each track ~88px, and
-       "McCaffrey" at the engine's inline 1.35rem bold is wider than that on its
-       own -- (a) alone would still have to break it. --cmpn is the column count
-       the grid above is already sized from (1..4), so one linear calc covers
-       every width: 2 cols -> 1.35rem (unchanged, the two-up case he uses most),
-       3 -> 1.10rem, 4 -> 0.85rem. max(...,2) keeps a lone column at 1.35rem.
-       !important is not decoration: CMP_CSS.nm is an INLINE style on that div
-       and inline styles are engine output, so nothing else can override it.
-   Body cells keep `anywhere` untouched, and the padding stays put. */
-body[data-view="compare"] .cmph2h thead th{overflow-wrap:break-word;
- -webkit-hyphens:auto;hyphens:auto}
-body[data-view="compare"] .cmph2h thead th>div:first-of-type{
- font-size:calc(1.35rem - (max(var(--cmpn,2),2) - 2) * 0.25rem) !important}
+/* Defect 2, seen live at 375x812 (2026-09-04): at 3-4 columns the shared th/td
+   overflow-wrap:anywhere was splitting player NAMES mid-word -- "Jahmy/r Gibbs",
+   "Christi/an McCaf/frey". The rule that fixed it lived on the <thead> cell; the
+   redesign later replaced that cell with .cmpcnm on the player card and the fix
+   moved with it (see the card block below: break-word + hyphens:auto, so a word
+   breaks only as a LAST RESORT, plus a --cmpn-driven size so the last resort is
+   never reached at 3 or 4 columns). Data cells keep `anywhere` -- a long fallback
+   string must still be allowed to shrink its track. */
 body[data-view="compare"] .cmph2h tbody tr>td:first-child{grid-column:1/-1;color:var(--muted);
  font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps);
  white-space:normal;padding-bottom:3px}
-body[data-view="compare"] .cmph2h thead tr{border-bottom:2px solid var(--line-strong);align-items:start}
-body[data-view="compare"] .cmph2h thead th:first-child{display:none}
 body[data-view="compare"] .cmph2h td.best{color:var(--positive);font-weight:var(--w-bold)}
 body[data-view="compare"] .cmpcol.gone{opacity:.45}
 body[data-view="compare"] .cmpcol.gone .gonebadge{color:var(--urgent);font-weight:var(--w-bold);font-size:var(--fs-meta)}
-body[data-view="compare"] .cmph2h td.cmppick{font-size:var(--fs-answer);font-weight:var(--w-bold);
- font-variant-numeric:tabular-nums;line-height:var(--lh-tight)}
-body[data-view="compare"] .cmph2h td.cmppick.gone{text-decoration:line-through}
 body[data-view="compare"] .cmpmore{margin-top:var(--s3);border-top:1px solid var(--line);padding-top:6px}
 body[data-view="compare"] .cmpmore>summary{cursor:pointer;color:var(--muted);font-size:var(--fs-meta);
  text-transform:uppercase;letter-spacing:var(--ls-caps);padding:10px 0}
 @media(min-width:700px){
+ /* column-gap matches .cmpcards' own gap EXACTLY. Without it the two grids get
+    the same track list but different free space (measured: 184px tracks under
+    178px cards), and card N sits 6px off column N -- which is the one thing the
+    aligned-column layout has to get right to be worth doing. */
  body[data-view="compare"] .cmph2h tbody tr{grid-template-columns:minmax(150px,1fr) repeat(var(--cmpn,2),minmax(90px,1fr));
-  align-items:baseline}
+  column-gap:var(--s2);align-items:baseline}
  body[data-view="compare"] .cmph2h tbody tr>td:first-child{grid-column:auto;padding-bottom:1px}
  /* the section-header rows ("The pick" / "Usage") are a lone colspan cell; on the
     wide layout they must still span, or they'd sit in the label column alone */
  body[data-view="compare"] .cmph2h tbody tr>td:only-child{grid-column:1/-1}
- body[data-view="compare"] .cmph2h thead tr{grid-template-columns:minmax(150px,1fr) repeat(var(--cmpn,2),minmax(90px,1fr))}
- body[data-view="compare"] .cmph2h thead th:first-child{display:block}
+}
+
+/* ===== Compare redesign (2026-09-04) — the answer card + the player cards ===
+   NEW CLASS NAMES, DELIBERATELY UNSCOPED. Everything above this point is scoped
+   to one data-view (cockpit / cockpit2 / compare) because it restyles SHARED
+   classes — .cmph2h means three different layouts depending on which surface is
+   mounted. These do not: cmpans*, cmpc*, cmpsg/cmpsl/cmpstrip and cmpsp are new
+   names that appear nowhere else in the file, so one unscoped block covers the
+   standalone compare page AND the cockpit's ⚖ tray (data-view cockpit and
+   cockpit2) without three near-copies that can drift apart. The only rules that
+   need a scope are the two laptop layout differences at the bottom.
+
+   WHY CARDS AT ALL. The old header was a <thead> cell per player carrying the
+   name, team, chips and a "no Usage Board row" note inside one grid track. At
+   3 columns on a 390px phone that track is ~120px and the name had to be scaled
+   down to 1.10rem to fit — a fix that worked but that was fighting the layout.
+   A card stacks on the phone (full width, nothing competes) and becomes a
+   column header on the laptop, which is the same information at both widths
+   without shrinking type to survive.
+
+   The two numbers on the card are the whole point of the redesign: the pick
+   score and the usage percentile, side by side, at --fs-answer. Everything that
+   used to be read by scanning thirteen table rows is now read by looking at two
+   numbers and one sentence. */
+.cmpans{background:var(--raised);border:1px solid var(--line-strong);
+ border-radius:var(--r2);padding:var(--s3);margin-bottom:var(--s3)}
+.cmpanslbl{font-size:var(--fs-meta);text-transform:uppercase;
+ letter-spacing:var(--ls-caps);color:var(--muted)}
+.cmpansname{font-size:var(--fs-hero);font-weight:var(--w-bold);line-height:var(--lh-tight);
+ overflow-wrap:break-word;-webkit-hyphens:auto;hyphens:auto}
+/* The band chip carries the confidence word CLEAR / LEAN / COIN FLIP that used
+   to be a muted caps span beside the name. Colour is the band, not decoration:
+   a downgraded CLEAR arrives here already relabelled LEAN by cmpBand's conf(),
+   so the chip can never claim more confidence than the engine granted. */
+.cmpansband{display:inline-block;vertical-align:middle;font-size:var(--fs-meta);
+ font-weight:var(--w-bold);text-transform:uppercase;letter-spacing:var(--ls-caps);
+ border:1px solid var(--line);border-radius:var(--r3);padding:1px 7px;margin-left:8px;
+ color:var(--muted);white-space:nowrap}
+.cmpansband.clear{color:var(--positive);border-color:var(--positive)}
+.cmpansband.lean{color:var(--caution);border-color:var(--caution)}
+.cmpansbits{font-size:var(--fs-body);color:var(--text-dim);margin-top:4px;
+ font-variant-numeric:tabular-nums}
+.cmpansdrv{font-size:var(--fs-body);color:var(--muted);margin-top:2px}
+.cmpansturn{font-size:var(--fs-body);color:var(--muted);margin-bottom:4px}
+/* The usage verdict is now a LINE INSIDE the answer card, not a second box.
+   It is still always rendered and still always labelled — cmpUsageBlock's named
+   "no usage comparison — <who> and <why>" reasons are what land here when there
+   is no comparison to make, exactly as before. Only the container changed. */
+.cmpansu{font-size:var(--fs-body);color:var(--muted);margin-top:8px;padding-top:8px;
+ border-top:1px solid var(--line)}
+.cmpansu b{color:var(--text-dim)}
+.cmpansu.split{color:var(--caution)}
+.cmpansu.split b{color:var(--caution)}
+
+.cmpcards{display:grid;grid-template-columns:1fr;gap:var(--s2);margin-bottom:var(--s3)}
+/* The alignment spacer. On the compare page the table body is a CSS grid whose
+   first track is the row label; the cards use the IDENTICAL track list plus this
+   empty first cell, so card N sits exactly above column N. Hidden on the phone
+   (one card per row) and in the tray (a real table, no shared track list). */
+.cmpsp{display:none}
+.cmpc{background:var(--raised);border:1px solid var(--line);border-radius:var(--r2);
+ padding:8px 10px;min-width:0}
+.cmpc.win{border-color:var(--positive)}
+.cmpc.gone{opacity:.55}
+.cmpcnm{font-size:var(--fs-answer);font-weight:var(--w-bold);line-height:var(--lh-tight);
+ overflow-wrap:break-word;-webkit-hyphens:auto;hyphens:auto}
+.cmpc.gone .cmpcnm>span:first-child{text-decoration:line-through}
+.cmpcnm .gonebadge{color:var(--urgent);font-weight:var(--w-bold);font-size:var(--fs-meta)}
+.cmpcsub{font-size:var(--fs-body);color:var(--muted)}
+.cmpcnums{display:flex;gap:var(--s3);margin-top:6px;flex-wrap:wrap}
+.cmpcn{min-width:0}
+.cmpcn>b{display:block;font-size:var(--fs-answer);font-weight:var(--w-bold);
+ font-variant-numeric:tabular-nums;line-height:var(--lh-tight)}
+.cmpcn>span{display:block;font-size:var(--fs-meta);text-transform:uppercase;
+ letter-spacing:var(--ls-caps);color:var(--muted);white-space:nowrap}
+/* Colour AND a glyph. .cmpcn>b is already bold, so green alone would have been
+   the only thing separating best from not-best -- the old table cell got bold
+   against non-bold neighbours for free, and a card does not. */
+.cmpcn.best>b{color:var(--positive)}
+.cmpcn.best>span::after{content:' \25B2';color:var(--positive)}
+/* The component strip: five bars, one per comp_pct percentile, so "where does
+   this usage score come from" is a glance instead of four table rows. Bars are
+   percentiles within position — the same numbers UB.usageVerdict already uses
+   to say who wins target share — never raw shares, which are not comparable
+   across positions. A component with no data draws an empty track, not a zero. */
+.cmpstrip{display:flex;gap:3px;align-items:flex-end;height:22px;margin-top:6px}
+.cmpsg{flex:1 1 0;min-width:0;height:100%;border-radius:1px;
+ background:var(--raised-hi);display:flex;align-items:flex-end}
+.cmpsg>i{display:block;width:100%;background:var(--accent);border-radius:1px}
+.cmpsl{display:flex;gap:3px;margin-top:2px}
+.cmpsl>span{flex:1 1 0;text-align:center;font-size:var(--fs-meta);color:var(--muted)}
+.cmpcno{font-size:var(--fs-body);color:var(--muted);font-style:italic;margin-top:4px}
+
+/* THE SCROLL BELONGS TO ONE TABLE (2026-09-04).
+   .cmptw used to wrap the ENTIRE compare body. That put the answer card and the
+   player cards -- the two things the whole redesign exists to put in front of
+   him -- inside a horizontal scroll box they have no business being in: a wide
+   row anywhere in the fold could drag them sideways, and a card you have to
+   scroll to read is a card that failed. The wrapper moved down onto each
+   <table> instead, which is what the stylesheet meant at :1224 by "the SCROLL
+   BELONGS TO THE TABLE": the two tables can scroll, nothing above them can.
+
+   max-width:100% + min-width:0 are the pair that actually hold a scroll box to
+   its parent when its content is a wide grid; overflow-x alone does not.
+   Unscoped, so the cockpit ⚖ tray gets the same containment -- the scoped rule
+   below still ships for the surface that named it. */
+.cmptw{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;min-width:0}
+
+/* ===== the quick-add strip (2026-09-04) ==================================
+   Unscoped for the same reason the cards are: cmpqs/cmpqc/cmpqm/cmpqlbl are new
+   names, and the strip mounts on BOTH the standalone page and inside the ⚖ tray.
+   Chips are min-height:36px — short of the file's own --tap:44px, which would
+   make a strip of eight unusably tall, but comfortably past a text link. Stated
+   rather than rounded up: a compromise, not the house tap size. */
+.cmpqlbl{font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps);
+ color:var(--muted);margin-top:var(--s2)}
+.cmpqs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 var(--s2)}
+.cmpqc{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-body);
+ color:var(--text-dim);background:var(--raised-hi);border:1px solid var(--line);
+ border-radius:var(--r3);padding:5px 9px;min-height:36px;box-sizing:border-box;
+ cursor:pointer;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.cmpqc.on{color:var(--accent);border-color:var(--accent);background:var(--accent-fill)}
+.cmpqm{color:var(--muted);font-size:var(--fs-meta)}
+.cmpqcap{font-size:var(--fs-body);color:var(--caution);margin-bottom:var(--s2)}
+
+/* The draft slot, set once per draft and then noise. Collapsed it is one line
+   that still SAYS the slot and the picks — the numbers stay on screen, only the
+   14-option <select> hides. The select is never removed from the DOM: the shell
+   is written once and repainting a native picker under his thumb is the defect
+   the shell/paint split exists to prevent, so this hides it in CSS. */
+/* gap, not a literal space: the summary is a flex container, and flex trims the
+   whitespace between its items -- which is why it first rendered "…change". */
+body[data-view="compare"] .cmptssum{display:none;cursor:pointer;font-size:var(--fs-body);
+ color:var(--text-dim);gap:6px;align-items:baseline;flex-wrap:wrap}
+body[data-view="compare"] .cmptssum b{color:var(--accent);font-weight:var(--w-med)}
+body[data-view="compare"] .cmptsbar.set:not(.open) .cmptssum{display:inline-flex}
+body[data-view="compare"] .cmptsbar.set:not(.open) .cmptslab,
+body[data-view="compare"] .cmptsbar.set:not(.open) #cmptslot,
+body[data-view="compare"] .cmptsbar.set:not(.open) .cmptshint{display:none}
+
+@media(min-width:700px){
+ /* In the tray the cards are a plain N-across header band above a real table.
+    On the compare page they inherit the table body's own track list, spacer
+    included, so the columns line up. --cmpn is set on the mount host by
+    cmpPlanMount, so both read the same column count from the same place. */
+ .cmpcards{grid-template-columns:repeat(var(--cmpn,2),minmax(0,1fr))}
+ body[data-view="compare"] .cmpcards{
+  grid-template-columns:minmax(150px,1fr) repeat(var(--cmpn,2),minmax(90px,1fr))}
+ body[data-view="compare"] .cmpsp{display:block}
+ /* The name-scaling rule the old thead cell carried, moved to the card and now
+    needed ONLY here: on the phone a card is full width and nothing has to
+    shrink. 2 cols -> --fs-answer unchanged, 3 -> 18px, 4 -> 16px. */
+ .cmpcnm{font-size:calc(var(--fs-answer) - (max(var(--cmpn,2),2) - 2) * 2px)}
 }
 </style></head><body>
 <div id="load">Unpacking the tracker&hellip;</div>
@@ -5216,6 +5343,10 @@ function cmpToggle(sl){sl=String(sl);const i=CMP.indexOf(sl);
      first-class comparable (edit F), and gating here would undo that. */
   if(!plan && typeof UB!=='undefined'&&UB.byId&&!UB.byId(sl))return;
   CMP.push(sl);
+  /* Recents are recorded HERE because cmpToggle is the single add path -- the
+     standalone picker, the quick-add strip, the tray strip and every ⚖ on the
+     board all come through it, so there is exactly one place that can forget. */
+  if(typeof cmpRecentPush==='function') cmpRecentPush(sl);
  }
  render();}
 function cmpClear(){CMP=[];render();}
@@ -5227,6 +5358,15 @@ function openCompare(){
   if(plan){
    if(CMP.length<2) ob.innerHTML=cmpTooFewBlock(CMP.length);   // S21
    else cmpPlanMount(ob, CMP);
+   /* The tray's own picker (2026-09-04). Before this, changing your mind about
+      the third player meant closing the overlay, finding the row, tapping ⚖ and
+      reopening -- four actions to answer "what about him instead". Prepended
+      rather than built into cmpPlanMount because the standalone page mounts its
+      own copy in its own place, and cmpPlanMount must keep returning nothing but
+      the comparison. The read-then-write of .innerHTML is the same pattern
+      cmpToolPaintBody already uses for .cmptw: a getElementById and a property,
+      never a traversal. */
+   ob.innerHTML=cmpPickStripHTML('cmpTrayAdd')+ob.innerHTML;
   } else UB.mountCompare(ob, META.superflex?'bk':'joop', CMP);
  }catch(e){ ob.innerHTML='<div class="box">Compare failed: '+esc((e&&e.message)||String(e))+'</div>'; }
  ov.classList.add('show'); ov.scrollTop=0;
@@ -5687,20 +5827,109 @@ function cmpChipsHTML(row){
   }).join('')+'</div>';
 }
 
-/* §5.1 header cell. The name is clickable through an inline onclick calling
-   globals -- no listener, per ground rule 2. GONE badge is "GONE #47" only when
-   takenAt != null; a manual mark, an own-roster row and every season-mode row
-   carry no pick number and get a bare GONE (D1). */
-function cmpHeadCell(row){
-  return '<th class="cmpcol'+(row.taken?' gone':'')+'">'
-    +'<div style="'+CMP_CSS.nm+'">'
+/* ===== the player card (replaces the §5.1 <thead> cell) ==================
+   Same information, restructured. The old cell packed the name, the position
+   and team, the status chips and the "no Usage Board row" note into one grid
+   track, then the two numbers he actually decides on lived far below it as
+   table rows 1 and 8. The card puts those two numbers ON the player.
+
+   Nothing here is new maths. row.score.pick is the engine's, unmodified;
+   ub.usage_joop is the Usage Board's, unmodified; comp_pct is the per-component
+   percentile set the board has always shipped and that UB.usageVerdict already
+   reads to say who wins target share. The card only shows them earlier.
+
+   The name is still clickable through an inline onclick calling globals, and
+   the GONE badge still reads "GONE #47" only when takenAt != null (D1). */
+
+/* Display-only band on the 0-100 usage percentile. NOTHING downstream reads
+   this -- it never enters cmpScore, cmpBand or the driver -- so the cutoffs are
+   a label he can retune without touching a number that decides anything. The
+   rubric's 8 / 3 thresholds are about the GAP between two players and are
+   untouched; these are about one player in isolation, which the rubric never
+   named. */
+const CMP_UBAND={ELITE:85,STRONG:70,AVG:40};
+function cmpUBand(v){
+  if(v==null||typeof v!=='number'||!isFinite(v)) return null;
+  return v>=CMP_UBAND.ELITE?'Elite'
+       :(v>=CMP_UBAND.STRONG?'Strong'
+       :(v>=CMP_UBAND.AVG?'Average':'Thin'));
+}
+/* The one place usage_joop is read for display. planOn() gates this whole
+   engine to joop-14, which is why the column is named rather than chosen -- the
+   same literal cmpPlanTable has always used. */
+function cmpUsageOf(row){
+  const v=row&&row.ub?row.ub.usage_joop:null;
+  return (typeof v==='number'&&isFinite(v))?v:null;
+}
+
+/* comp_pct keys, in weight order per the rubric. The letters are the strip
+   legend; the third field is the title text, and it is the same vocabulary
+   UB.usageVerdict prints ("wins target share"), so the strip and the sentence
+   above it can never call the same component two different things. */
+const CMP_STRIP=[['tgt','T','target share'],['snap','S','snap share'],
+                 ['rz','R','red-zone role'],['air','A','downfield role'],
+                 ['ypt','Y','efficiency']];
+function cmpStripHTML(row){
+  const c=(row&&row.ub)?row.ub.comp_pct:null;
+  if(!c) return '';
+  let any=0;
+  const bars=CMP_STRIP.map(function(k){
+    const v=c[k[0]], ok=(typeof v==='number'&&isFinite(v));
+    if(ok) any=1;
+    /* A floor of 2% so an honest 0th percentile still draws a mark -- an empty
+       track means NO DATA and the two must not look identical. */
+    const hgt=ok?Math.max(2,Math.min(100,Math.round(v))):0;
+    return '<span class="cmpsg" title="'+esc(k[2])+(ok?' — '+Math.round(v)+'th percentile':' — no data')+'">'
+      +(ok?'<i style="height:'+hgt+'%"></i>':'')+'</span>';
+  }).join('');
+  if(!any) return '';
+  return '<div class="cmpstrip">'+bars+'</div>'
+    +'<div class="cmpsl">'+CMP_STRIP.map(function(k){return '<span>'+k[1]+'</span>';}).join('')+'</div>';
+}
+
+function cmpCardHTML(row,bestPick,bestUsage){
+  const u=cmpUsageOf(row), band=cmpUBand(u), gone=!!row.taken;
+  return '<div class="cmpc'+(bestPick&&!gone?' win':'')+(gone?' gone':'')+'">'
+    +'<div class="cmpcnm">'
       +'<span style="cursor:pointer" onclick="closeOv4();openP('+row._i+')">'+esc(row.n)+'</span>'
-      +(row.taken?' <span class="gonebadge">GONE'+(row.takenAt!=null?' #'+row.takenAt:'')+'</span>':'')
+      +(gone?' <span class="gonebadge">GONE'+(row.takenAt!=null?' #'+row.takenAt:'')+'</span>':'')
     +'</div>'
-    +'<div style="'+CMP_CSS.sub+'">'+esc(row.pos)+' &middot; '+esc(row.tm||'')+'</div>'
+    +'<div class="cmpcsub">'+esc(row.pos)+' &middot; '+esc(row.tm||'')+'</div>'
+    +'<div class="cmpcnums">'
+      +'<div class="cmpcn'+(bestPick&&!gone?' best':'')+'"><b>'+cmpN(row.score.pick,1)+'</b><span>Pick</span></div>'
+      +'<div class="cmpcn'+(bestUsage&&!gone?' best':'')+'"><b>'+(u==null?'—':cmpN(u,0))+'</b>'
+        +'<span>Usage'+(band?' · '+band:'')+'</span></div>'
+    +'</div>'
+    +cmpStripHTML(row)
     +cmpChipsHTML(row)
-    +(!row.ub?'<div style="'+CMP_CSS.sub+';font-style:italic">no Usage Board row — priced on ADP alone</div>':'')
-    +'</th>';
+    +(!row.ub?'<div class="cmpcno">no Usage Board row — priced on ADP alone</div>':'')
+    +'</div>';
+}
+
+/* The green "best" marker follows the SPIRIT of cmpRow's rule (§5.6) -- a LIVE
+   winner and at least two live values, or the colour is meaningless -- with two
+   deliberate differences from cmpRow itself: a tie marks only the FIRST card
+   rather than every tied one (two "best" cards side by side reads as a bug), and
+   "two live values" counts live rows for the pick score, which every row has,
+   and live usage numbers for the usage score. And the
+   usage marker is suppressed on a mixed-position compare for the reason the
+   audit gave at §4.3 S10 -- a WR's percentile and an RB's percentile are two
+   different populations and highlighting one over the other is a category
+   error. The pick score is board-wide, so it keeps its marker either way. */
+function cmpCardsHTML(rows){
+  const live=rows.filter(function(r){return !r.taken;});
+  const mixed=rows.some(function(r){return r.pos!==rows[0].pos;});
+  let bp=null,bu=null;
+  if(live.length>1){
+    bp=live.reduce(function(a,b){return (b.score.pick>a.score.pick)?b:a;});
+    if(!mixed){
+      const us=live.filter(function(r){return cmpUsageOf(r)!=null;});
+      if(us.length>1) bu=us.reduce(function(a,b){return (cmpUsageOf(b)>cmpUsageOf(a))?b:a;});
+    }
+  }
+  return '<div class="cmpcards"><div class="cmpsp"></div>'
+    +rows.map(function(r){return cmpCardHTML(r,bp===r,bu===r);}).join('')
+    +'</div>';
 }
 
 /* §6.2 -- returns the <table> STRING only, never the verdict blocks, and
@@ -5712,20 +5941,28 @@ function cmpPlanTable(rows){
   const N=rows.length, gone=rows.map(function(r){return !!r.taken;});
   const mixed=rows.some(function(r){return r.pos!==rows[0].pos;});
   const np=myReturnPick();
-  const sec=function(t){return '<tr><td colspan="'+(N+1)+'" style="'+CMP_CSS.sec+'">'+t+'</td></tr>';};
-  const ub=function(k,d){ return rows.map(function(r){
-    const v=r.ub?r.ub[k]:null; return (typeof v==='number'&&isFinite(v))?v:null; }); };
-  const uFmt=function(d){ return function(v,i){
-    return cmpN(v,d)+((mixed&&v!=null)?' ('+esc(rows[i].pos)+')':''); }; };
 
-  let h='<table class="cmph2h"><thead><tr><th></th>'
-        +rows.map(cmpHeadCell).join('')+'</tr></thead><tbody>';
+  /* NO <thead>. The header cells became cmpCardsHTML, which cmpPlanMount emits
+     directly above this table -- so this is a tbody-only table, exactly like the
+     fold's own table has always been. That is what removes the 3-column phone
+     squeeze: the name no longer has to survive inside a 120px grid track.
 
-  /* --- Section 1: the pick. Board-wide and comparable, so it keeps its
-         highlights even on a mixed compare (§4.3 S10). --- */
-  h+=sec('The pick');
-  h+=cmpRow('Pick score', rows.map(function(r){return r.score.pick;}), true,
-            function(v){return cmpN(v,1);}, {cls:'cmppick', gone:gone});
+     FIVE VISIBLE ROWS, down from thirteen. Nothing was deleted: seven of the
+     eight that left are in cmpFoldBlock below, one tap away, and the eighth --
+     the pick score -- was promoted, not demoted, to the large number on the
+     card. What stayed is
+     what answers "why this one" without needing a second number to divide it by:
+     how much he is reaching, whether the player survives to his next pick, what
+     he falls back to, what hole it fills, and whether the man is hurt. The pick
+     score and the usage score left the table because they are now the two large
+     numbers on the card -- they were rows 1 and 8 of thirteen, which is exactly
+     the "dig for it" problem this rebuild is fixing.
+
+     No row here carries a green best-marker any more: the four context rows were
+     already noHi, and the two that WERE highlighted are now the cards' job. One
+     highlight per screen, on the thing being decided. */
+  let h='<div class="cmptw"><table class="cmph2h"><tbody>';
+
   h+=cmpRow('Reach / value', rows.map(function(r){return cmpReachText(r.score.reach);}), true,
             function(v){return esc(v);}, {noHi:true, gone:gone});
   h+=cmpRow(np?('Lasts to #'+np):'Lasts to your next pick',
@@ -5739,33 +5976,14 @@ function cmpPlanTable(rows){
             }), true, function(v){return v;}, {noHi:true, gone:gone});
   h+=cmpRow('Fills', rows.map(function(r){return r.score.mSlotWhy||'—';}), true,
             function(v){return esc(v);}, {noHi:true, gone:gone});
-  h+=cmpRow('Plan', rows.map(function(r){
-              const p=r.plan;
-              const base=(p&&p.pos===r.pos&&p.why)?p.why:'off-plan';
-              return base+(r.score.mWindow>1?' · window ×'+cmpN(r.score.mWindow,2):'');
-            }), true, function(v){return esc(v);}, {noHi:true, gone:gone});
-  h+=cmpRow('Room price', rows.map(function(r){
-              return (r.al==null)?'national only'
-                : (cmpN(r.al,1)+(r.ls?' ('+r.ls+')':''));
-            }), true, function(v){return esc(v);}, {noHi:true, gone:gone});
-
-  /* --- Section 2: usage. Within-position measures, so ALL green highlights are
-         suppressed on a mixed compare -- highlighting across positions is the
-         defect the audit named (§4.3 S10). --- */
-  h+=sec('Usage');
-  h+=cmpRow('Usage · percentile vs his own position',
-            ub('usage_joop'), true, uFmt(0), {noHi:mixed, gone:gone});
-  h+=cmpRow('Target share % (2025)',       ub('tgt_share'),           true, function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
-  h+=cmpRow('Snap share % (2025)',         ub('snap_share'),          true, function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
-  h+=cmpRow('RZ-tgt share % (2025)',       ub('rz_share'),            true, function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
-  h+=cmpRow('Proj rec share % (2026)',     ub('proj_rec_share_adj'),  true, function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
   h+=cmpRow('Injury / status', rows.map(function(r){return cmpStatus(r);}), true,
             function(v){return esc(v);}, {noHi:true, gone:gone});
 
-  h+='</tbody></table>';
-  if(mixed) h+='<div style="'+CMP_CSS.sub+'">Green = best in row. Usage rows are within-position '
-              +'and are not highlighted across positions.</div>';
-  h+=cmpFoldBlock(rows);          // stage 6: §5.3 the fold + §5.4 the RB depth block
+  h+='</tbody></table></div>';
+  if(mixed) h+='<div style="'+CMP_CSS.sub+'">These are different positions — the usage '
+              +'scores are percentiles within each man\'s own position and are not '
+              +'compared against each other.</div>';
+  h+=cmpFoldBlock(rows);          // stage 6 + the eight rows that left the table
   return h;
 }
 
@@ -5812,7 +6030,33 @@ function cmpFoldBlock(rows){
   };
 
   let h='<details class="cmpmore"><summary>More detail</summary>'
-       +'<table class="cmph2h"><tbody>';
+       +'<div class="cmptw"><table class="cmph2h"><tbody>';
+
+  /* Seven of the eight rows that left the visible table (2026-09-04); the
+     eighth, the pick score, went up onto the card instead. Same order and same
+     copy they had above the fold -- demoted, not removed. The Usage rows are the
+     raw shares behind the strip on the card: the strip says WHERE the score
+     comes from, these say by how much. */
+  h+=sec('The pick');
+  h+=cmpRow('Plan', rows.map(function(r){
+              const pl=r.plan;
+              const base=(pl&&pl.pos===r.pos&&pl.why)?pl.why:'off-plan';
+              return base+(r.score.mWindow>1?' · window ×'+cmpN(r.score.mWindow,2):'');
+            }), true, function(v){return esc(v);}, {noHi:true, gone:gone});
+  h+=cmpRow('Room price', rows.map(function(r){
+              return (r.al==null)?'national only'
+                : (cmpN(r.al,1)+(r.ls?' ('+r.ls+')':''));
+            }), true, function(v){return esc(v);}, {noHi:true, gone:gone});
+
+  h+=sec('Usage');
+  h+=cmpRow('Usage · percentile vs his own position', ubn('usage_joop'), true,
+            function(v){return cmpN(v,0);}, {noHi:mixed, gone:gone});
+  h+=numRow('Target share % (2025)','tgt_share',1);
+  h+=numRow('Snap share % (2025)','snap_share',1);
+  h+=numRow('RZ-tgt share % (2025)','rz_share',1);
+  h+=numRow('Proj rec share % (2026)','proj_rec_share_adj',1);
+
+  h+=sec('Detail');
 
   /* Proven merges the games count into the same cell (the audit's #12 merge):
      "86 · 12 gm" -- a proven percentile without its sample is half a number. */
@@ -5875,7 +6119,7 @@ function cmpFoldBlock(rows){
         }, {noHi:true, gone:gone});
   }
 
-  h+='</tbody></table></details>';
+  h+='</tbody></table></div></details>';
   return h;
 }
 /* ===== end COMPARE REBUILD stage 6 ======================================== */
@@ -5938,64 +6182,82 @@ function cmpDriverText(A,B,np){
   return 'Driven by '+esc(sub(d.topWhy))+(d.second?', then '+esc(sub(d.secondWhy)):'')+'.';
 }
 
-/* §4.5 -- the two verdicts, in this order, both labels ALWAYS rendered even
-   when a block has nothing to say. Never let one verdict appear unlabelled. */
+/* §4.5 rebuilt (2026-09-04): ONE answer card, not two boxes and a banner.
+
+   WHAT DID NOT CHANGE. Every sentence below is the copy the audit settled, and
+   the usage verdict is still cmpUsageBlock() unmodified -- including its whole
+   named-reason chain, which is the reason it exists: "no usage comparison"
+   never appears without saying who and why. Both verdicts are still ALWAYS
+   labelled. The LOUD divergence still fires on all four conditions or not at
+   all.
+
+   WHAT CHANGED. The usage verdict stopped being a second box of equal weight
+   sitting under the first and became a labelled line inside the one card, and
+   the divergence case recolours that line instead of injecting a third box
+   between them. Three stacked boxes competing for the top of the screen was the
+   "convoluted" half of the complaint: the eye had to decide which box was the
+   answer before it could read the answer. */
 function cmpVerdictBlock(rows, band){
   const np=myReturnPick();
-  let head='', body='', loud='';
+  let lbl='Take', name='', chip='', bits='', drv='', turn='', split=false;
 
   if(!band || band.kind==='ONE_LEFT'){
     const live=(band&&band.live)||rows.filter(function(r){return !r.taken;});
     if(live.length===1){                                     // S8b
-      head='<div style="'+CMP_CSS.nm+'">'+esc(live[0].n)+'</div>';
-      body='<div style="'+CMP_CSS.sub+'">Only one of these is still available — '+esc(live[0].n)+'.</div>';
+      lbl='Only one left'; name=esc(live[0].n);
+      bits='Only one of these is still available — '+esc(live[0].n)+'.';
     }else{                                                   // S8c -- zero live
-      head='<div style="'+CMP_CSS.nm+'">All of these are gone.</div>';
-      body='<div style="'+CMP_CSS.sub+'">'+rows.map(function(r){
+      lbl='All gone'; name='All of these are gone.';
+      bits=rows.map(function(r){
               return esc(r.n)+' — '+(r.takenAt!=null?('GONE #'+r.takenAt):'gone');
-            }).join('<br>')+'<br>Clear the tray and pick two more.</div>';
+            }).join('<br>')+'<br>Clear the tray and pick two more.';
     }
   }else if(band.kind==='PASS'){                              // max(PICK) <= 0
     const A=band.rk[0];
     const fb=(A.score.vrNames||[]).slice(0,2).map(function(x){return esc(x.n);});
-    head='<div style="'+CMP_CSS.nm+'">Neither</div>';
-    body='<div style="'+CMP_CSS.sub+'">Nothing here beats your fallback at #'
-        +(np==null?'your next pick':np)+(fb.length?' — '+cmpNameList(fb):'')
-        +' ('+cmpN(A.score.VR,1)+' pts). Spend this pick elsewhere.</div>';
+    lbl='Pass'; name='Neither';
+    bits='Nothing here beats your fallback at #'+(np==null?'your next pick':np)
+        +(fb.length?' — '+cmpNameList(fb):'')
+        +' ('+cmpN(A.score.VR,1)+' pts). Spend this pick elsewhere.';
   }else{                                                     // RANK, or TURN over it
     const A=band.winner, B=band.runnerUp;
-    let turn='';
-    if(band.kind==='TURN'){
-      /* "these", never "both" (N1): TURN fires when EVERY live row clears
-         TURN_S and the tray holds up to 4, so this line renders at 2, 3 and 4. */
-      turn='<div style="'+CMP_CSS.sub+'">You\'ll likely get these at #'+(np==null?'your next pick':np)+' — '
-          +band.rk.map(function(r){return esc(r.n)+' '+pct(r.score.s);}).join(', ')
-          +'. This is a value question, not a timing one.</div>';
-    }
-    head=turn+'<div style="'+CMP_CSS.nm+'">'+esc(A.n)
-        +' <span style="'+CMP_CSS.lbl+'">'+esc(band.band||'')+'</span></div>';
-    const bits=['+'+cmpN(band.margin,1)+' board pts', Math.round((band.ratio||0)*100)+'% of a round'];
+    name=esc(A.n);
+    const bc=(band.band==='CLEAR')?'clear':((band.band==='LEAN')?'lean':'');
+    chip='<span class="cmpansband'+(bc?' '+bc:'')+'">'+esc(band.band||'')+'</span>';
+    const b=['+'+cmpN(band.margin,1)+' board pts', Math.round((band.ratio||0)*100)+'% of a round'];
     /* The reaching guard is non-negotiable (§4.5): the 1.40 hard multiplier's
        loudest bad habit is telling him to reach, and the number has to be on
-       screen. One literal, shared with table row 2, via cmpReachText. */
-    if(A.score.reach!=null && A.score.reach>0) bits.push(cmpReachText(A.score.reach));
-    if(band.bandDowngraded) bits.push('confidence downgraded — the edge rests on a soft input');
-    const drv=cmpDriverText(A,B,np);
-    body='<div style="'+CMP_CSS.sub+'">'+bits.join(' · ')+'</div>'
-        +(drv?'<div style="'+CMP_CSS.sub+'">'+drv+'</div>':'');
-    /* State 3 -- LOUD divergence. All four conditions, or no banner at all. */
+       screen. Same literal as the table's Reach / value row, via cmpReachText. */
+    if(A.score.reach!=null && A.score.reach>0) b.push(cmpReachText(A.score.reach));
+    if(band.bandDowngraded) b.push('confidence downgraded — the edge rests on a soft input');
+    bits=b.join(' · ');
+    drv=cmpDriverText(A,B,np);
+    if(band.kind==='TURN'){
+      /* "these", never "both" (N1): TURN fires when EVERY live row clears
+         TURN_S and the tray holds up to 4, so this renders at 2, 3 and 4. */
+      turn='You\'ll likely get these at #'+(np==null?'your next pick':np)+' — '
+          +band.rk.map(function(r){return esc(r.n)+' '+pct(r.score.s);}).join(', ')
+          +'. This is a value question, not a timing one.';
+    }
+    /* State 3 -- LOUD divergence, all four conditions or nothing. It no longer
+       needs its own box: cmpUsageBlock's sentence already NAMES the usage
+       winner, and this card already names the pick winner, so relabelling and
+       recolouring the usage line says the same thing in one place. */
     const uw=cmpUsageWinner(rows);
     if(uw && uw.win.g!==A.g && uw.gap>=CMP_K.USAGE_CLEAR_GAP
-       && band.band==='CLEAR' && A.score.pick>0){
-      loud='<div class="box"><b>The two tools disagree.</b> Usage says '+esc(uw.win.n)
-          +'. The pick says '+esc(A.n)+(drv?' — '+drv:'.')+'</div>';
-    }
+       && band.band==='CLEAR' && A.score.pick>0) split=true;
   }
 
-  return '<div class="box"><div style="'+CMP_CSS.lbl+'">BEST PICK FOR YOU</div>'+head+body+'</div>'
-       + loud
-       + '<div class="box"><div style="'+CMP_CSS.lbl+'">BEST PLAYER (USAGE)</div>'
-       + '<div style="'+CMP_CSS.sub+'">'+cmpUsageBlock(rows)+'</div></div>';
+  return '<div class="cmpans">'
+    +(turn?'<div class="cmpansturn">'+turn+'</div>':'')
+    +'<div class="cmpanslbl">'+esc(lbl)+'</div>'
+    +'<div class="cmpansname">'+name+chip+'</div>'
+    +(bits?'<div class="cmpansbits">'+bits+'</div>':'')
+    +(drv?'<div class="cmpansdrv">'+drv+'</div>':'')
+    +'<div class="cmpansu'+(split?' split':'')+'">'
+      +'<b>'+(split?'Usage disagrees':'Best player (usage)')+'</b> · '+cmpUsageBlock(rows)
+    +'</div>'
+  +'</div>';
 }
 
 /* S21 -- the seed (or the tray) yields fewer than 2. The overlay opens anyway;
@@ -6011,21 +6273,46 @@ function cmpTooFewBlock(n){
   return '<div class="box">Nothing left to compare. Tap ⚖ on any two board rows.</div>';
 }
 
-/* §6.2 -- host.innerHTML = verdicts + table, and nothing else. No DOM read, no
-   traversal, so this runs headless under the smoke stub. Unresolvable ids are
-   dropped by cmpPlanRows and the drop is made VISIBLE here (§6.1) rather than
-   silently showing fewer columns -- the :1515 defect the audit caught. */
+/* §6.2 -- host.innerHTML = the answer card, the player cards, then the table.
+   No DOM read, no traversal, so this still runs headless under the smoke stub.
+   Unresolvable ids are dropped by cmpPlanRows and the drop is made VISIBLE here
+   (§6.1) rather than silently showing fewer columns -- the :1515 defect the
+   audit caught. */
 function cmpPlanMount(host, pids){
   if(!host) return;
-  const list=pids||[], rows=cmpPlanRows(list);
-  const lost=list.length-rows.length;
+  const list=pids||[], raw=cmpPlanRows(list);
+  const lost=list.length-raw.length;
+
+  /* WINNER FIRST, AT EVERY WIDTH, and the cards and the table columns read the
+     SAME array -- so card order and column order cannot drift apart. That is
+     what lets the phone stack the winner on top without a second ordering to
+     keep in sync, and it is why this sort lives here rather than inside
+     cmpCardsHTML. Live rows before taken ones, then pick score descending;
+     cmpBand sorts its own copy, so the verdict is unaffected by this order. */
+  const rows=raw.slice().sort(function(a,b){
+    if(!!a.taken!==!!b.taken) return a.taken?1:-1;
+    const A=(a.score&&typeof a.score.pick==='number'&&isFinite(a.score.pick))?a.score.pick:-1e9;
+    const B=(b.score&&typeof b.score.pick==='number'&&isFinite(b.score.pick))?b.score.pick:-1e9;
+    return B-A;
+  });
+
+  /* The column count the card grid and the table grid both size from. Set HERE,
+     on the mount host, so the cockpit tray gets it too. It was never written
+     there before, and nothing in the tray READ it either until .cmpcards -- which
+     is unscoped -- started to at >=700px. A new requirement, not a long-standing
+     mis-sizing. */
+  try{ host.style.setProperty('--cmpn', String(Math.max(1,Math.min(4,rows.length)))); }catch(e){}
+
   let h=(lost>0)?('<div class="box">'+lost+' of '+list.length+' players could not be resolved</div>'):'';
   if(!myPicks().length)
     h+='<div class="box">Set your draft slot to get survival and fallback numbers.</div>';   // S19
   else if(myReturnPick()==null)
     h+='<div class="box">This is your last pick — nothing to hold him against.</div>';       // S18
   if(rows.length<2){ host.innerHTML=h+cmpTooFewBlock(rows.length); return; }
-  host.innerHTML=h+cmpVerdictBlock(rows, cmpBand(rows, cmpCtx().cp))+cmpPlanTable(rows);
+  host.innerHTML=h
+    +cmpVerdictBlock(rows, cmpBand(rows, cmpCtx().cp))
+    +cmpCardsHTML(rows)
+    +cmpPlanTable(rows);
 }
 /* ===== end COMPARE REBUILD stage 3 ======================================== */
 
@@ -6092,6 +6379,91 @@ function cmpSeedOpen(){ CMP=cmpSeed(); render(); openCompare(); }
    - Every symbol is prefixed cmp/CMP_ and none shadows verdict, usage, adp,
      tier, proven, statusText or h2hRow.
    =========================================================================== */
+
+/* ===== the quick-add strip + recents (2026-09-04) ========================
+   Shared by BOTH surfaces: the standalone page mounts it above the search box,
+   and openCompare prepends it inside the ⚖ tray. One renderer, parameterised by
+   the handler name, because the two surfaces need different repaint behaviour
+   (the page repaints panes, the tray re-mounts the overlay) and nothing else.
+
+   WHAT FEEDS IT. bestAvailable() -- the exact ranking the cockpit's decision
+   column already paints. Not ADP, and not a second opinion: if the strip and the
+   cockpit ever disagreed about who is worth looking at, one of them would be
+   lying, and the compare page is not the place to find that out. Filtered by
+   cmpSeed's own ok() rule, verbatim: no K, no DEF, a Sleeper id PRESENT (not
+   checked to RESOLVE -- identical to cmpSeed rather than stricter, so the strip
+   and the seed can never offer different sets), and not already drafted.
+
+   NOT deduped by position, unlike cmpSeed. The seed is building a balanced
+   opening compare and wants one man per position; the strip is answering "who is
+   even in the conversation", and at a real pick that is often three RBs. */
+const CMP_QUICK_N=8;
+function cmpQuick(){
+  /* rc() is the file's own per-recompute memo (:2231), busted by rcBust() on
+     every pick. bestAvailable sorts the whole pool, and this strip repaints on
+     the 3-second live poll -- without the memo that is a full sort every 3s for
+     a list that cannot change until somebody drafts. */
+  return rc('cmpQuickStrip', function(){
+    const ok=function(q){ return !!q && q.p!=='K' && q.p!=='DEF'
+                        && q.sl!=null && q.sl!=='' && !TAKEN[q.g]; };
+    const ba=bestAvailable(PL.length), out=[], seen={};
+    for(let i=0;i<ba.length && out.length<CMP_QUICK_N;i++){
+      const q=ba[i].p;
+      if(!ok(q)) continue;
+      const sl=String(q.sl);
+      if(seen[sl]) continue;
+      seen[sl]=1; out.push(q);
+    }
+    return out;
+  });
+}
+
+/* In memory only, by decision: state lives in the URL hash (:2126), the hash is
+   already seven segments long and gets shared as a link, and a draft is one
+   sitting. Nothing here survives a reload, and nothing here needs to. */
+let CMP_RECENT=[];
+function cmpRecentPush(sl){
+  sl=String(sl);
+  const i=CMP_RECENT.indexOf(sl);
+  if(i>=0) CMP_RECENT.splice(i,1);
+  CMP_RECENT.unshift(sl);
+  if(CMP_RECENT.length>CMP_QUICK_N) CMP_RECENT.length=CMP_QUICK_N;
+}
+
+function cmpChipHTML(p,fn,meta){
+  const sl=String(p.sl), on=CMP.indexOf(sl)>=0;
+  return '<span class="cmpqc'+(on?' on':'')+'" onclick="'+fn+'(\''+esc(sl)+'\')">'
+    +(on?'✓ ':'')+esc(p.n)
+    +(meta?'<span class="cmpqm">'+esc(p.p)+(TAKEN[p.g]?' · GONE':'')+'</span>':'')
+    +'</span>';
+}
+
+/* The whole picker strip: the candidates at his pick, then anyone he has already
+   looked at this session. Both are one tap. This is the zero-typing path -- the
+   search box below it is the fallback for a name that is not in either list. */
+function cmpPickStripHTML(fn){
+  let h='';
+  const q=cmpQuick();
+  if(q.length) h+='<div class="cmpqlbl">At your pick</div><div class="cmpqs">'
+    +q.map(function(p){return cmpChipHTML(p,fn,1);}).join('')+'</div>';
+  const seen=[];
+  CMP_RECENT.forEach(function(sl){
+    if(CMP.indexOf(sl)>=0) return;                 // already picked -> not "recent"
+    if(q.some(function(p){return String(p.sl)===sl;})) return;   // already offered above
+    const g=BYSL[String(sl)], p=g?BYID[g]:null;
+    if(p) seen.push(p);
+  });
+  if(seen.length) h+='<div class="cmpqlbl">Recent</div><div class="cmpqs">'
+    +seen.map(function(p){return cmpChipHTML(p,fn,0);}).join('')+'</div>';
+  /* The 5th-tap message, in whichever surface the tap happened. */
+  if(CMP_FLASH) h+='<div class="cmpqcap">4 is the max — drop one first.</div>';
+  return h;
+}
+
+/* The tray's handler. cmpToggle owns the add/remove/cap rules and calls render()
+   (the board); openCompare then re-mounts the overlay so the comparison under
+   the strip actually changes. Two calls, no second implementation. */
+function cmpTrayAdd(sl){ cmpToggle(sl); openCompare(); }
 
 /* The picker's own state. CMP itself (the cockpit tray array of Sleeper id
    strings) is the picked set — reused deliberately, because it is exactly the
@@ -6327,10 +6699,10 @@ function cmpToolSelHTML(){
   });
   if(!rows.length) return '<span class="cmptm" style="color:var(--muted)">Nobody picked yet.</span>';
   rows.push('<button class="cmptclr" onclick="cmpToolClear()">Clear all</button>');
-  /* The 5th-tap message. CMP_FLASH is set by cmpToggle (:5030) and cleared by
-     its own setTimeout; the cockpit paints it as a bar animation, this page
-     prints the sentence, because there is no tray bar here to flash. */
-  if(CMP_FLASH) rows.push('<span class="cmptcap">4 is the max — drop one first.</span>');
+  /* The 5th-tap message used to be printed HERE as well as in cmpPickStripHTML,
+     and both hosts are on screen at once, so the standalone page said "4 is the
+     max" twice (audited 2026-09-04). The strip owns it now, because the strip is
+     the one surface that exists in BOTH places -- this page and the ⚖ tray. */
   return rows.join('');
 }
 
@@ -6352,11 +6724,25 @@ function cmpToolSelHTML(){
    only when it actually differs, so a poll cannot close the native picker
    mid-selection. */
 function cmpToolSlotHTML(){
-  let h='<label class="cmptslab" for="cmptslot">Draft slot</label>'
+  /* The collapsed summary sits FIRST and the select stays in the DOM behind it
+     (hidden in CSS, never removed) -- see the .cmptsbar.set:not(.open) rules. */
+  let h='<span class="cmptssum" id="cmptssum" onclick="cmpToolSlotOpen()"></span>'
+   +'<label class="cmptslab" for="cmptslot">Draft slot</label>'
    +'<select id="cmptslot" class="cmptslot'+(SLOT?' set':'')+'" onchange="cmpToolSlot(this.value)">'
    +'<option value="0"'+(SLOT?'':' selected')+'>not set</option>';
   for(let i=1;i<=META.teams;i++)h+='<option value="'+i+'"'+(SLOT==i?' selected':'')+'>'+i+'</option>';
   return h+'</select><span class="cmptshint" id="cmptshint">'+cmpToolSlotHint()+'</span>';
+}
+/* Collapsed once a slot is set, because it is set once per draft and then it is
+   fourteen options of noise above the thing he came here for. The numbers do not
+   hide with it -- the summary still prints the slot and the next four picks. */
+let CMP_TSLOTOPEN=0;
+function cmpToolSlotOpen(){ CMP_TSLOTOPEN=CMP_TSLOTOPEN?0:1; cmpToolPaintSlot(); }
+function cmpToolSlotSummary(){
+  if(!SLOT) return '';
+  const mp=myPicks();
+  return 'Slot '+SLOT+(mp.length?' · picks '+mp.slice(0,4).join(', ')+(mp.length>4?'…':''):'')
+    +' <b>change</b>';
 }
 function cmpToolSlotHint(){
   if(!SLOT) return 'Set this — survival and fallback numbers need it.';
@@ -6366,7 +6752,12 @@ function cmpToolSlotHint(){
 /* setSlot (:5047) does SLOT/saveState/render, and render() on this page is
    cmpToolRender() — so picking a seat repaints the compare through the one
    existing code path. No second implementation. */
-function cmpToolSlot(v){ setSlot(v); }
+/* Re-collapse on choose. Without this the control was a one-way door: .cmptssum
+   is the ONLY element carrying the expand/collapse tap and it is display:none
+   while the bar is .open, so once expanded it stayed expanded for the life of
+   the page. Set before setSlot, because setSlot calls render() and render()
+   paints the bar from this flag. */
+function cmpToolSlot(v){ CMP_TSLOTOPEN=0; setSlot(v); }
 function cmpToolPaintSlot(){
   const s=document.getElementById('cmptslot');
   if(s){
@@ -6374,8 +6765,19 @@ function cmpToolPaintSlot(){
     const c='cmptslot'+(SLOT?' set':'');
     if(s.className!==c) s.className=c;
   }
+  const bar=document.getElementById('cmptsbar');
+  if(bar){
+    const c='cmptsbar'+(SLOT?' set':'')+(CMP_TSLOTOPEN?' open':'');
+    if(bar.className!==c) bar.className=c;
+  }
+  const sum=document.getElementById('cmptssum');
+  if(sum) sum.innerHTML=cmpToolSlotSummary();
   const h=document.getElementById('cmptshint');
   if(h) h.innerHTML=cmpToolSlotHint();
+}
+function cmpToolPaintQuick(){
+  const e=document.getElementById('cmptquick');
+  if(e) e.innerHTML=cmpPickStripHTML('cmpToolPick');
 }
 
 function cmpToolPaintPos(){ const e=document.getElementById('cmptpos'); if(e)e.innerHTML=cmpToolPosHTML(); }
@@ -6400,7 +6802,9 @@ function cmpToolPaintSel(){ const e=document.getElementById('cmptsel'); if(e)e.i
 function cmpToolPaintBody(){
   const host=document.getElementById('cmptbody');
   if(!host) return;
-  try{ host.style.setProperty('--cmpn', String(Math.max(1,Math.min(4,CMP.length)))); }catch(e){}
+  /* --cmpn used to be set here. cmpPlanMount sets it now, on the same host, so
+     the cockpit tray gets it too -- which it needs, since .cmpcards (unscoped)
+     reads it there. One writer, both surfaces. */
   if(CMP.length<2){
     host.innerHTML='<div class="box">'
       +(CMP.length===1
@@ -6409,16 +6813,12 @@ function cmpToolPaintBody(){
       +'</div>';
     return;
   }
-  /* .cmptw{overflow-x:auto} is the containment the stylesheet promises at :1224 —
-     "the SCROLL BELONGS TO THE TABLE, never to the page body". Nothing emitted it
-     until now: cmpPlanTable writes a bare <table class="cmph2h">, so at 4 columns
-     on a 390px screen the horizontal scroll fell through to the page body. Wrapped
-     HERE and not in cmpPlanTable, because that function is engine and is shared
-     verbatim with the cockpit's own compare tray. */
-  try{
-    cmpPlanMount(host, CMP);
-    host.innerHTML='<div class="cmptw">'+host.innerHTML+'</div>';
-  }
+  /* The .cmptw wrap used to happen HERE, around the whole body, which left the
+     answer card and the player cards inside a horizontal scroll box. Each
+     <table> carries its own wrapper now (cmpPlanTable and cmpFoldBlock), so
+     only the tables can scroll sideways -- and that is true on the cockpit tray
+     too now, not just here. */
+  try{ cmpPlanMount(host, CMP); }
   catch(e){ host.innerHTML='<div class="box">Compare failed: '+esc((e&&e.message)||String(e))+'</div>'; }
 }
 
@@ -6446,7 +6846,8 @@ function cmpToolClear(){ cmpClear(); }
    No traversal, no listeners — the same rule the rebuild works under. */
 function cmpToolShell(){
   return '<div class="cmptlbl">Compare — pick up to 4</div>'
-    +'<div class="cmptsbar">'+cmpToolSlotHTML()+'</div>'
+    +'<div class="cmptsbar" id="cmptsbar">'+cmpToolSlotHTML()+'</div>'
+    +'<div id="cmptquick"></div>'
     +'<input id="cmptq" class="cmptq" placeholder="Search players…" autocomplete="off" '
       +'autocorrect="off" autocapitalize="off" spellcheck="false" oninput="cmpToolQ(this.value)">'
     +'<div class="cmptchips" id="cmptpos"></div>'
@@ -6456,12 +6857,38 @@ function cmpToolShell(){
     +'<div id="cmptbody"></div>';
 }
 
+/* Auto-seed, ONCE per page life. The page used to open on an empty picker, so
+   the fastest possible answer still cost a search. cmpSeed() is the cockpit's
+   own opening three -- the plan hero plus the best alternative at each other
+   position -- so the page now opens on a real comparison he can act on or clear.
+
+   THE LATCH FIRES ON SLOT, NOT ON THE SEED. Getting that backwards is a real
+   bug and this code had it: latching only when the seed actually ran meant that
+   if he picked anyone BEFORE setting his slot the latch never got set, and the
+   next Clear all re-seeded three players on the same tap. Audited 2026-09-04 --
+   reproduced as "no slot, tap two chips, set slot, Clear all -> 3 players back".
+
+   So: the moment there is a slot, this is done for the life of the page. The
+   seed itself is then gated separately on an EMPTY tray, so it can never
+   overwrite a set he picked himself. CMP is not persisted anywhere -- saveState
+   writes seven segments and the tray is not one of them -- so "already has a
+   set" only ever means "picked in this session". */
+let CMP_TSEEDED=0;
+function cmpToolSeedOnce(){
+  if(CMP_TSEEDED || !SLOT) return;
+  CMP_TSEEDED=1;                 // latched by the SLOT, whatever happens next
+  if(CMP.length) return;         // his own picks are never overwritten
+  try{ CMP=cmpSeed(); }catch(e){ CMP=[]; }
+}
+
 function cmpToolRender(){
   const v=document.getElementById('view');
   if(!v) return;
   try{ document.body.dataset.view='compare'; }catch(e){}
   if(!CMP_TMOUNT){ v.innerHTML=cmpToolShell(); CMP_TMOUNT=1; }
+  cmpToolSeedOnce();
   cmpToolPaintSlot();
+  cmpToolPaintQuick();
   cmpToolPaintPos();
   cmpToolPaintCount();
   cmpToolPaintRes();
