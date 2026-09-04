@@ -797,6 +797,25 @@ body[data-view="cockpit"] .ckcmpbar .ccchip{font-size:var(--fs-meta);background:
 body[data-view="cockpit"] .ckcmpbar .ccgo{background:var(--accent-fill);border:1px solid var(--accent);color:var(--text);border-radius:var(--r3);padding:4px 12px;cursor:pointer;font-weight:var(--w-bold)}
 body[data-view="cockpit"] .ckcmpbar .ccx{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:var(--r3);padding:4px 10px;cursor:pointer}
 body[data-view="cockpit"] .ckcmpbar .cchint{font-size:var(--fs-meta);color:var(--muted)}
+/* --- Compare rebuild (2026-09-04). Prefix is the only difference between the
+       two copies of this block. Tokens only -- no raw hex. --- */
+body[data-view="cockpit"] .ckcmpbar.ccflash{animation:ccflashkf 1200ms ease-out 1}
+body[data-view="cockpit"] .ckcmpbar.ccflash .cchint{color:var(--caution)}
+
+body[data-view="cockpit"] .cmph2h{width:100%;border-collapse:collapse;font-size:var(--fs-body)}
+body[data-view="cockpit"] .cmph2h th,
+body[data-view="cockpit"] .cmph2h td{border-bottom:1px solid var(--line);padding:5px 7px;text-align:right;vertical-align:top}
+body[data-view="cockpit"] .cmph2h th:first-child,
+body[data-view="cockpit"] .cmph2h td:first-child{text-align:left;color:var(--muted);white-space:nowrap;font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps)}
+body[data-view="cockpit"] .cmph2h td.best{color:var(--positive);font-weight:var(--w-bold)}
+
+body[data-view="cockpit"] .cmpcol.gone{opacity:.45}
+body[data-view="cockpit"] .cmpcol.gone .gonebadge{color:var(--urgent);font-weight:var(--w-bold);font-size:var(--fs-meta)}
+body[data-view="cockpit"] td.cmppick{font-weight:var(--w-bold)}
+body[data-view="cockpit"] td.cmppick.gone{text-decoration:line-through}
+
+body[data-view="cockpit"] .cmpmore{margin-top:10px;border-top:1px solid var(--line);padding-top:6px}
+body[data-view="cockpit"] .cmpmore>summary{cursor:pointer;color:var(--muted);font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps)}
 body[data-view="cockpit"] .ckcuff{font-size:10px;font-weight:var(--w-med);line-height:1.5;text-transform:uppercase;letter-spacing:.03em;color:var(--caution);background:var(--caution-fill);border:1px solid var(--caution);border-radius:var(--r3);padding:0 6px;cursor:help;white-space:nowrap}
 body[data-view="cockpit"] .ckr .ckflags{display:inline-flex;gap:2px;align-items:center}
 body[data-view="cockpit"] .ckr .ckflag{display:none}
@@ -1088,6 +1107,37 @@ body[data-view="cockpit2"] .ckcmpbar .ccchip{font-size:var(--fs-meta);background
 body[data-view="cockpit2"] .ckcmpbar .ccgo{background:var(--accent-fill);border:1px solid var(--accent);color:var(--text);border-radius:var(--r3);padding:4px 12px;cursor:pointer;font-weight:var(--w-bold)}
 body[data-view="cockpit2"] .ckcmpbar .ccx{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:var(--r3);padding:4px 10px;cursor:pointer}
 body[data-view="cockpit2"] .ckcmpbar .cchint{font-size:var(--fs-meta);color:var(--muted)}
+/* --- Compare rebuild (2026-09-04). Prefix is the only difference between the
+       two copies of this block. Tokens only -- no raw hex. --- */
+body[data-view="cockpit2"] .ckcmpbar.ccflash{animation:ccflashkf 1200ms ease-out 1}
+body[data-view="cockpit2"] .ckcmpbar.ccflash .cchint{color:var(--caution)}
+
+body[data-view="cockpit2"] .cmph2h{width:100%;border-collapse:collapse;font-size:var(--fs-body)}
+body[data-view="cockpit2"] .cmph2h th,
+body[data-view="cockpit2"] .cmph2h td{border-bottom:1px solid var(--line);padding:5px 7px;text-align:right;vertical-align:top}
+body[data-view="cockpit2"] .cmph2h th:first-child,
+body[data-view="cockpit2"] .cmph2h td:first-child{text-align:left;color:var(--muted);white-space:nowrap;font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps)}
+body[data-view="cockpit2"] .cmph2h td.best{color:var(--positive);font-weight:var(--w-bold)}
+
+body[data-view="cockpit2"] .cmpcol.gone{opacity:.45}
+body[data-view="cockpit2"] .cmpcol.gone .gonebadge{color:var(--urgent);font-weight:var(--w-bold);font-size:var(--fs-meta)}
+body[data-view="cockpit2"] td.cmppick{font-weight:var(--w-bold)}
+body[data-view="cockpit2"] td.cmppick.gone{text-decoration:line-through}
+
+body[data-view="cockpit2"] .cmpmore{margin-top:10px;border-top:1px solid var(--line);padding-top:6px}
+body[data-view="cockpit2"] .cmpmore>summary{cursor:pointer;color:var(--muted);font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps)}
+/* Exactly ONCE, and unscoped: @keyframes cannot be scoped by an ancestor
+   selector, and two identical named keyframes would only shadow each other.
+   The bar HOLDS the caution border and halo for the first 70%, then settles back
+   to its resting accent border -- a held state that decays, not a strobe,
+   because "the tray is full" is still true when the animation ends. The 1200ms
+   here and CMP_K.FLASH_MS are THE SAME NUMBER IN TWO LANGUAGES: change one,
+   change both. End frame is var(--shadow-pop), a real token (:101) -- no raw hex. */
+@keyframes ccflashkf{
+  0%   {border-color:var(--caution);box-shadow:0 0 0 3px var(--caution-fill)}
+  70%  {border-color:var(--caution);box-shadow:0 0 0 3px var(--caution-fill)}
+  100% {border-color:var(--accent); box-shadow:var(--shadow-pop)}
+}
 
 /* ---- Column 3: CONTEXT. Reference, never an answer. Its own scroll container
        — ~780px of content in a ~636px column, which 01 budgeted nothing for. ---- */
@@ -1540,7 +1590,7 @@ function mountCompare(host, league, initialPids){
 }
 
 const BYPID={}; PLAYERS.forEach(function(p){ if(p&&p.pid!=null) BYPID[String(p.pid)]=p; });
-return { mountUsage, mountCompare, byId:function(pid){ return pid==null?null:(BYPID[String(pid)]||null); } };
+return { mountUsage, mountCompare, usageVerdict:verdict, byId:function(pid){ return pid==null?null:(BYPID[String(pid)]||null); } };
 })();
 
 </script>
@@ -3688,7 +3738,16 @@ function ckRow(p){
  const ol=(tx&&tx.ol!=null)?tx.ol:null;
  const olChip=(ol!=null&&(p.p==='RB'||p.p==='QB'))?'<span class="ckol'+(ol<=10?' good':(ol>=23?' bad':''))+'" title="Offensive line: PFF 2026 rank '+ol+'/32 (1=best)">OL '+ol+'</span>':'';
  const inCmp=CMP.indexOf(String(p.sl))>=0;
- const canCmp=(p.sl!=null&&typeof UB!=='undefined'&&UB.byId&&UB.byId(p.sl));
+ /* Edit F (compare rebuild, stage 4). On plan, the ⚖ admits ANY row with a
+    non-empty Sleeper id that is not a K or a DEF -- the plan compare prices on
+    ADP and does not need a UB row. Off plan the expression is today's, character
+    for character, because the classic engine hard-throws at :1474/:1478 on a row
+    PLAYERS.find cannot resolve. The p.sl!=='' half is what silently costs the
+    one falsy-sl board row (Mike Washington) his ⚖ -- he renders the ckcmp0
+    spacer like a K does, and is still reachable through the detail card. */
+ const canCmp=planOn()
+   ? (p.sl!=null && p.sl!=='' && p.p!=='K' && p.p!=='DEF')
+   : (p.sl!=null&&typeof UB!=='undefined'&&UB.byId&&UB.byId(p.sl));
  return '<div class="ckr'+(TAKEN[p.g]?' taken':'')+(MINE.includes(p.g)?' mine':'')+(inCmp?' cmp':'')+'" onclick="openP('+p._i+')">'
   +'<span class="ckpos">'+esc(p.p)+'</span>'
   +'<span class="cknm"><span class="nmt">'+esc(p.n)+'</span>'+cuff
@@ -3878,9 +3937,23 @@ function viewCockpit(){
 
  // Phase 4: compare tray — a fixed bar listing the ⚖-picked players + a pop button.
  if(CMP.length){
-  h+='<div class="ckcmpbar"><span class="ccl">Compare</span>'
+  /* Edit G (compare rebuild, stage 4). THIS BLOCK IS BYTE-IDENTICAL to its twin
+     in the other layout's view function -- diff the two, they must be equal.
+     The ccflash hook, the "4 is the max" hint AND the GONE count are ALL
+     planOn()-gated here at the emit site (ground rule 4) -- every one of them
+     reads `cpl` in the three lines below. Do NOT "fix" the GONE count by
+     ungating it: the gate is exactly what keeps this bar byte-identical to the
+     pre-rebuild tray bar on every off-plan surface. */
+  const cpl=((typeof planOn==='function')&&planOn());
+  const cf=(cpl&&CMP_FLASH>0);
+  const cg=cpl?CMP.filter(sl=>{const pp=PL.find(x=>String(x.sl)===String(sl));return !!(pp&&TAKEN[pp.g]);}).length:0;
+  h+='<div class="ckcmpbar'+(cf?' ccflash':'')+'"><span class="ccl">Compare</span>'
     +CMP.map(sl=>{const pp=PL.find(x=>String(x.sl)===String(sl));return '<span class="ccchip" onclick="cmpToggle(\''+esc(String(sl))+'\')" title="remove">'+esc(pp?surname(pp.n):String(sl))+' ×</span>';}).join('')
+    +(cg?'<span class="cchint" style="color:var(--urgent)">'+cg+' GONE</span>':'')
     +(CMP.length>=2?'<button class="ccgo" onclick="openCompare()">Compare '+CMP.length+' →</button>':'<span class="cchint">add '+(2-CMP.length)+' more</span>')
+    /* The flash hint is ADDED, never substituted: a full tray of 4 is exactly
+       when he most needs the Compare button to still be there. */
+    +(cf?'<span class="cchint">4 is the max — drop one first.</span>':'')
     +'<button class="ccx" onclick="cmpClear()">clear</button></div>';
  }
 
@@ -4123,10 +4196,37 @@ function viewCockpit2(){
 
  h+='</div>'; /* ckwrap */
 
- if(CMP.length){
+ /* Edit I (compare rebuild, stage 5). The seed is the ONLY entry into the
+    compare while the tray is empty (S1), so it takes the tray bar's slot and
+    hands it straight back the moment cmpSeedOpen() fills CMP -- which also
+    means it can never overwrite a tray he built by hand, and can never collide
+    with the fixed bar below.
+    THE EMIT IS planOn()-GATED, not just the behaviour: viewCockpit2 renders on
+    a public shell reachable via ?view=cockpit2, so an ungated emit would put a
+    plan-only button on a public page. */
+ if(!CMP.length && (typeof planOn==='function') && planOn()){
   h+='<div class="ckcmpbar"><span class="ccl">Compare</span>'
+    +'<button class="ccgo" onclick="cmpSeedOpen()">⚖ Compare top 3</button></div>';
+ }
+
+ if(CMP.length){
+  /* Edit G (compare rebuild, stage 4). THIS BLOCK IS BYTE-IDENTICAL to its twin
+     in the other layout's view function -- diff the two, they must be equal.
+     The ccflash hook, the "4 is the max" hint AND the GONE count are ALL
+     planOn()-gated here at the emit site (ground rule 4) -- every one of them
+     reads `cpl` in the three lines below. Do NOT "fix" the GONE count by
+     ungating it: the gate is exactly what keeps this bar byte-identical to the
+     pre-rebuild tray bar on every off-plan surface. */
+  const cpl=((typeof planOn==='function')&&planOn());
+  const cf=(cpl&&CMP_FLASH>0);
+  const cg=cpl?CMP.filter(sl=>{const pp=PL.find(x=>String(x.sl)===String(sl));return !!(pp&&TAKEN[pp.g]);}).length:0;
+  h+='<div class="ckcmpbar'+(cf?' ccflash':'')+'"><span class="ccl">Compare</span>'
     +CMP.map(sl=>{const pp=PL.find(x=>String(x.sl)===String(sl));return '<span class="ccchip" onclick="cmpToggle(\''+esc(String(sl))+'\')" title="remove">'+esc(pp?surname(pp.n):String(sl))+' ×</span>';}).join('')
+    +(cg?'<span class="cchint" style="color:var(--urgent)">'+cg+' GONE</span>':'')
     +(CMP.length>=2?'<button class="ccgo" onclick="openCompare()">Compare '+CMP.length+' →</button>':'<span class="cchint">add '+(2-CMP.length)+' more</span>')
+    /* The flash hint is ADDED, never substituted: a full tray of 4 is exactly
+       when he most needs the Compare button to still be there. */
+    +(cf?'<span class="cchint">4 is the max — drop one first.</span>':'')
     +'<button class="ccx" onclick="cmpClear()">clear</button></div>';
  }
  return h;
@@ -4740,6 +4840,15 @@ function render(){
   +(META.draft ? 'draft '+META.draft : 'draft date TBD')
   +(BUILT?' \u00b7 built '+esc(BUILT.slice(0,16).replace('T',' '))+'Z':'');
  document.getElementById('sub').textContent=sub;
+ // S7: a pick landing while the overlay is open must not freeze it. Plan path
+ // ONLY -- re-mounting UB.mountCompare here would reset C.sel from initialPids
+ // (:1515) and rebuild the search box (:1526) on every 3s poll. See ground rule 4.
+ try{
+  if(planOn()&&CMP.length>=2){
+   const ov=document.getElementById('ov4');
+   if(ov&&ov.classList.contains('show')) cmpPlanMount(document.getElementById('ob4'), CMP);
+  }
+ }catch(e){ /* a compare that cannot repaint must never take the board down */ }
 }
 
 /* ---------- the quick-entry box ----------
@@ -4913,15 +5022,866 @@ function closeOv4(){document.getElementById('ov4').classList.remove('show');}
    head-to-head compare in an overlay. Reuses the UB compare engine; the tray holds
    Sleeper ids (== UB pids). No tab switch. Only players UB has data for are addable. */
 let CMP=[];
+/* Edit E (compare rebuild, stage 4). Excluded from roomSig() by construction --
+   it is a new global and :4660 is not touched. */
+let CMP_FLASH=0;
 function cmpToggle(sl){sl=String(sl);const i=CMP.indexOf(sl);
  if(i>=0)CMP.splice(i,1);
- else{if(CMP.length>=4)return; if(typeof UB!=='undefined'&&UB.byId&&!UB.byId(sl))return; CMP.push(sl);}
+ else{
+  const plan=(typeof planOn==='function')&&planOn();
+  /* S4, the 5th tap. On plan it flashes the bar and says why; off plan it is
+     today's silent return, unchanged. NEVER replace the oldest chip. */
+  if(CMP.length>=4){
+   if(plan){ CMP_FLASH=Date.now();
+             setTimeout(function(){CMP_FLASH=0;render();}, CMP_K.FLASH_MS);
+             render(); }
+   return;
+  }
+  /* The UB.byId gate is the off-plan branch only: on plan a no-UB row is a
+     first-class comparable (edit F), and gating here would undo that. */
+  if(!plan && typeof UB!=='undefined'&&UB.byId&&!UB.byId(sl))return;
+  CMP.push(sl);
+ }
  render();}
 function cmpClear(){CMP=[];render();}
 function openCompare(){
- if(CMP.length<2)return;
- UB.mountCompare(document.getElementById('ob4'), META.superflex?'bk':'joop', CMP);
- const ov=document.getElementById('ov4');ov.classList.add('show');ov.scrollTop=0;}
+ const ob=document.getElementById('ob4'), ov=document.getElementById('ov4');
+ const plan=(typeof planOn==='function')&&planOn();
+ if(!plan&&CMP.length<2)return;                            // classic path: today's guard, untouched
+ try{
+  if(plan){
+   if(CMP.length<2) ob.innerHTML=cmpTooFewBlock(CMP.length);   // S21
+   else cmpPlanMount(ob, CMP);
+  } else UB.mountCompare(ob, META.superflex?'bk':'joop', CMP);
+ }catch(e){ ob.innerHTML='<div class="box">Compare failed: '+esc((e&&e.message)||String(e))+'</div>'; }
+ ov.classList.add('show'); ov.scrollTop=0;
+}
+
+/* ===========================================================================
+   COMPARE REBUILD -- stage 2 (2026-09-04): the headless PICK score engine.
+
+   Spec: Projects/Fantasy-Football-Hub/2026-Compare-Rebuild-Spec.md rev 4, §3.
+   Score design: 2026-Compare-Rebuild-Pick-Score.md.
+
+   NOTHING HERE RENDERS. Every symbol is prefixed cmp / CMP_ so it cannot
+   shadow the UB IIFE's verdict() / usage() / adp() / tier() / statusText()
+   or the cockpit's own verdict(s) at :2938 (spec §0 rule 3).
+
+   This block sits OUTSIDE the UB IIFE deliberately: at this scope it has
+   native access to PL, BYID, BYSL, TAKEN, FEED, MINE, MYLIST, TEAMX, need(),
+   myPicks(), myReturnPick(), currentPick(), survivalAt(), survivalNext(),
+   bestAvailable(), planPick(), planNeedTilt(), ckNeedSet(), myPosCounts(),
+   multiSlots(), slotTakes(), PLAN2, NEED_TILT_MAX, RS(), LP(), rc().
+   It reaches UB only through UB.byId().
+   =========================================================================== */
+
+/* ===== COMPARE — PICK score tunables ======================================
+   Every judgment call from 2026-Compare-Rebuild-Pick-Score lives here and
+   NOWHERE ELSE. Changing a number here is the whole tuning surface; if you
+   find a literal from this list inlined below, that is a bug.
+   Principled (do not move without re-deriving): VAL_C / VAL_A0 (least-squares
+   fit to the Phase-4 VOR curve), the (1-s)(V-V_R) structure, multiplicative m.
+   Tunable at a mock: everything else. U_CAP is the biggest late-round lever. */
+const CMP_K = {
+  VAL_C: 48, VAL_A0: 196,        // VAL(a) = VAL_C * ln(VAL_A0 / a), floored at 0
+  U_GAIN: 40, U_CAP: 12,         // U = clamp(U_GAIN * delta, -U_CAP, +U_CAP)
+  M_SLOT_DED: 1.00,              // dedicated starter slot open
+  M_SLOT_FLEX: 0.90,             // fills only a multi-position slot
+  M_SLOT_DEPTH: 0.75,            // starters full, under PLAN2[pos].depth
+  M_SLOT_FULL: 0.55,             // starters full AND at depth
+  W_WINDOW: 0.30,                // m_window = 1 + W_WINDOW * u
+  M_WINDOW_HARD: 1.40,           // planPick() kind:'hard' AND pos matches
+  M_LO: 0.55, M_HI: 1.40,        // clamp on (m_slot * m_window), BEFORE m_status
+  M_STATUS: 0.35,                // p.st in CMP_STATUS_OUT
+  BAND_CLEAR: 0.50,              // margin / roundStake >= this  -> CLEAR
+  BAND_LEAN: 0.15,               //                             -> LEAN, else COIN FLIP
+  TURN_S: 0.60,                  // all survivals >= this -> TURN override
+  VR_DEPTH: 40,                  // survivors folded into V_R before truncation
+  VR_EPS: 0.001,                 // stop when the no-one-survived mass drops below this
+  ATTR_SECOND: 0.25,             // margin-attribution second clause threshold
+  CONF_CARRY: 0.50,              // CLEAR->LEAN when |dU| > this * margin on a soft chip
+  USAGE_CLEAR_GAP: 8,            // existing verdict() clear-edge threshold (:1281)
+  GP_SMALL: 8,                   // existing small-sample threshold (:1266)
+  FLASH_MS: 1200                 // 5th-tap flash. MUST equal the CSS animation
+                                 // duration in edit M (§5.7). Two places, one number.
+};
+/* Status set for m_status. DELIBERATELY the six from the score doc, NOT the
+   engine's IR_STATUS (:1990), which carries a seventh, 'DOU-NO'. Kept separate
+   so a change here cannot silently move irEligible() and the My Team IR stash.
+   See spec §9.2 — whether 'DOU-NO' belongs here is Chris's call, not ours.
+   NOTE: this Set is the FIRST half of the OUT test. The second half is a truthy
+   ub.out. p.st is a roster status and never carries a season-ending injury on
+   its own -- see §2.4. */
+const CMP_STATUS_OUT = new Set(['RES','PUP','NON','IR','NFI','OUT']);
+function cmpIsOut(row){ return CMP_STATUS_OUT.has(row.st) || !!(row.ub && row.ub.out); }
+
+/* The single status source (§2.4). Spine first (100% coverage, but it is a
+   ROSTER status whose whole range is {ACT,RES,RLS,CUT}), UB second because the
+   injury text lives nowhere else. Three consumers: table row 13, both status
+   chips, and the {status} slot in the usage block's state-1 copy. */
+function cmpStatus(row){
+  return (row.st && row.st!=='ACT') ? row.st
+       : ((row.ub && (row.ub.out || row.ub.injury)) || 'Active');
+}
+
+/* One joiner for every copy path that can name more than one player (N1).
+   The tray holds 4 and cmpSeed() returns up to 3, so no clause may say "both". */
+function cmpNameList(a){                       // ['A'] -> "A"; ['A','B'] -> "A and B";
+  if(!a.length) return '';                     // ['A','B','C'] -> "A, B and C"
+  if(a.length===1) return a[0];
+  return a.slice(0,-1).join(', ')+' and '+a[a.length-1];
+}
+
+/* The ONE reach formatter, shared by the margin line and table row 2 (§4.5).
+   Math.abs on the negative branch is not optional: reach = round(adp - cp), so
+   a faller is negative and the sign is already carried by the word "falling". */
+function cmpReachText(r){
+  if(r==null) return '—';                       // em dash
+  if(r>0) return 'reaching '+r+' picks early';
+  if(r<0) return 'falling '+Math.abs(r)+' picks';
+  return 'at value';
+}
+
+/* --- §3.1 the value curve. Units: board points. -------------------------- */
+function cmpVal(a){ return (a==null||a<=0)?0:Math.max(0, CMP_K.VAL_C*Math.log(CMP_K.VAL_A0/a)); }
+
+/* --- §3.2/§3.3 U, the usage residual ------------------------------------- */
+/* 1-based ranks with ties averaged (mid-rank). descIsBest: usage ranks
+   descending (higher usage = rank 1), ADP ranks ascending (lower ADP = 1). */
+function cmpMidRank(list, key, descIsBest){
+  const L=list.slice().sort(function(a,b){ return descIsBest ? (b[key]-a[key]) : (a[key]-b[key]); });
+  const out={};
+  let i=0;
+  while(i<L.length){
+    let j=i;
+    while(j+1<L.length && L[j+1][key]===L[i][key]) j++;
+    const r=(i+j)/2+1;
+    for(let k=i;k<=j;k++) out[L[k].g]=r;
+    i=j+1;
+  }
+  return out;
+}
+/* The universe is board rows that can be both usage-ranked and price-ranked.
+   Computed over the WHOLE board regardless of TAKEN -- U is a static price
+   residual, not a live availability measure. Memoized per render cycle. */
+function cmpUniverse(){ return rc('cmpU', function(){
+  const by={};                                   // pos -> [{g,adp,u}]
+  PL.forEach(function(p){
+    if(p.adp==null) return;                      // must be price-rankable
+    const u=(p.sl!=null)?UB.byId(p.sl):null;
+    if(!u || u.usage_joop==null) return;         // must be usage-rankable
+    (by[p.p]=by[p.p]||[]).push({g:p.g, adp:p.adp, u:u.usage_joop});
+  });
+  const out={};
+  Object.keys(by).forEach(function(pos){
+    const L=by[pos], n=L.length;
+    out[pos]={n:n, uRank:cmpMidRank(L,'u',true), aRank:cmpMidRank(L,'adp',false)};
+  });
+  return out;
+});}
+function cmpU(row){
+  if(!row.ub || row.ub.usage_joop==null || row.adp==null) return 0;
+  const U=cmpUniverse()[row.pos]; if(!U || U.n<2) return 0;
+  const ur=U.uRank[row.g], ar=U.aRank[row.g];
+  if(ur==null || ar==null) return 0;
+  const d=(ar-ur)/U.n;                                  // + = cheaper than his usage
+  return Math.max(-CMP_K.U_CAP, Math.min(CMP_K.U_CAP, CMP_K.U_GAIN*d));
+}
+
+/* --- §3.4 survival and the fallback -------------------------------------- */
+/* Takes a PL ROW (not a CmpRow) and returns {s, sv}. Call it ONCE per row and
+   destructure -- CmpRow.s and CmpRow.surv are the two halves of one call.
+   Room track when it exists, national otherwise: survivalAt (:2875) populates
+   room only when LP() && p.al != null. ADP drift is already inside via
+   DRIFT.room -- do NOT add a drift term. */
+function cmpSurv(pl){
+  const sv=survivalNext(pl);                // :2882 -> {thin,why,sd,nat,room} | null
+  if(!sv) return {s:0, sv:null};
+  const s=(sv.room!=null)?sv.room:(sv.nat!=null?sv.nat:0);
+  return {s:Math.max(0,Math.min(1,s)), sv:sv};
+}
+function cmpVR(row){
+  const np=myReturnPick(); if(!np) return {vr:0, names:[]};
+  const pool=PL.filter(function(q){
+    return !TAKEN[q.g] && q.p===row.pos && q.g!==row.g && q.adp!=null;
+  }).map(function(q){
+    const r={_pl:q, g:q.g, n:q.n, pos:q.p, adp:q.adp, sl:q.sl, ub:(q.sl!=null?UB.byId(q.sl):null)};
+    r.V=cmpVal(q.adp)+cmpU(r);           // V only -- survival is NOT computed here
+    return r;
+  }).sort(function(a,b){return b.V-a.V;}).slice(0, CMP_K.VR_DEPTH);
+  pool.forEach(function(r){ r.s=cmpSurv(r._pl).s; });   // survival AFTER the slice
+  let vr=0, carry=1, names=[];
+  for(let i=0;i<pool.length && carry>CMP_K.VR_EPS;i++){
+    const w=pool[i].s*carry;
+    vr += pool[i].V*w;
+    if(w>=0.05) names.push({n:pool[i].n, w:w});
+    carry *= (1-pool[i].s);
+  }
+  names.sort(function(a,b){return b.w-a.w;});
+  return {vr:vr, names:names.slice(0,3)};
+}
+
+/* --- §3.5 the three multipliers ------------------------------------------ */
+/* Mirrors bestAvailable's own dedicated/flexible split (:2546-2551) exactly,
+   so "fills a slot" means the same thing on both screens. */
+function cmpSlotMult(row){
+  const n=need(), MS=multiSlots(), st=Object.keys(n);
+  const ded=st.filter(function(s){return MS.indexOf(s)<0 && slotTakes(s,row.pos);});
+  if(ded.length) return {m:CMP_K.M_SLOT_DED, fills:ded[0], why:'fills '+ded[0]};
+  const flx=st.filter(function(s){return MS.indexOf(s)>=0 && slotTakes(s,row.pos);});
+  if(flx.length) return {m:CMP_K.M_SLOT_FLEX, fills:flx[0], why:'fills '+flx[0]};
+  const c=myPosCounts(), cfg=PLAN2[row.pos], depth=cfg?cfg.depth:0;
+  return (c[row.pos]||0)<depth
+    ? {m:CMP_K.M_SLOT_DEPTH, fills:null, why:row.pos+' depth '+((c[row.pos]||0)+1)+' of '+depth}
+    : {m:CMP_K.M_SLOT_FULL, fills:null, why:'starters full, at '+row.pos+' depth'};
+}
+/* The 1.40 is POSITION-MATCHED (T1 gives Chase 1.00 under a hard-RB plan).
+   planNeedTilt returns ADP spots (0..NEED_TILT_MAX=6), not the 0..1 ramp, so it
+   is divided by NEED_TILT_MAX -- used VERBATIM per spec §9.1, which flags the
+   doc/engine ramp disagreement as deliberately unresolved. Do not change
+   planNeedTilt. The mustTakeKDef clause is dropped: it is a local inside
+   bestAvailable (:2511) and only fires for K/DEF, which never enter the tray. */
+function cmpWindowMult(row, cp){
+  const pt=planPick(cp);
+  if(pt && pt.kind==='hard' && pt.pos===row.pos) return CMP_K.M_WINDOW_HARD;
+  const u=NEED_TILT_MAX ? planNeedTilt(row._pl, cp)/NEED_TILT_MAX : 0;
+  return 1 + CMP_K.W_WINDOW*Math.max(0,Math.min(1,u));
+}
+function cmpStatusMult(row){ return cmpIsOut(row) ? CMP_K.M_STATUS : 1; }
+
+/* --- §3.6 one round of draft capital, in board points -------------------- */
+function cmpRoundStake(cp){
+  const rs=RS();                              // META.roundSize — 14 for joop-14
+  return (cp>0) ? CMP_K.VAL_C*Math.log((cp+rs)/cp) : CMP_K.VAL_C;
+}
+
+/* --- §3.7 the pure kernel. Every Tier-A acceptance test calls THIS. ------- */
+/* Numbers in, numbers out -- it cannot go stale when the ADP board refreshes.
+   Note the clamp order: clamp (m_slot * m_window) FIRST, then multiply by
+   m_status. m_status is deliberately outside the clamp so an OUT player can
+   fall below M_LO. */
+function cmpPickFromParts(o){
+  const V   = o.VAL + o.U;
+  const gap = V - o.VR;
+  const m   = Math.max(CMP_K.M_LO, Math.min(CMP_K.M_HI, o.mSlot*o.mWindow)) * o.mStatus;
+  return {V:V, gap:gap, m:m, pick:(1-o.s)*m*gap};
+}
+
+/* --- §3.11 bestAvailable, memoized per render cycle ---------------------- */
+/* bestAvailable is NOT memoized by rc() -- the four render-loop callers each
+   invoke it directly with their own limit and never route through here. This
+   memo de-duplicates the compare's own N columns down to one call per cycle,
+   which is the whole of the benefit. */
+function cmpBA(){ return rc('cmpBA', function(){
+  const m={}; bestAvailable(PL.length).forEach(function(o){ m[o.p.g]=o; }); return m;
+});}
+
+/* --- §3.9 the assembled bundle ------------------------------------------- */
+function cmpScore(row, ctx){
+  const VAL=cmpVal(row.adp), U=cmpU(row), vr=cmpVR(row);
+  const sl=cmpSlotMult(row), mW=cmpWindowMult(row, ctx.cp), mS=cmpStatusMult(row);
+  const k=cmpPickFromParts({VAL:VAL, U:U, VR:vr.vr, s:row.s, mSlot:sl.m, mWindow:mW, mStatus:mS});
+  return {VAL:VAL, U:U, V:k.V, VR:vr.vr, vrNames:vr.names, gap:k.gap, s:row.s, sv:row.surv,
+          mSlot:sl.m, mSlotWhy:sl.why, mFills:sl.fills, mWindow:mW, mStatus:mS, m:k.m, pick:k.pick,
+          reach:(row.adp==null?null:Math.round(row.adp-ctx.cp))};
+}
+
+/* --- §4.4 confidence chips. A chip NEVER changes pick. ------------------- */
+function cmpChips(row){
+  const out=[];
+  if(!row.ub) out.push('NO USAGE ROW');
+  if(row.ub && (row.ub.rookie || row.ub.has25===false)) out.push('PROJECTION-ONLY');
+  if(row.ub && row.ub.has25 && row.ub.gp!=null && row.ub.gp<CMP_K.GP_SMALL) out.push(row.ub.gp+'-GAME SAMPLE');
+  if(row.ub && row.ub.mover) out.push('usage earned with '+row.ub.team25);
+  /* nd == null -> the bare chip, no parenthetical (spec §4.4, rev 4). sdok is
+     !!p.sdok, so a take-only row with no sdok reaches here with nd null, and
+     "n=null drafts" would be both meaningless and a C15 failure. Same rule rev 2
+     set for takenAt (D1): the badge survives, the number it cannot source does not. */
+  if(row.sdok===false) out.push(row.nd==null?'THIN PRICE':('THIN PRICE (n='+row.nd+' drafts)'));
+  if(row.al==null) out.push('national ADP only — this room\'s pace is unmeasured here');
+  /* Exactly one of the two status chips can fire; cmpIsOut is the discriminator
+     and neither fires when cmpStatus is 'Active'. Colour is the renderer's job
+     (urgent when cmpIsOut, caution otherwise) -- stage 2 emits text only. */
+  const stx=cmpStatus(row);
+  if(cmpIsOut(row)) out.push(stx);
+  else if(stx!=='Active') out.push(stx);
+  return out;
+}
+/* The soft-input test behind the confidence downgrade (§3.8). */
+function cmpSoftChip(r){
+  const ch=(r && r.chips) || cmpChips(r||{});
+  return ch.indexOf('PROJECTION-ONLY')>=0 || ch.some(function(c){return /-GAME SAMPLE$/.test(c);});
+}
+
+/* --- §3.8 bands and the two overrides ------------------------------------ */
+/* cp is not optional and is not derived inside -- the caller has it on ctx. */
+function cmpBand(rows, cp){
+  const live=rows.filter(function(r){return !r.taken;});
+  if(live.length<2) return {kind:'ONE_LEFT', live:live};
+  const rk=live.slice().sort(function(a,b){return b.score.pick-a.score.pick;});
+  const A=rk[0], B=rk[1];
+  const stake=cmpRoundStake(cp), margin=Math.abs(A.score.pick-B.score.pick), ratio=margin/stake;
+  if(A.score.pick<=0) return {kind:'PASS', rk:rk, margin:margin, ratio:ratio, stake:stake};
+  const mkBand=function(){ return ratio>=CMP_K.BAND_CLEAR?'CLEAR':(ratio>=CMP_K.BAND_LEAN?'LEAN':'COIN FLIP'); };
+  /* Confidence downgrade, applied AFTER the band: a CLEAR carried by a soft
+     input is relabelled, never rescored. Confidence changes the label, never
+     the number -- pick is untouched. */
+  const conf=function(o){
+    if(o.band==='CLEAR' && cmpSoftChip(A)
+       && Math.abs((A.score.U||0)-(B.score.U||0)) > CMP_K.CONF_CARRY*margin){
+      o.band='LEAN'; o.bandDowngraded=true;
+    }
+    return o;
+  };
+  if(live.every(function(r){return r.score.s>=CMP_K.TURN_S;}))
+    return conf({kind:'TURN', rk:rk, winner:A, runnerUp:B, margin:margin, ratio:ratio, stake:stake, band:mkBand()});
+  return conf({kind:'RANK', rk:rk, winner:A, runnerUp:B, margin:margin, ratio:ratio, stake:stake, band:mkBand()});
+}
+
+/* --- §3.10 the reason line, generated not written ------------------------ */
+/* Recompute the margin five times, each equalising one factor across the pair.
+   All five go through cmpPickFromParts, so this is not a second engine.
+   Accepts either a CmpRow (reads .score) or a bare parts object, which is what
+   lets the Tier-A fixtures drive it. */
+function cmpDriverParts(x){
+  const o=(x && x.score) ? x.score : x;
+  return {VAL:o.VAL, U:o.U, VR:o.VR, s:o.s, mSlot:o.mSlot, mWindow:o.mWindow, mStatus:o.mStatus};
+}
+const CMP_DRIVER_WHY={ s:"he won't be there", m:'roster fit', U:'usage',
+                       VR:'your fallback at #NP', VAL:'raw ADP value' };
+function cmpDriver(A,B,ctx){
+  const a=cmpDriverParts(A), b=cmpDriverParts(B);
+  const margin=Math.abs(cmpPickFromParts(a).pick - cmpPickFromParts(b).pick);
+  /* m is equalised on the COMPOSITE, not on its three factors: the clamp is
+     non-linear, so averaging mSlot and mWindow is not averaging m. Loading the
+     mean into mStatus with mSlot=mWindow=1 reproduces it exactly for any value,
+     clamp(1*1)=1 included. */
+  const eq=[
+   {id:'s',   f:function(x,y){ const m=(a.s+b.s)/2; x.s=m; y.s=m; }},
+   {id:'m',   f:function(x,y){ const m=(cmpPickFromParts(a).m+cmpPickFromParts(b).m)/2;
+                               x.mSlot=1; x.mWindow=1; x.mStatus=m;
+                               y.mSlot=1; y.mWindow=1; y.mStatus=m; }},
+   {id:'U',   f:function(x,y){ x.U=0; y.U=0; }},
+   {id:'VR',  f:function(x,y){ const m=(a.VR+b.VR)/2; x.VR=m; y.VR=m; }},
+   {id:'VAL', f:function(x,y){ const m=(a.VAL+b.VAL)/2; x.VAL=m; y.VAL=m; }}
+  ];
+  const shares=eq.map(function(e){
+    const x={VAL:a.VAL,U:a.U,VR:a.VR,s:a.s,mSlot:a.mSlot,mWindow:a.mWindow,mStatus:a.mStatus};
+    const y={VAL:b.VAL,U:b.U,VR:b.VR,s:b.s,mSlot:b.mSlot,mWindow:b.mWindow,mStatus:b.mStatus};
+    e.f(x,y);
+    const m2=cmpPickFromParts(x).pick - cmpPickFromParts(y).pick;
+    return {id:e.id, share:(margin>0 ? Math.abs(margin-Math.abs(m2))/margin : 0)};
+  }).sort(function(p,q){return q.share-p.share;});
+  const second=(shares[1] && shares[1].share>=CMP_K.ATTR_SECOND) ? shares[1].id : null;
+  return {top:shares[0].id, topWhy:CMP_DRIVER_WHY[shares[0].id], second:second,
+          secondWhy:second?CMP_DRIVER_WHY[second]:null, shares:shares, margin:margin};
+}
+
+/* --- the per-open context, built once ------------------------------------ */
+function cmpCtx(){
+  const cp=currentPick();
+  return {cp:cp, np:myReturnPick(), stake:cmpRoundStake(cp),
+          plan:planPick(cp), need:ckNeedSet(), universe:cmpUniverse()};
+}
+
+/* --- §2 the CmpRow data model. Plain data only -- no HTML, no DOM. ------- */
+/* pids are Sleeper id strings (== today's CMP array). Resolution is
+   sl -> BYSL[sl] -> g -> BYID[g]. Order is preserved; unresolvable ids are
+   dropped, and the drop is VISIBLE because the returned array is shorter.
+   Pure with respect to the DOM: safe to call headless. */
+function cmpPlanRows(pids){
+  const ctx=cmpCtx(), BA=cmpBA(), out=[];
+  (pids||[]).forEach(function(pid){
+    const g=BYSL[String(pid)]; if(!g) return;
+    const p=BYID[g]; if(!p) return;
+    const sv=cmpSurv(p);
+    const row={
+      g:p.g, sl:(p.sl==null?'':String(p.sl)), n:p.n, pos:p.p, tm:p.tm, st:p.st,
+      adp:(p.adp==null?null:p.adp), bye:(p.bye==null?null:p.bye),
+      tr:(p.tr==null?null:p.tr), tw:p.tw?1:0, _i:p._i,
+      al:(p.al==null?null:p.al), ls:p.ls, lf:p.lf, lr:p.lr, lc:p.lc,
+      sd:(p.sd==null?null:p.sd), sdok:!!p.sdok, nd:(p.nd==null?null:p.nd),
+      lean:p.lean||'', cv:(p.cv==null?0:p.cv),
+      ub:(p.sl!=null&&p.sl!=='')?(UB.byId(String(p.sl))||null):null,
+      taken:!!TAKEN[p.g],
+      /* TAKEN[g] is ALWAYS the literal 1 (:1819/:1820/:1825), so TAKEN[g] ?? null
+         would badge every drafted player "GONE #1". The pick number lives in
+         FEED[g].no (:3077); null is correct and expected for a manual mark, an
+         own-roster row and every row in season mode. */
+      takenAt:((FEED[p.g]&&FEED[p.g].no)||null),
+      surv:sv.sv, s:sv.s, _pl:p
+    };
+    row.status  = cmpStatus(row);
+    row.survK   = myPicks().filter(function(k){return k>ctx.cp;}).slice(0,3)
+                           .map(function(k){return survivalAt(p,k,ctx.cp);});
+    /* Display only. The SCORE must not read ba -- bestAvailable omits drafted
+       players, so a GONE row has no entry here. */
+    row.ba      = BA[p.g]||null;
+    row.fills   = cmpSlotMult(row).fills;
+    row.inNeed  = ctx.need.has(row.pos);
+    row.plan    = ctx.plan;
+    row.tiltU   = NEED_TILT_MAX ? planNeedTilt(p, ctx.cp)/NEED_TILT_MAX : 0;
+    row.mine    = (MYLIST && MYLIST.t && MYLIST.t[p.g]) || null;
+    row.fade    = !!(MYLIST && MYLIST.f && MYLIST.f[p.g]);
+    row.fell    = (row.adp==null) ? null : (ctx.cp-row.adp);
+    row.byeHits = (row.bye==null) ? 0 : MINE.filter(function(mg){
+                    const q=BYID[mg]; return q && q.bye===row.bye; }).length;
+    row.tx      = TEAMX[row.tm]||null;
+    row.score   = cmpScore(row, ctx);
+    row.chips   = cmpChips(row);
+    out.push(row);
+  });
+  return out;
+}
+/* ===== end COMPARE REBUILD stage 2 ======================================== */
+
+/* ===========================================================================
+   COMPARE REBUILD -- stage 3 (2026-09-04): the table, the two verdicts, mount.
+
+   Spec: 2026-Compare-Rebuild-Spec.md rev 4, §4.5, §5.1-§5.2, §5.6, §6.2.
+
+   HARD CONSTRAINT (spec §0 rule 2): nothing here traverses the DOM after
+   writing innerHTML. All interactivity is inline onclick="..." calling globals,
+   exactly as ckRow() does at :3702. No addEventListener, no firstElementChild,
+   no root.querySelector anywhere -- that is what makes cmpPlanMount executable
+   under the headless smoke stub, whose querySelector returns null.
+   =========================================================================== */
+
+/* Chrome that is NOT in edit M's CSS budget (§5.7 gives that block's exact
+   text, and the edit list is closed). Rendered as inline styles instead, every
+   value a token -- no raw hex, and no --warn token exists, so --caution. */
+const CMP_CSS={
+  lbl :'font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps);color:var(--muted)',
+  nm  :'font-size:1.35rem;font-weight:var(--w-bold);line-height:1.25',
+  sub :'font-size:var(--fs-body);color:var(--muted)',
+  sec :'font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps);color:var(--muted);padding-top:10px',
+  chip:'display:inline-block;font-size:var(--fs-meta);border-radius:var(--r3);padding:0 6px;margin:2px 4px 0 0;white-space:nowrap;border:1px solid var(--line);color:var(--muted)',
+  chpU:'display:inline-block;font-size:var(--fs-meta);border-radius:var(--r3);padding:0 6px;margin:2px 4px 0 0;white-space:nowrap;border:1px solid var(--urgent);color:var(--urgent)',
+  chpC:'display:inline-block;font-size:var(--fs-meta);border-radius:var(--r3);padding:0 6px;margin:2px 4px 0 0;white-space:nowrap;border:1px solid var(--caution);color:var(--caution)'
+};
+
+/* Every number that reaches the screen goes through here. A null, a NaN and an
+   Infinity all render as an em dash -- C15 greps the whole table for the words
+   "undefined", "NaN" and "null", and this is the one place that can emit them. */
+function cmpN(v,d){
+  return (v==null||typeof v!=='number'||!isFinite(v)) ? '—' : v.toFixed(d==null?1:d);
+}
+
+/* §5.6 highlighting, today's rule verbatim: a cell is `best` when it ties the
+   row's best AND at least two columns in that row are non-null. Deliberately
+   NOT named h2hRow -- that symbol belongs to the UB IIFE (:1270). opts.noHi
+   suppresses the whole row (the S10 mixed-position case); a `gone` column can
+   never take the highlight, because a drafted player is not an answer. */
+function cmpRow(lbl, vals, hiGood, fmtFn, opts){
+  opts=opts||{};
+  const f=fmtFn||function(v){return (v==null)?'—':String(v);};
+  const num=function(v){return (typeof v==='number'&&isFinite(v))?v:null;};
+  const nums=vals.map(function(v){const x=num(v); return x==null?(hiGood?-1e9:1e9):x;});
+  const best=hiGood?Math.max.apply(null,nums):Math.min.apply(null,nums);
+  const live=vals.filter(function(v){return num(v)!=null;}).length;
+  return '<tr><td>'+lbl+'</td>'+vals.map(function(v,i){
+    const gone=!!(opts.gone&&opts.gone[i]);
+    const hi=(!opts.noHi && !gone && num(v)!=null && nums[i]===best && live>1);
+    return '<td class="cmpcol'+(opts.cls?' '+opts.cls:'')+(gone?' gone':'')+(hi?' best':'')+'">'
+      +f(v,i)+'</td>';
+  }).join('')+'</tr>';
+}
+
+/* §4.4 -- cmpChips returns plain strings (§2.3). The urgent/caution colour
+   split is the renderer's job and is re-derived from cmpIsOut here: exactly one
+   status chip can fire, and it is the one whose text equals cmpStatus(row). */
+function cmpChipsHTML(row){
+  const chips=row.chips||cmpChips(row);
+  if(!chips.length) return '';
+  const stx=cmpStatus(row), out=cmpIsOut(row);
+  return '<div>'+chips.map(function(c){
+    const isStatus=(c===stx && stx!=='Active');
+    const st=isStatus ? (out?CMP_CSS.chpU:CMP_CSS.chpC) : CMP_CSS.chip;
+    return '<span style="'+st+'">'+esc(c)+'</span>';
+  }).join('')+'</div>';
+}
+
+/* §5.1 header cell. The name is clickable through an inline onclick calling
+   globals -- no listener, per ground rule 2. GONE badge is "GONE #47" only when
+   takenAt != null; a manual mark, an own-roster row and every season-mode row
+   carry no pick number and get a bare GONE (D1). */
+function cmpHeadCell(row){
+  return '<th class="cmpcol'+(row.taken?' gone':'')+'">'
+    +'<div style="'+CMP_CSS.nm+'">'
+      +'<span style="cursor:pointer" onclick="closeOv4();openP('+row._i+')">'+esc(row.n)+'</span>'
+      +(row.taken?' <span class="gonebadge">GONE'+(row.takenAt!=null?' #'+row.takenAt:'')+'</span>':'')
+    +'</div>'
+    +'<div style="'+CMP_CSS.sub+'">'+esc(row.pos)+' &middot; '+esc(row.tm||'')+'</div>'
+    +cmpChipsHTML(row)
+    +(!row.ub?'<div style="'+CMP_CSS.sub+';font-style:italic">no Usage Board row — priced on ADP alone</div>':'')
+    +'</th>';
+}
+
+/* §6.2 -- returns the <table> STRING only, never the verdict blocks, and
+   touches no DOM. §5.2: 13 rows in two sections. The fold (§5.3) and the RB
+   depth block (§5.4) are stage 6 and are deliberately absent here; backfieldMap
+   is never emitted on this path at all (§5.5, C16). */
+function cmpPlanTable(rows){
+  if(!rows||!rows.length) return '';
+  const N=rows.length, gone=rows.map(function(r){return !!r.taken;});
+  const mixed=rows.some(function(r){return r.pos!==rows[0].pos;});
+  const np=myReturnPick();
+  const sec=function(t){return '<tr><td colspan="'+(N+1)+'" style="'+CMP_CSS.sec+'">'+t+'</td></tr>';};
+  const ub=function(k,d){ return rows.map(function(r){
+    const v=r.ub?r.ub[k]:null; return (typeof v==='number'&&isFinite(v))?v:null; }); };
+  const uFmt=function(d){ return function(v,i){
+    return cmpN(v,d)+((mixed&&v!=null)?' ('+esc(rows[i].pos)+')':''); }; };
+
+  let h='<table class="cmph2h"><thead><tr><th></th>'
+        +rows.map(cmpHeadCell).join('')+'</tr></thead><tbody>';
+
+  /* --- Section 1: the pick. Board-wide and comparable, so it keeps its
+         highlights even on a mixed compare (§4.3 S10). --- */
+  h+=sec('The pick');
+  h+=cmpRow('Pick score', rows.map(function(r){return r.score.pick;}), true,
+            function(v){return cmpN(v,1);}, {cls:'cmppick', gone:gone});
+  h+=cmpRow('Reach / value', rows.map(function(r){return cmpReachText(r.score.reach);}), true,
+            function(v){return esc(v);}, {noHi:true, gone:gone});
+  h+=cmpRow(np?('Lasts to #'+np):'Lasts to your next pick',
+            rows.map(function(r){
+              if(!np) return 'This is your last pick';
+              return pct(r.score.s)+(r.score.sv&&r.score.sv.room!=null?' (this room)':' (national)');
+            }), true, function(v){return v;}, {noHi:true, gone:gone});
+  if(np) h+=cmpRow('Fallback at #'+np, rows.map(function(r){
+              const nm=(r.score.vrNames||[]).slice(0,2).map(function(x){return x.n;});
+              return cmpN(r.score.VR,1)+(nm.length?' — '+esc(cmpNameList(nm)):'');
+            }), true, function(v){return v;}, {noHi:true, gone:gone});
+  h+=cmpRow('Fills', rows.map(function(r){return r.score.mSlotWhy||'—';}), true,
+            function(v){return esc(v);}, {noHi:true, gone:gone});
+  h+=cmpRow('Plan', rows.map(function(r){
+              const p=r.plan;
+              const base=(p&&p.pos===r.pos&&p.why)?p.why:'off-plan';
+              return base+(r.score.mWindow>1?' · window ×'+cmpN(r.score.mWindow,2):'');
+            }), true, function(v){return esc(v);}, {noHi:true, gone:gone});
+  h+=cmpRow('Room price', rows.map(function(r){
+              return (r.al==null)?'national only'
+                : (cmpN(r.al,1)+(r.ls?' ('+r.ls+')':''));
+            }), true, function(v){return esc(v);}, {noHi:true, gone:gone});
+
+  /* --- Section 2: usage. Within-position measures, so ALL green highlights are
+         suppressed on a mixed compare -- highlighting across positions is the
+         defect the audit named (§4.3 S10). --- */
+  h+=sec('Usage');
+  h+=cmpRow('Usage · percentile vs his own position',
+            ub('usage_joop'), true, uFmt(0), {noHi:mixed, gone:gone});
+  h+=cmpRow('Target share % (2025)',       ub('tgt_share'),           true, function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
+  h+=cmpRow('Snap share % (2025)',         ub('snap_share'),          true, function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
+  h+=cmpRow('RZ-tgt share % (2025)',       ub('rz_share'),            true, function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
+  h+=cmpRow('Proj rec share % (2026)',     ub('proj_rec_share_adj'),  true, function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
+  h+=cmpRow('Injury / status', rows.map(function(r){return cmpStatus(r);}), true,
+            function(v){return esc(v);}, {noHi:true, gone:gone});
+
+  h+='</tbody></table>';
+  if(mixed) h+='<div style="'+CMP_CSS.sub+'">Green = best in row. Usage rows are within-position '
+              +'and are not highlighted across positions.</div>';
+  h+=cmpFoldBlock(rows);          // stage 6: §5.3 the fold + §5.4 the RB depth block
+  return h;
+}
+
+/* ===== COMPARE REBUILD stage 6 — the fold (§5.3) + RB depth (§5.4) ========
+   Both live inside ONE <details class="cmpmore">, closed by default. The 13
+   rows of §5.2 are the *visible* rows and neither of these is among them, so
+   folding the RB block costs nothing at the default height -- which matters,
+   because §9.6 item 3 already flags 4 columns of nowrap first-column labels as
+   a phone-fit risk and an unfolded ~15-row rushing block would double the
+   scroll. One tap, labelled, and it never fires on a non-RB compare anyway.
+   §9.7: ub.role / ub.ahead_name are a DISPLAY FLAG here and never enter the
+   score -- m is positional, not personal. */
+
+/* The single reconciled team row (§5.3). It REPLACES runTendency(), which is
+   deliberately not ported cockpit-side. The soft/avg/tough thresholds are
+   bestAvailable's own (:2647) verbatim, so the two screens can never disagree
+   about what a soft slate is; rank 1 is the easiest. */
+function cmpTeamCtxText(r){
+  const tx=r.tx; if(!tx) return null;
+  const bits=[];
+  if(typeof tx.ol==='number'&&isFinite(tx.ol)) bits.push('OL '+tx.ol+'/32');
+  const sr=(tx.sos&&typeof tx.sos[r.pos]==='number'&&isFinite(tx.sos[r.pos]))?tx.sos[r.pos]:null;
+  if(sr!=null) bits.push((sr<=10?'soft':(sr>=23?'tough':'avg'))+' '+r.pos+' slate ('+sr+'/32)');
+  return bits.length?bits.join(' · '):null;
+}
+
+function cmpFoldBlock(rows){
+  if(!rows||!rows.length) return '';
+  const N=rows.length, gone=rows.map(function(r){return !!r.taken;});
+  const mixed=rows.some(function(r){return r.pos!==rows[0].pos;});
+  const allRB=rows.every(function(r){return r.pos==='RB';});
+  const sec=function(t){return '<tr><td colspan="'+(N+1)+'" style="'+CMP_CSS.sec+'">'+t+'</td></tr>';};
+  /* Every numeric read is type-checked here rather than at the cell, so a UB
+     field that is absent, null or a string can never reach the table as
+     "undefined" or "NaN" -- C15 greps the whole string for both. */
+  const ubn=function(k){ return rows.map(function(r){
+    const v=r.ub?r.ub[k]:null; return (typeof v==='number'&&isFinite(v))?v:null; }); };
+  const S=function(v){ return (v==null||v==='')?'—':esc(String(v)); };
+  const numRow=function(lbl,k,d){
+    return cmpRow(lbl, ubn(k), true, function(v){return cmpN(v,d);}, {noHi:mixed, gone:gone});
+  };
+  const txtRow=function(lbl,fn){
+    return cmpRow(lbl, rows.map(fn), true, function(v){return S(v);}, {noHi:true, gone:gone});
+  };
+
+  let h='<details class="cmpmore"><summary>More detail</summary>'
+       +'<table class="cmph2h"><tbody>';
+
+  /* Proven merges the games count into the same cell (the audit's #12 merge):
+     "86 · 12 gm" -- a proven percentile without its sample is half a number. */
+  h+=cmpRow('Proven (2025)', ubn('proven_joop'), true, function(v,i){
+       if(v==null) return '—';
+       const u=rows[i].ub, gp=(u&&typeof u.gp==='number'&&isFinite(u.gp))?u.gp:null;
+       return cmpN(v,0)+(gp!=null?' · '+cmpN(gp,0)+' gm':'');
+     }, {noHi:mixed, gone:gone});
+  h+=numRow('Projected (2026)','projected',0);
+  h+=numRow('Air-yards share %','air_share',1);
+  h+=numRow('Yards/target','ypt',1);
+  /* Tier is the one row where LOWER is better, so hiGood is false. */
+  h+=cmpRow('Tier', rows.map(function(r){return r.tr;}), false, function(v,i){
+       return (v==null)?'—':(cmpN(v,0)+(rows[i].tw?' · wall':''));
+     }, {noHi:mixed, gone:gone});
+  h+=txtRow('ADP', function(r){
+       if(r.adp==null) return null;
+       let s=cmpN(r.adp,1);
+       if(typeof r.sd==='number'&&isFinite(r.sd)) s+=' · sd '+cmpN(r.sd,1);
+       if(typeof r.nd==='number'&&isFinite(r.nd)) s+=' · n='+r.nd;
+       if(!r.sdok) s+=' · thin';
+       return s;
+     });
+  /* p.bye is a STRING on the wire ("6"), not the Number §2.1 states -- measured
+     2026-09-04 on the live payload, 271 of 384 rows populated. Formatting it
+     through cmpN would print an em dash on every priced row. byeHits is
+     unaffected: cmpPlanRows compares bye to bye, string to string. */
+  h+=txtRow('Bye', function(r){
+       if(r.bye==null||r.bye==='') return null;
+       const b=Number(r.bye), t=(isFinite(b)&&b>0)?String(b):String(r.bye);
+       return t+(r.byeHits>0?' · '+r.byeHits+' on your roster':'');
+     });
+  h+=txtRow('Team context', cmpTeamCtxText);
+
+  /* §5.4 -- RB depth. Emits ONLY when every row is an RB; a WR+RB compare gets
+     none of it (C6). Rows with no UB row render an em dash throughout. */
+  if(allRB){
+    h+=sec('Rushing');
+    h+=numRow('Carries','rush_att',0);
+    h+=numRow('Rush share %','rush_share',1);
+    h+=numRow('Rush yards','rush_yd',0);
+    h+=numRow('Yards/carry','rush_ypc',1);
+    h+=numRow('RZ carries in-20','rush_rz',0);
+    h+=numRow('Broken tackles','rush_btkl',0);
+    h+=numRow('Yds after contact','rush_yac',0);
+    h+=numRow("'26 proj carries",'p_rush_att',0);
+
+    h+=sec('Depth / Handcuff');
+    h+=txtRow('Role',              function(r){return r.ub?r.ub.role:null;});
+    h+=txtRow("Handcuff if he's out", function(r){return r.ub?r.ub.hc_name:null;});
+    h+=txtRow('Backs up',          function(r){return r.ub?r.ub.ahead_name:null;});
+    /* The only cell in the block that can carry a link. esc() the text, never
+       the tag; rel="noopener" is not optional on a target="_blank". */
+    h+=cmpRow('Contingency take', rows.map(function(r){return r.ub?r.ub.hc_take:null;}), true,
+        function(v,i){
+          if(v==null||v==='') return '—';
+          const u=rows[i].ub, url=(u&&typeof u.hc_url==='string'&&u.hc_url)?u.hc_url:null;
+          return url ? ('<a href="'+esc(url)+'" target="_blank" rel="noopener">'+esc(String(v))+'</a>')
+                     : esc(String(v));
+        }, {noHi:true, gone:gone});
+  }
+
+  h+='</tbody></table></details>';
+  return h;
+}
+/* ===== end COMPARE REBUILD stage 6 ======================================== */
+
+/* §4.5 state 1 -- the usage verdict, or a NAMED reason there isn't one.
+   "No comparison" without a name is the failure this block exists to prevent.
+   The priority order is a strict first-match chain; every clause that can name
+   more than one player routes through cmpNameList, so none of them says "both"
+   (N1) -- the tray holds 4 and cmpSeed() returns up to 3. */
+function cmpUsageBlock(rows){
+  const live=rows.filter(function(r){return !r.taken;});
+  const ok  =live.filter(function(r){return r.ub && r.ub.usage_joop!=null && !cmpIsOut(r);});
+  const nm  =function(a){return cmpNameList(a.map(function(r){return esc(r.n);}));};
+  if(live.length>=2 && ok.length===live.length) return UB.usageVerdict(ok.map(function(r){return r.ub;}));
+
+  const noRow    =live.filter(function(r){return !r.ub;});
+  const unscored =live.filter(function(r){return r.ub && r.ub.usage_joop==null;});
+  const outRow   =live.filter(function(r){return cmpIsOut(r);});
+  const P='no usage comparison — ';
+  if(live.length && live.every(function(r){return r.pos==='QB';}))
+    return P+'the Usage Board covers RB/WR/TE only.';
+  if(outRow.length>=1)
+    return P+cmpNameList(outRow.map(function(r){return esc(r.n)+' is '+esc(cmpStatus(r));}))+'.';
+  if(unscored.length && unscored.length===live.length)
+    return P+nm(unscored)+' are unscored handcuffs. The pick score still ranks them.';
+  if(unscored.length>=1)
+    return P+nm(unscored)+(unscored.length===1?' has':' have')
+          +' a Usage Board row but no usage score (unscored handcuff). The pick score still ranks them.';
+  if(noRow.length===1) return P+nm(noRow)+' has no Usage Board row.';
+  if(noRow.length>=2)  return P+nm(noRow)+' have no Usage Board row.';
+  /* Only reachable at live.length < 2 with a fully-scored survivor (S8b/S8c).
+     Not specified copy -- flagged in the handback. */
+  return P+'fewer than two of these are still available.';
+}
+
+/* The usage winner and the gap verdict() thresholds at :1281, recomputed here
+   over the same `ok` set so the LOUD-divergence banner cannot disagree with the
+   block underneath it. */
+function cmpUsageWinner(rows){
+  const ok=rows.filter(function(r){return !r.taken && r.ub && r.ub.usage_joop!=null && !cmpIsOut(r);});
+  if(ok.length<2) return null;
+  const s=ok.slice().sort(function(a,b){return b.ub.usage_joop-a.ub.usage_joop;});
+  return {win:s[0], gap:s[0].ub.usage_joop-s[1].ub.usage_joop};
+}
+
+/* §3.10 rendered. cmpDriver equalises one factor at a time through
+   cmpPickFromParts, so this is a label, not a second engine. Returns '' rather
+   than throwing when a row carries a hand-built score (C21 builds three), which
+   is also what keeps NaN out of the copy. */
+function cmpDriverText(A,B,np){
+  const fin=function(x){
+    const o=x&&x.score; if(!o) return false;
+    return ['VAL','U','VR','s','mSlot','mWindow','mStatus'].every(function(k){
+      return typeof o[k]==='number' && isFinite(o[k]); });
+  };
+  if(!fin(A)||!fin(B)) return '';
+  let d; try{ d=cmpDriver(A,B); }catch(e){ return ''; }
+  if(!d||!d.topWhy) return '';
+  const sub=function(w){ return String(w).replace('#NP','#'+(np==null?'your next pick':np)); };
+  return 'Driven by '+esc(sub(d.topWhy))+(d.second?', then '+esc(sub(d.secondWhy)):'')+'.';
+}
+
+/* §4.5 -- the two verdicts, in this order, both labels ALWAYS rendered even
+   when a block has nothing to say. Never let one verdict appear unlabelled. */
+function cmpVerdictBlock(rows, band){
+  const np=myReturnPick();
+  let head='', body='', loud='';
+
+  if(!band || band.kind==='ONE_LEFT'){
+    const live=(band&&band.live)||rows.filter(function(r){return !r.taken;});
+    if(live.length===1){                                     // S8b
+      head='<div style="'+CMP_CSS.nm+'">'+esc(live[0].n)+'</div>';
+      body='<div style="'+CMP_CSS.sub+'">Only one of these is still available — '+esc(live[0].n)+'.</div>';
+    }else{                                                   // S8c -- zero live
+      head='<div style="'+CMP_CSS.nm+'">All of these are gone.</div>';
+      body='<div style="'+CMP_CSS.sub+'">'+rows.map(function(r){
+              return esc(r.n)+' — '+(r.takenAt!=null?('GONE #'+r.takenAt):'gone');
+            }).join('<br>')+'<br>Clear the tray and pick two more.</div>';
+    }
+  }else if(band.kind==='PASS'){                              // max(PICK) <= 0
+    const A=band.rk[0];
+    const fb=(A.score.vrNames||[]).slice(0,2).map(function(x){return esc(x.n);});
+    head='<div style="'+CMP_CSS.nm+'">Neither</div>';
+    body='<div style="'+CMP_CSS.sub+'">Nothing here beats your fallback at #'
+        +(np==null?'your next pick':np)+(fb.length?' — '+cmpNameList(fb):'')
+        +' ('+cmpN(A.score.VR,1)+' pts). Spend this pick elsewhere.</div>';
+  }else{                                                     // RANK, or TURN over it
+    const A=band.winner, B=band.runnerUp;
+    let turn='';
+    if(band.kind==='TURN'){
+      /* "these", never "both" (N1): TURN fires when EVERY live row clears
+         TURN_S and the tray holds up to 4, so this line renders at 2, 3 and 4. */
+      turn='<div style="'+CMP_CSS.sub+'">You\'ll likely get these at #'+(np==null?'your next pick':np)+' — '
+          +band.rk.map(function(r){return esc(r.n)+' '+pct(r.score.s);}).join(', ')
+          +'. This is a value question, not a timing one.</div>';
+    }
+    head=turn+'<div style="'+CMP_CSS.nm+'">'+esc(A.n)
+        +' <span style="'+CMP_CSS.lbl+'">'+esc(band.band||'')+'</span></div>';
+    const bits=['+'+cmpN(band.margin,1)+' board pts', Math.round((band.ratio||0)*100)+'% of a round'];
+    /* The reaching guard is non-negotiable (§4.5): the 1.40 hard multiplier's
+       loudest bad habit is telling him to reach, and the number has to be on
+       screen. One literal, shared with table row 2, via cmpReachText. */
+    if(A.score.reach!=null && A.score.reach>0) bits.push(cmpReachText(A.score.reach));
+    if(band.bandDowngraded) bits.push('confidence downgraded — the edge rests on a soft input');
+    const drv=cmpDriverText(A,B,np);
+    body='<div style="'+CMP_CSS.sub+'">'+bits.join(' · ')+'</div>'
+        +(drv?'<div style="'+CMP_CSS.sub+'">'+drv+'</div>':'');
+    /* State 3 -- LOUD divergence. All four conditions, or no banner at all. */
+    const uw=cmpUsageWinner(rows);
+    if(uw && uw.win.g!==A.g && uw.gap>=CMP_K.USAGE_CLEAR_GAP
+       && band.band==='CLEAR' && A.score.pick>0){
+      loud='<div class="box"><b>The two tools disagree.</b> Usage says '+esc(uw.win.n)
+          +'. The pick says '+esc(A.n)+(drv?' — '+drv:'.')+'</div>';
+    }
+  }
+
+  return '<div class="box"><div style="'+CMP_CSS.lbl+'">BEST PICK FOR YOU</div>'+head+body+'</div>'
+       + loud
+       + '<div class="box"><div style="'+CMP_CSS.lbl+'">BEST PLAYER (USAGE)</div>'
+       + '<div style="'+CMP_CSS.sub+'">'+cmpUsageBlock(rows)+'</div></div>';
+}
+
+/* S21 -- the seed (or the tray) yields fewer than 2. The overlay opens anyway;
+   a dead button is the exact failure S15 exists to kill, and reintroducing it
+   one function over would be worse than the bug we just fixed. */
+function cmpTooFewBlock(n){
+  if(n>=1){
+    let nm='';
+    try{ const r=cmpPlanRows(CMP)[0]; if(r) nm=esc(r.n); }catch(e){}
+    return '<div class="box">Only one player left to compare'+(nm?' — '+nm:'')
+      +'. Tap ⚖ on another board row to put someone beside him.</div>';
+  }
+  return '<div class="box">Nothing left to compare. Tap ⚖ on any two board rows.</div>';
+}
+
+/* §6.2 -- host.innerHTML = verdicts + table, and nothing else. No DOM read, no
+   traversal, so this runs headless under the smoke stub. Unresolvable ids are
+   dropped by cmpPlanRows and the drop is made VISIBLE here (§6.1) rather than
+   silently showing fewer columns -- the :1515 defect the audit caught. */
+function cmpPlanMount(host, pids){
+  if(!host) return;
+  const list=pids||[], rows=cmpPlanRows(list);
+  const lost=list.length-rows.length;
+  let h=(lost>0)?('<div class="box">'+lost+' of '+list.length+' players could not be resolved</div>'):'';
+  if(!myPicks().length)
+    h+='<div class="box">Set your draft slot to get survival and fallback numbers.</div>';   // S19
+  else if(myReturnPick()==null)
+    h+='<div class="box">This is your last pick — nothing to hold him against.</div>';       // S18
+  if(rows.length<2){ host.innerHTML=h+cmpTooFewBlock(rows.length); return; }
+  host.innerHTML=h+cmpVerdictBlock(rows, cmpBand(rows, cmpCtx().cp))+cmpPlanTable(rows);
+}
+/* ===== end COMPARE REBUILD stage 3 ======================================== */
+
+/* ===== COMPARE REBUILD stage 5 — the seed (§5.x) ==========================
+   cmpSeed() fills the tray from the decision column's own ranking, so the
+   compare can never disagree with the screen it was launched from. Up to 3 --
+   the plan hero plus the top alternatives at OTHER positions -- leaving the
+   4th slot free for a manual ⚖.
+
+   ONE ok() predicate, applied to every candidate INCLUDING the hero. This is
+   audit D5: the earlier draft filtered K/DEF, empty sl and TAKEN only inside
+   the alternatives loop and pushed the hero unconditionally -- and the hero is
+   ba[0], which bestAvailable's mustTakeKDef (:2561) deliberately forces to a K
+   or DEF in the last two rounds. A kicker has no UB row, no cmpU and no
+   business in a compare. The fix is not a second guard on the hero; it is to
+   stop having a separate hero path at all. */
+function cmpSeed(){
+  const ok=function(q){
+    return !!q && q.p!=='K' && q.p!=='DEF' && q.sl!=null && q.sl!=='' && !TAKEN[q.g];
+  };
+  const ba=bestAvailable(PL.length);
+  const out=[], seen={};
+  /* planHero is only ever set on ba[0]: bestAvailable's own tail splices the
+     hard-plan row out, unshifts it to the front and flags it THERE. Not
+     fullPlanPick, which never touches planHero. So no .find(), and no risk of
+     picking up a flagged row that is no longer first. */
+  if(ba.length && ba[0].planHero && ok(ba[0].p)){ out.push(ba[0].p); seen[ba[0].p.p]=1; }
+  for(let i=0;i<ba.length && out.length<3;i++){
+    const q=ba[i].p;
+    if(!ok(q)) continue;
+    if(seen[q.p]) continue;
+    seen[q.p]=1; out.push(q);
+  }
+  return out.map(function(q){return String(q.sl);});
+}
+/* "Up to 3", not "exactly 3": late in a draft, with most positions filled and
+   K/DEF excluded, this can legitimately return 1 or 0. openCompare's planOn()
+   branch routes CMP.length<2 to cmpTooFewBlock (S21) and shows the overlay
+   anyway -- a dead button here would be the S15 failure reintroduced one
+   function over. */
+function cmpSeedOpen(){ CMP=cmpSeed(); render(); openCompare(); }
+/* ===== end COMPARE REBUILD stage 5 ======================================== */
 
 function md(t){
  const L=t.split('\n');let o='',inl=0;
