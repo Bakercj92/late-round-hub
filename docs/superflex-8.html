@@ -1264,8 +1264,22 @@ body[data-view="compare"] .cmptchips{display:flex;flex-wrap:wrap;gap:6px;margin-
 body[data-view="compare"] .cmptchip{font-size:var(--fs-body);color:var(--muted);background:var(--raised);
  border:1px solid var(--line);border-radius:var(--r3);padding:7px 14px;cursor:pointer}
 body[data-view="compare"] .cmptchip.on{color:var(--accent);border-color:var(--accent);background:var(--accent-fill)}
+/* The count line. It sits between the chips and the list because that is where
+   the truncation happens, and it is the ONLY affordance that removes the cap —
+   so it gets a real tap target, not a footnote. */
+body[data-view="compare"] .cmptcount{display:flex;flex-wrap:wrap;gap:var(--s2);
+ align-items:center;justify-content:space-between;margin-top:var(--s2);
+ font-size:var(--fs-meta);color:var(--muted);font-variant-numeric:tabular-nums}
+body[data-view="compare"] .cmptcn{min-width:0}
+body[data-view="compare"] .cmptmore{display:inline-flex;align-items:center;cursor:pointer;
+ color:var(--accent);border:1px solid var(--accent);border-radius:var(--r3);
+ padding:6px 13px;min-height:var(--tap);font-size:var(--fs-body);white-space:nowrap}
 body[data-view="compare"] .cmptres{border:1px solid var(--line);border-radius:var(--r2);
  overflow:hidden;margin-top:var(--s2)}
+/* The list can now be all 332 rows, so the SCROLL BELONGS TO THE LIST — the same
+   rule the compare table works under at :1302. Without this the page body grows
+   to 332 rows and the picked strip and the table below it fall off the phone. */
+body[data-view="compare"] .cmptres{max-height:52vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
 body[data-view="compare"] .cmptr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s2);
  align-items:center;padding:9px var(--s3);border-top:1px solid var(--line);cursor:pointer;
  font-size:var(--fs-support);min-height:var(--tap)}
@@ -6084,9 +6098,57 @@ function cmpSeedOpen(){ CMP=cmpSeed(); render(); openCompare(); }
    shape cmpPlanMount consumes and it gets cmpToggle's cap-at-4 and 5th-tap
    flash for free. Nothing on this page renders a tray bar. */
 let CMP_TQ='';            // type-ahead query
-let CMP_TPOS='';          // '' | QB | RB | WR | TE
+let CMP_TPOS='';          // '' | QB | RB | WR | TE | DEEP
+let CMP_TALL=0;           // 0 = windowed/capped default, 1 = the whole filtered list
 let CMP_TMOUNT=0;         // the shell is written once; the panes repaint
 const CMP_TMAX_RESULTS=40;
+
+/* ---- reachability: the window, the cohort chip and the count ------------- *
+   The defect this replaces: the list was ADP-ascending, sliced at 40, with
+   adp==null sorted to 1e9. So the default list stopped at ADP 37.3 and 292 of
+   the 332 pickable players — including ALL 113 with no ADP, which no cap could
+   ever reach — were invisible unless he already knew the name to type. In a
+   14-round league where nearly every pick lands past ADP 37 that is backwards.
+
+   Three moving parts, and one invariant that holds regardless of all three:
+
+   1. THE WINDOW. With an empty query and no position chip, the list is centred
+      on where he actually is: a band of ADP around his next pick, not the top
+      of the board. Expressed in ROUNDS, because that is the unit the league is
+      played in — one round of lead-in above the pick (players who have FALLEN
+      to him, which is the interesting half) and three rounds of reach below it.
+      META.teams is the round length, so the band moves with the league config
+      rather than assuming 14. Anchor = myReturnPick(), the pick the snake
+      circles back to — the same anchor the survival maths uses.
+
+      WITHOUT SLOT THERE IS NO ANCHOR. myPicks() returns [] and there is nothing
+      honest to centre on, so the list falls back to today's exact behaviour
+      (top of the board, capped) and the count line SAYS SO and points at the
+      slot control. A guessed anchor would be worse than no anchor.
+
+   2. THE DEEP COHORT. adp==null is not a tail of the ADP order, it is a
+      separate cohort — handcuffs, deep fliers, take-only rows — and sorting it
+      to infinity is what made it permanently unreachable. It gets its own chip,
+      name-sorted because ADP cannot order it.
+
+   3. THE COUNT + SHOW ALL. Truncation is now stated ("Showing 40 of 332") and
+      has a tap that removes it. This defect existed because truncation was
+      invisible; a silent slice is the bug, not the number 40.
+
+   THE INVARIANT (build/cockpit_smoke.cjs, CT-REACH): every pickable player is
+   listed by at least one filter state reachable by tapping — and in fact by two
+   independent ones, "All + Show all" and "his position chip + Show all". The
+   assertion enumerates all 332 and names the state for each; it does not check
+   that the cap got bigger. */
+const CMP_TWIN_BACK=1;    // rounds of lead-in ABOVE the anchor (players who fell)
+const CMP_TWIN_FWD=3;     // rounds of reach BELOW it
+
+/* null means "no honest anchor" — SLOT unset, or the snake has no pick left. */
+function cmpToolAnchor(){
+  if(!SLOT) return null;
+  const r=myReturnPick()||nextMyPick()||currentPick();
+  return (typeof r==='number'&&r>0)?r:null;
+}
 
 /* canCmp's plan-branch rule (:3750), verbatim in substance: a non-empty Sleeper
    id, and not a kicker or a defence. A no-UB row is a first-class comparable on
@@ -6096,24 +6158,67 @@ function cmpToolPickable(p){
   return !!p && p.sl!=null && p.sl!=='' && p.p!=='K' && p.p!=='DEF';
 }
 
-/* Type-ahead over PL by name, plus the position filter. Sorted by ADP so the
-   empty query is a useful default list rather than payload order; take-only
-   rows (adp==null) sort last but are still reachable by typing the name. */
-function cmpToolResults(){
-  const q=(CMP_TQ||'').trim().toLowerCase(), pos=CMP_TPOS;
+/* EVERY pickable player the current chip + query admit, uncapped and unwindowed.
+   This is the set the count line reports against and the set "Show all" shows,
+   so it is deliberately the only place the filters are expressed. */
+function cmpToolMatches(){
+  const q=(CMP_TQ||'').trim().toLowerCase(), pos=CMP_TPOS, deep=(pos==='DEEP');
   const hit=[];
   PL.forEach(function(p){
     if(!cmpToolPickable(p)) return;
-    if(pos && p.p!==pos) return;
+    if(deep){ if(p.adp!=null) return; }
+    else if(pos && p.p!==pos) return;
     if(q && String(p.n||'').toLowerCase().indexOf(q)<0) return;
     hit.push(p);
   });
-  hit.sort(function(a,b){
+  /* The deep cohort has no ADP to sort on, so it sorts by name. Everywhere else
+     is ADP-ascending with the no-ADP rows last — and name as the tie-break, so
+     the order of a 332-row list is stable across the 3s repaint. */
+  if(deep) hit.sort(function(a,b){ return String(a.n||'')<String(b.n||'')?-1:1; });
+  else hit.sort(function(a,b){
     const A=(a.adp==null)?1e9:a.adp, B=(b.adp==null)?1e9:b.adp;
-    return A-B;
+    if(A!==B) return A-B;
+    return String(a.n||'')<String(b.n||'')?-1:1;
   });
-  return hit.slice(0,CMP_TMAX_RESULTS);
+  return hit;
 }
+
+/* What the pane actually paints, plus everything the count line needs to be
+   honest about it. rows ⊆ base ⊆ all; the window is skipped whenever he has
+   narrowed by hand (a query or a chip) or asked for everything, because in
+   those cases HE has already said what he is looking for. */
+function cmpToolView(){
+  const all=cmpToolMatches();
+  const q=(CMP_TQ||'').trim(), pos=CMP_TPOS;
+  const anchor=cmpToolAnchor();
+  const windowed=(!CMP_TALL && !q && !pos && anchor!=null);
+  let base=all;
+  if(windowed){
+    const n=(META&&META.teams)||12;
+    const lo=anchor-CMP_TWIN_BACK*n, hi=anchor+CMP_TWIN_FWD*n;
+    const band=all.filter(function(p){ return p.adp!=null && p.adp>=lo && p.adp<=hi; });
+    /* A band that catches nobody would be a worse default than the old one, so
+       it degrades to the top of the board rather than to an empty pane. */
+    if(!band.length) return {rows:all.slice(0,CMP_TMAX_RESULTS),
+      all:all.length,base:all.length,mode:'top',anchor:anchor,lo:lo,hi:hi};
+    /* NOT capped again at 40. The band is already a bound — four rounds of the
+       draft, 50-95 rows — and slicing it would have reintroduced exactly the
+       defect: at pick 149 the band runs to ADP 191 and a 40-cap would have cut
+       it at 159, hiding half the players he is actually choosing between behind
+       a "Show all" that jumps back to ADP 1.5. The pane scrolls (:1274). */
+    return {rows:band,all:all.length,base:band.length,
+      mode:'window',anchor:anchor,lo:lo,hi:hi};
+  }
+  return {rows:CMP_TALL?base:base.slice(0,CMP_TMAX_RESULTS),
+    all:all.length,base:base.length,
+    mode:CMP_TALL?'all':(q?'search':(pos?(pos==='DEEP'?'deep':'pos'):'top')),
+    anchor:anchor,lo:null,hi:null};
+}
+
+/* Unchanged contract: the rows the picker is offering, every one of which has a
+   Sleeper id that resolves. Kept as the name the rest of the file (and the
+   suite) calls, so nothing downstream had to learn the new shape. */
+function cmpToolResults(){ return cmpToolView().rows; }
 
 /* Rows the picker CANNOT offer, SHOWN rather than swallowed. A player with a
    blank Sleeper id fails cmpToolPickable — cmpPlanRows keys on p.sl and would
@@ -6132,7 +6237,9 @@ function cmpToolBlocked(){
   PL.forEach(function(p){
     if(!p || p.p==='K' || p.p==='DEF') return;
     if(p.sl!=null && p.sl!=='') return;          // pickable -> not blocked
-    if(pos && p.p!==pos) return;
+    /* obeys the chip the same way the offered rows do, DEEP included */
+    if(pos==='DEEP'){ if(p.adp!=null) return; }
+    else if(pos && p.p!==pos) return;
     if(q && String(p.n||'').toLowerCase().indexOf(q)<0) return;
     out.push(p);
   });
@@ -6154,11 +6261,41 @@ function cmpToolBlockedHTML(){
 
 /* ---- the four repaintable panes ---------------------------------------- */
 
+/* Six chips, MUTUALLY EXCLUSIVE — Deep is the sixth, not an independent toggle
+   layered on top of the position row. Chosen that way for three reasons:
+   (a) the row already means "one list at a time", and a toggle would have made
+   All+Deep and QB+Deep two more states with no obvious reading; (b) a Deep-RB
+   view already exists without a second axis — tap RB, tap Show all, and the
+   no-ADP RBs are the block at the bottom of that list, since no-ADP sorts last
+   everywhere except Deep itself; (c) coverage does not depend on it: the
+   reachability proof runs on single-chip states only. */
 function cmpToolPosHTML(){
-  return ['','QB','RB','WR','TE'].map(function(p){
+  return ['','QB','RB','WR','TE','DEEP'].map(function(p){
     return '<span class="cmptchip'+(CMP_TPOS===p?' on':'')+'" onclick="cmpToolPos(\''+p+'\')">'
-      +(p||'All')+'</span>';
+      +(p==='DEEP'?'Deep':(p||'All'))+'</span>';
   }).join('');
+}
+
+/* WHY THIS LINE EXISTS: the picker hid 292 of 332 players for weeks because the
+   slice at the end of the old cmpToolResults() left no mark on the page. A list
+   that is cut now says it is cut, says by how much, and carries the tap that
+   uncuts it. */
+function cmpToolCountHTML(){
+  const v=cmpToolView();
+  let why='';
+  if(v.mode==='window') why='around pick '+v.anchor
+    +' (ADP '+Math.max(1,Math.round(v.lo))+'–'+Math.round(v.hi)+')';
+  else if(v.mode==='deep') why='no ADP — handcuffs, deep fliers, take-only';
+  else if(v.mode==='search') why='matching “'+esc(CMP_TQ.trim())+'”';
+  else if(v.mode==='all') why='everything the filter admits';
+  else if(v.anchor==null) why='top of the board — set your draft slot above to '
+    +'centre this on your pick';
+  else why='top of the board';
+  const cut=(v.rows.length<v.all);
+  return '<span class="cmptcn">Showing <b>'+v.rows.length+'</b> of '+v.all
+    +(why?' · '+why:'')+'</span>'
+    +(cut?'<span class="cmptmore" onclick="cmpToolAll(1)">Show all '+v.all+'</span>'
+        :(CMP_TALL?'<span class="cmptmore" onclick="cmpToolAll(0)">Show fewer</span>':''));
 }
 
 function cmpToolResHTML(){
@@ -6242,7 +6379,18 @@ function cmpToolPaintSlot(){
 }
 
 function cmpToolPaintPos(){ const e=document.getElementById('cmptpos'); if(e)e.innerHTML=cmpToolPosHTML(); }
-function cmpToolPaintRes(){ const e=document.getElementById('cmptres'); if(e)e.innerHTML=cmpToolResHTML(); }
+function cmpToolPaintCount(){ const e=document.getElementById('cmptcount'); if(e)e.innerHTML=cmpToolCountHTML(); }
+/* The pane can now be 332 rows deep and it repaints on the 3-second live poll,
+   so the repaint restores where he was scrolled to. getElementById + a property
+   on the element it hands back — no traversal, and the stub in the smoke
+   harness carries scrollTop, so this is exercised headless rather than assumed. */
+function cmpToolPaintRes(){
+  const e=document.getElementById('cmptres');
+  if(!e) return;
+  const y=e.scrollTop||0;
+  e.innerHTML=cmpToolResHTML();
+  if(y) try{ e.scrollTop=y; }catch(err){}
+}
 function cmpToolPaintSel(){ const e=document.getElementById('cmptsel'); if(e)e.innerHTML=cmpToolSelHTML(); }
 
 /* The compare itself. cmpPlanMount does all of it; this only supplies the host,
@@ -6276,8 +6424,13 @@ function cmpToolPaintBody(){
 
 /* ---- handlers, all global, all reached from inline attributes ----------- */
 
-function cmpToolQ(v){ CMP_TQ=String(v==null?'':v); cmpToolPaintRes(); }
-function cmpToolPos(p){ CMP_TPOS=String(p==null?'':p); cmpToolPaintPos(); cmpToolPaintRes(); }
+/* Every one of these resets CMP_TALL: "show all" is an answer to the list he
+   was looking at, and carrying a 332-row expansion into the next chip he taps
+   would be a surprise. cmpToolAll is the one that sets it. */
+function cmpToolQ(v){ CMP_TQ=String(v==null?'':v); CMP_TALL=0; cmpToolPaintCount(); cmpToolPaintRes(); }
+function cmpToolPos(p){ CMP_TPOS=String(p==null?'':p); CMP_TALL=0;
+  cmpToolPaintPos(); cmpToolPaintCount(); cmpToolPaintRes(); }
+function cmpToolAll(v){ CMP_TALL=v?1:0; cmpToolPaintCount(); cmpToolPaintRes(); }
 /* cmpToggle owns add/remove, the cap at 4 and the 5th-tap flash, and it calls
    render() — which on this page is cmpToolRender(). One code path, no second
    implementation of the tray rules. */
@@ -6297,6 +6450,7 @@ function cmpToolShell(){
     +'<input id="cmptq" class="cmptq" placeholder="Search players…" autocomplete="off" '
       +'autocorrect="off" autocapitalize="off" spellcheck="false" oninput="cmpToolQ(this.value)">'
     +'<div class="cmptchips" id="cmptpos"></div>'
+    +'<div class="cmptcount" id="cmptcount"></div>'
     +'<div class="cmptres" id="cmptres"></div>'
     +'<div class="cmptsel" id="cmptsel"></div>'
     +'<div id="cmptbody"></div>';
@@ -6309,6 +6463,7 @@ function cmpToolRender(){
   if(!CMP_TMOUNT){ v.innerHTML=cmpToolShell(); CMP_TMOUNT=1; }
   cmpToolPaintSlot();
   cmpToolPaintPos();
+  cmpToolPaintCount();
   cmpToolPaintRes();
   cmpToolPaintSel();
   cmpToolPaintBody();
