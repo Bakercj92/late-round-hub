@@ -1308,6 +1308,33 @@ body[data-view="compare"] .cmph2h tr{display:grid;
 body[data-view="compare"] .cmph2h th,
 body[data-view="compare"] .cmph2h td{border:0;padding:1px var(--s2);text-align:left;
  vertical-align:top;overflow-wrap:anywhere}
+/* --- defect 2, seen live at 375x812 (2026-09-04): at 3-4 columns the rule
+   directly above was splitting player NAMES mid-word -- "Jahmy/r Gibbs",
+   "Christi/an McCaf/frey". `anywhere` is right for data cells (a long fallback
+   string must be allowed to shrink its track) and wrong for the one cell whose
+   job is to say who this column is.
+
+   The name is emitted by cmpHeadCell, which cmpPlanTable calls -- engine, shared
+   verbatim with the cockpit's compare tray -- so this is fixed HERE, in the
+   compare-scoped stylesheet, and nowhere else. Two halves, both needed:
+
+   (a) break-word (not anywhere) + hyphens:auto: a word is broken only as a LAST
+       RESORT, and the UA prefers a real boundary. html carries lang="en" (:1),
+       so hyphens:auto has a dictionary to work from.
+   (b) the last resort is then never reached, because the name scales with the
+       column count. At 4 columns a 375px screen gives each track ~88px, and
+       "McCaffrey" at the engine's inline 1.35rem bold is wider than that on its
+       own -- (a) alone would still have to break it. --cmpn is the column count
+       the grid above is already sized from (1..4), so one linear calc covers
+       every width: 2 cols -> 1.35rem (unchanged, the two-up case he uses most),
+       3 -> 1.10rem, 4 -> 0.85rem. max(...,2) keeps a lone column at 1.35rem.
+       !important is not decoration: CMP_CSS.nm is an INLINE style on that div
+       and inline styles are engine output, so nothing else can override it.
+   Body cells keep `anywhere` untouched, and the padding stays put. */
+body[data-view="compare"] .cmph2h thead th{overflow-wrap:break-word;
+ -webkit-hyphens:auto;hyphens:auto}
+body[data-view="compare"] .cmph2h thead th>div:first-of-type{
+ font-size:calc(1.35rem - (max(var(--cmpn,2),2) - 2) * 0.25rem) !important}
 body[data-view="compare"] .cmph2h tbody tr>td:first-child{grid-column:1/-1;color:var(--muted);
  font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps);
  white-space:normal;padding-bottom:3px}
@@ -5271,8 +5298,8 @@ function cmpNameList(a){                       // ['A'] -> "A"; ['A','B'] -> "A 
    a faller is negative and the sign is already carried by the word "falling". */
 function cmpReachText(r){
   if(r==null) return '—';                       // em dash
-  if(r>0) return 'reaching '+r+' picks early';
-  if(r<0) return 'falling '+Math.abs(r)+' picks';
+  if(r>0) return 'reaching '+r+' pick'+(r===1?'':'s')+' early';
+  if(r<0) return 'falling '+Math.abs(r)+' pick'+(r===-1?'':'s');
   return 'at value';
 }
 
