@@ -812,8 +812,10 @@ body[data-view="cockpit"] .cmph2h td.best{color:var(--positive);font-weight:var(
 body[data-view="cockpit"] .cmpcol.gone{opacity:.45}
 body[data-view="cockpit"] .cmpcol.gone .gonebadge{color:var(--urgent);font-weight:var(--w-bold);font-size:var(--fs-meta)}
 
-body[data-view="cockpit"] .cmpmore{margin-top:10px;border-top:1px solid var(--line);padding-top:6px}
-body[data-view="cockpit"] .cmpmore>summary{cursor:pointer;color:var(--muted);font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps)}
+/* .cmpmore retired 2026-09-04 — the single "More detail" fold became five
+   <details class="cmpsec">, styled once and unscoped further down. The rules
+   went with the markup rather than lingering: retired CSS still shipping and
+   still guarded by a passing assertion is a defect this file has had before. */
 body[data-view="cockpit"] .ckcuff{font-size:10px;font-weight:var(--w-med);line-height:1.5;text-transform:uppercase;letter-spacing:.03em;color:var(--caution);background:var(--caution-fill);border:1px solid var(--caution);border-radius:var(--r3);padding:0 6px;cursor:help;white-space:nowrap}
 body[data-view="cockpit"] .ckr .ckflags{display:inline-flex;gap:2px;align-items:center}
 body[data-view="cockpit"] .ckr .ckflag{display:none}
@@ -1120,8 +1122,7 @@ body[data-view="cockpit2"] .cmph2h td.best{color:var(--positive);font-weight:var
 body[data-view="cockpit2"] .cmpcol.gone{opacity:.45}
 body[data-view="cockpit2"] .cmpcol.gone .gonebadge{color:var(--urgent);font-weight:var(--w-bold);font-size:var(--fs-meta)}
 
-body[data-view="cockpit2"] .cmpmore{margin-top:10px;border-top:1px solid var(--line);padding-top:6px}
-body[data-view="cockpit2"] .cmpmore>summary{cursor:pointer;color:var(--muted);font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps)}
+/* .cmpmore retired 2026-09-04 — see the note on the cockpit copy above. */
 /* Exactly ONCE, and unscoped: @keyframes cannot be scoped by an ancestor
    selector, and two identical named keyframes would only shadow each other.
    The bar HOLDS the caution border and halo for the first 70%, then settles back
@@ -1220,7 +1221,7 @@ body[data-view="cockpit2"] .ckwrap.ctxcol .ckctx{padding-left:6px;align-items:ce
    a phrase wraps). The table sits inside .cmptw{overflow-x:auto}, so on the
    pathological row the SCROLL BELONGS TO THE TABLE, never to the page body.
 
-   Same row content, same copy, same classes as the cockpit table (cmpPlanTable
+   Same row content, same copy, same classes as the cockpit tray (cmpDetailBlock
    is reused verbatim) — only the layout differs. Tokens only, no raw hex;
    --w-bold, --ls-caps and --shadow-pop are :root-only and inherit; there is no
    --warn token, so caution uses --caution. */
@@ -1332,9 +1333,7 @@ body[data-view="compare"] .cmph2h tbody tr>td:first-child{grid-column:1/-1;color
 body[data-view="compare"] .cmph2h td.best{color:var(--positive);font-weight:var(--w-bold)}
 body[data-view="compare"] .cmpcol.gone{opacity:.45}
 body[data-view="compare"] .cmpcol.gone .gonebadge{color:var(--urgent);font-weight:var(--w-bold);font-size:var(--fs-meta)}
-body[data-view="compare"] .cmpmore{margin-top:var(--s3);border-top:1px solid var(--line);padding-top:6px}
-body[data-view="compare"] .cmpmore>summary{cursor:pointer;color:var(--muted);font-size:var(--fs-meta);
- text-transform:uppercase;letter-spacing:var(--ls-caps);padding:10px 0}
+/* .cmpmore retired 2026-09-04 — see the note on the cockpit copy above. */
 @media(min-width:700px){
  /* column-gap matches .cmpcards' own gap EXACTLY. Without it the two grids get
     the same track list but different free space (measured: 184px tracks under
@@ -1343,16 +1342,18 @@ body[data-view="compare"] .cmpmore>summary{cursor:pointer;color:var(--muted);fon
  body[data-view="compare"] .cmph2h tbody tr{grid-template-columns:minmax(150px,1fr) repeat(var(--cmpn,2),minmax(90px,1fr));
   column-gap:var(--s2);align-items:baseline}
  body[data-view="compare"] .cmph2h tbody tr>td:first-child{grid-column:auto;padding-bottom:1px}
- /* the section-header rows ("The pick" / "Usage") are a lone colspan cell; on the
-    wide layout they must still span, or they'd sit in the label column alone */
- body[data-view="compare"] .cmph2h tbody tr>td:only-child{grid-column:1/-1}
+ /* The td:only-child rule retired with the colspan section-header rows ("The
+    pick" / "Usage") that used to sit inside the one big fold. Those headings are
+    <summary> elements on real <details> now, outside the table entirely, and
+    cmpRow always emits a label cell plus one cell per player — so no <tr> in
+    this file can have a lone <td> any more. */
 }
 
 /* ===== Compare redesign (2026-09-04) — the answer card + the player cards ===
    NEW CLASS NAMES, DELIBERATELY UNSCOPED. Everything above this point is scoped
    to one data-view (cockpit / cockpit2 / compare) because it restyles SHARED
    classes — .cmph2h means three different layouts depending on which surface is
-   mounted. These do not: cmpans*, cmpc*, cmpsg/cmpsl/cmpstrip and cmpsp are new
+   mounted. These do not: cmpans*, cmpc*, cmpsec/cmpsecnote/cmppc and cmpsp are new
    names that appear nowhere else in the file, so one unscoped block covers the
    standalone compare page AND the cockpit's ⚖ tray (data-view cockpit and
    cockpit2) without three near-copies that can drift apart. The only rules that
@@ -1426,18 +1427,46 @@ body[data-view="compare"] .cmpmore>summary{cursor:pointer;color:var(--muted);fon
    against non-bold neighbours for free, and a card does not. */
 .cmpcn.best>b{color:var(--positive)}
 .cmpcn.best>span::after{content:' \25B2';color:var(--positive)}
-/* The component strip: five bars, one per comp_pct percentile, so "where does
-   this usage score come from" is a glance instead of four table rows. Bars are
-   percentiles within position — the same numbers UB.usageVerdict already uses
-   to say who wins target share — never raw shares, which are not comparable
-   across positions. A component with no data draws an empty track, not a zero. */
-.cmpstrip{display:flex;gap:3px;align-items:flex-end;height:22px;margin-top:6px}
-.cmpsg{flex:1 1 0;min-width:0;height:100%;border-radius:1px;
- background:var(--raised-hi);display:flex;align-items:flex-end}
-.cmpsg>i{display:block;width:100%;background:var(--accent);border-radius:1px}
-.cmpsl{display:flex;gap:3px;margin-top:2px}
-.cmpsl>span{flex:1 1 0;text-align:center;font-size:var(--fs-meta);color:var(--muted)}
-.cmpcno{font-size:var(--fs-body);color:var(--muted);font-style:italic;margin-top:4px}
+/* THE STRIP IS GONE (2026-09-04). .cmpstrip / .cmpsg / .cmpsl drew five
+   unlabelled bars under a T S R A Y legend. It was a code you had to memorise on
+   a screen used with a draft clock running, and .cmpcno — the italic "no Usage
+   Board row" line — went with it because the read sentence now says that in
+   words. Deleting the rules as well as the markup is the point: the last audit
+   caught retired CSS still shipping AND still guarded by passing assertions.
+
+   .cmpcread replaces all four. One generated sentence: the strongest signal and
+   the biggest caveat, which is what the bars were being squinted at for. */
+.cmpcread{font-size:var(--fs-body);color:var(--text-dim);margin-top:6px;
+ line-height:var(--lh-tight)}
+
+/* ===== the five sections (2026-09-04) =====================================
+   ONE unscoped block replacing three near-copies of .cmpmore. Every surface --
+   the standalone compare page and the cockpit's ⚖ tray on both cockpit and
+   cockpit2 -- gets identical accordions, which is what "both surfaces share
+   cmpPlanMount" is supposed to mean.
+
+   TAP TARGET. The summary is 44px tall on purpose: four of the five are closed
+   at rest, so opening one is the single most-repeated gesture on this screen and
+   the house minimum is what it has to clear, not a 24px text line. */
+.cmpsec{border-top:1px solid var(--line)}
+.cmpsec>summary{cursor:pointer;list-style:none;color:var(--text-dim);
+ font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps);
+ font-weight:var(--w-bold);min-height:44px;line-height:44px;padding:0 2px;
+ display:flex;align-items:center;gap:8px}
+.cmpsec>summary::-webkit-details-marker{display:none}
+/* The affordance has to be visible without opening anything: a closed section
+   that looks like a heading gets read as a heading and never tapped. */
+.cmpsec>summary::before{content:'+';display:inline-block;width:1em;
+ font-weight:var(--w-bold);color:var(--muted)}
+.cmpsec[open]>summary::before{content:'−'}
+.cmpsec[open]>summary{color:var(--text)}
+.cmpsec>*:last-child{padding-bottom:var(--s3)}
+/* The one-line body a section falls back to when a table would be all em
+   dashes -- an all-QB or all-unscored "Who gets the ball". */
+.cmpsecnote{font-size:var(--fs-body);color:var(--muted);padding:0 2px var(--s2)}
+/* The rank, in words, after the number it ranks. Dimmer than the number on
+   purpose: "27.3%" is the fact he quotes, "91st in position" is the reading. */
+.cmppc{color:var(--muted);white-space:nowrap}
 
 /* THE SCROLL BELONGS TO ONE TABLE (2026-09-04).
    .cmptw used to wrap the ENTIRE compare body. That put the answer card and the
@@ -1910,7 +1939,17 @@ function mountCompare(host, league, initialPids){
 }
 
 const BYPID={}; PLAYERS.forEach(function(p){ if(p&&p.pid!=null) BYPID[String(p.pid)]=p; });
-return { mountUsage, mountCompare, usageVerdict:verdict, byId:function(pid){ return pid==null?null:(BYPID[String(pid)]||null); } };
+/* `rows` is additive (2026-09-04, detail rebuild). The compare's Who-gets-the-ball
+   section prints a within-position percentile beside stats the board ships NO
+   percentile for -- targets, targets per game, carries, rush share, goal-line
+   carries -- and it has to rank them against the SAME cohort comp_pct was built
+   over, or two adjacent rows would be measuring against different populations.
+   That cohort lives in here. Returning PLAYERS itself rather than a copy is
+   deliberate and matches byId, which hands out live row objects too: every
+   consumer in this file treats UB rows as read-only, and a defensive slice on a
+   179-row array memoised per position would cost more than it protects. */
+return { mountUsage, mountCompare, usageVerdict:verdict, rows:function(){ return PLAYERS; },
+         byId:function(pid){ return pid==null?null:(BYPID[String(pid)]||null); } };
 })();
 
 </script>
@@ -5776,15 +5815,26 @@ function cmpPlanRows(pids){
        hook a future "does this fit?" glance would need. */
     row.inNeed  = ctx.need.has(row.pos);
     /* MYLIST must be reached through `typeof`, never a bare reference. hub.py
-       STRIPS the whole /*MYLIST_START..MYLIST_END* / block out of the published
-       dist copy (hub.py:247), so on the live site MYLIST is not merely undefined
+       STRIPS the whole MYLIST_START..MYLIST_END block out of the published
+       dist copy (hub.py:205 and :253), so on the live site MYLIST is not merely undefined
+       -- NB the two marker names above are written BARE, with no comment-opener
+       and no comment-closer, on purpose. hub.py's strip is a NON-GREEDY match
+       from the opener to the first closer, so a second literal opener anywhere in
+       this file is a live landmine: it anchors a match that runs to the first
+       closer after it and deletes every byte in between. Today the real block
+       sits earlier in the file so the first match wins and nothing is lost, but
+       that is an accident of ordering, not a guarantee. Exactly one opener may
+       exist, and the suite asserts the count. (2026-09-04)
        -- it is UNDECLARED, and a bare `MYLIST &&` throws ReferenceError before
        the && can short-circuit. That is the "Compare failed: can't find variable:
        MYLIST" seen on the published cockpit 2026-09-04. The smoke suite loads the
        LOCAL draft-cockpit.html (spec 1.4 item K), which still has MYLIST, so this
        class of defect is invisible to it -- see the stripped-build assertion. This
-       is the same `typeof` guard the pre-existing engine uses at :2465, :2488,
-       :2612, :2621, :3726, :3794 and :4147. */
+       is the same `typeof` guard the pre-existing engine uses at :2824, :2847,
+       :2971, :2980, :4085, :4153 and :4506. (Those seven numbers were wrong --
+       none of the lines they pointed at was a typeof guard -- and so was the
+       hub.py one above. Re-derived and corrected 2026-09-04; a comment that cites
+       a line is a claim, and a claim that has rotted is worse than no citation.) */
     const _ML     = (typeof MYLIST!=='undefined' && MYLIST) ? MYLIST : null;
     row.mine    = (_ML && _ML.t && _ML.t[p.g]) || null;
     row.fade    = !!(_ML && _ML.f && _ML.f[p.g]);
@@ -5829,7 +5879,15 @@ const CMP_CSS={
    Infinity all render as an em dash -- C15 greps the whole table for the words
    "undefined", "NaN" and "null", and this is the one place that can emit them. */
 function cmpN(v,d){
-  return (v==null||typeof v!=='number'||!isFinite(v)) ? '—' : v.toFixed(d==null?1:d);
+  if(v==null||typeof v!=='number'||!isFinite(v)) return '—';
+  const s=v.toFixed(d==null?1:d);
+  /* NEGATIVE ZERO IS NOT A NUMBER ANYONE MEANS. (-0.00435).toFixed(1) is "-0.0",
+     and the pick score of a player priced far past your slot lands there
+     routinely -- Derrick Henry vs Rashee Rice at slot 5 on a fresh board both
+     render as the headline number on a card. Strip the sign when every printed
+     digit is a zero; the magnitude is unchanged and only the meaningless minus
+     goes. Caught by audit, 2026-09-04. */
+  return /^-0(\.0*)?$/.test(s) ? s.slice(1) : s;
 }
 
 /* §5.6 highlighting, today's rule verbatim: a cell is `best` when it ties the
@@ -5895,35 +5953,266 @@ function cmpUBand(v){
 }
 /* The one place usage_joop is read for display. planOn() gates this whole
    engine to joop-14, which is why the column is named rather than chosen -- the
-   same literal cmpPlanTable has always used. */
+   same literal cmpDetailBlock uses. */
 function cmpUsageOf(row){
   const v=row&&row.ub?row.ub.usage_joop:null;
   return (typeof v==='number'&&isFinite(v))?v:null;
 }
 
-/* comp_pct keys, in weight order per the rubric. The letters are the strip
-   legend; the third field is the title text, and it is the same vocabulary
-   UB.usageVerdict prints ("wins target share"), so the strip and the sentence
-   above it can never call the same component two different things. */
-const CMP_STRIP=[['tgt','T','target share'],['snap','S','snap share'],
-                 ['rz','R','red-zone role'],['air','A','downfield role'],
-                 ['ypt','Y','efficiency']];
-function cmpStripHTML(row){
-  const c=(row&&row.ub)?row.ub.comp_pct:null;
-  if(!c) return '';
-  let any=0;
-  const bars=CMP_STRIP.map(function(k){
-    const v=c[k[0]], ok=(typeof v==='number'&&isFinite(v));
-    if(ok) any=1;
-    /* A floor of 2% so an honest 0th percentile still draws a mark -- an empty
-       track means NO DATA and the two must not look identical. */
-    const hgt=ok?Math.max(2,Math.min(100,Math.round(v))):0;
-    return '<span class="cmpsg" title="'+esc(k[2])+(ok?' — '+Math.round(v)+'th percentile':' — no data')+'">'
-      +(ok?'<i style="height:'+hgt+'%"></i>':'')+'</span>';
-  }).join('');
-  if(!any) return '';
-  return '<div class="cmpstrip">'+bars+'</div>'
-    +'<div class="cmpsl">'+CMP_STRIP.map(function(k){return '<span>'+k[1]+'</span>';}).join('')+'</div>';
+/* ===========================================================================
+   DETAIL REBUILD (2026-09-04) -- derived usage fields, within-position
+   percentiles, and the one generated sentence per player.
+
+   WHAT WENT AWAY. CMP_STRIP and cmpStripHTML built a five-bar T/S/R/A/Y strip
+   on every card. Deleted outright, legend and CSS with it. It was a code you had
+   to memorise, on a screen used with a draft clock running, and the percentiles
+   it drew now appear as WORDS in the Who-gets-the-ball section instead
+   ("27.3% — 91st in position"). Nothing was lost; the same five comp_pct values
+   are still on screen, spelled out.
+
+   THE COHORT, stated once because everything below depends on it. Every
+   percentile that reaches the screen ranks a player against ONE population per
+   position: the Usage Board rows for that position that carry a comp_pct object
+   (WR 62, TE 33, RB 52, measured 2026-09-04). That is the same set the board
+   built comp_pct over, which is why:
+
+     - a stat the board SHIPS a percentile for (target / snap / RZ / air-yards /
+       yards-per-target share) is READ from comp_pct and never recomputed. The
+       compare can therefore never disagree with the Usage Board tab.
+     - a stat it does NOT ship one for (targets, targets per game, carries, rush
+       share, goal-line carries) is ranked against that SAME cohort with the
+       board's own formula, verified below.
+
+   Two adjacent rows measuring against two different denominators is the defect
+   this paragraph exists to prevent.
+
+   THE FORMULA is midrank: 100 * (count(< v) + 0.5*count(== v)) / n. That is not
+   a guess -- it was recovered by fitting four candidate formulas to the shipped
+   comp_pct.tgt values across all 147 rows; midrank reproduces every one to
+   within 0.05 (the next best was out by 2.7). A player outside the cohort still
+   gets placed against it, which is how a 158-target/gp row without comp_pct can
+   still be told where it stands. */
+
+/* One numeric reader for the whole detail block, so a UB field that is absent,
+   null or a string can never reach a cell as "undefined" or "NaN" -- the C15
+   grep hunts both. 'tpg' is the one DERIVED key: targets per game = tgt / gp,
+   which the board does not ship and which is Chris's criterion 2. Guarded on
+   gp > 0 rather than gp != null: a 0-game row would divide to Infinity, and
+   cmpN would print an em dash for it while the percentile ranked it top. */
+function cmpUBnum(u,k){
+  if(!u) return null;
+  if(k==='tpg'){
+    const t=u.tgt, g=u.gp;
+    return (typeof t==='number'&&isFinite(t)&&typeof g==='number'&&isFinite(g)&&g>0)
+      ? (t/g) : null;
+  }
+  const v=u[k];
+  return (typeof v==='number'&&isFinite(v))?v:null;
+}
+
+/* Static data -- UB.rows() is the baked PLAYERS array and never changes inside a
+   session -- so a plain lazy cache is correct here and rc() (which clears on
+   every render) would rebuild 5 cohorts per paint for nothing. */
+const CMP_PCTL_CACHE={};
+/* Below this many cohort members a percentile is noise dressed as precision, so
+   it is withheld rather than printed. It does not fire on today's data (52/62/33
+   per position); it fires on an unknown position, which is exactly the case
+   where a printed rank would be a lie. */
+const CMP_PCTL_MIN=8;
+function cmpPctlPop(pos,key){
+  const ck=pos+'|'+key;
+  if(CMP_PCTL_CACHE[ck]) return CMP_PCTL_CACHE[ck];
+  let all=[];
+  try{ all=UB.rows()||[]; }catch(e){ all=[]; }
+  const out=[];
+  all.forEach(function(r){
+    if(!r || r.pos!==pos || !r.comp_pct) return;      // the comp_pct cohort, exactly
+    const v=cmpUBnum(r,key);
+    if(v!=null) out.push(v);
+  });
+  return (CMP_PCTL_CACHE[ck]=out);
+}
+function cmpPctl(pos,key,v){
+  if(v==null||typeof v!=='number'||!isFinite(v)) return null;
+  const pop=cmpPctlPop(pos,key);
+  if(pop.length<CMP_PCTL_MIN) return null;
+  let lo=0,eq=0;
+  pop.forEach(function(x){ if(x<v)lo++; else if(x===v)eq++; });
+  return 100*(lo+0.5*eq)/pop.length;
+}
+
+/* The five stats the board ALREADY has a percentile for, and where it lives.
+   Anything in this map is read, never recomputed -- see the cohort note above. */
+const CMP_SHIPPED_PCT={tgt_share:'tgt', snap_share:'snap', rz_share:'rz',
+                       air_share:'air', ypt:'ypt'};
+function cmpPctOf(row,key){
+  const u=row&&row.ub; if(!u) return null;
+  const sk=CMP_SHIPPED_PCT[key];
+  if(sk){
+    const c=u.comp_pct, v=c?c[sk]:null;
+    return (typeof v==='number'&&isFinite(v))?v:null;
+  }
+  return cmpPctl(row.pos,key,cmpUBnum(u,key));
+}
+
+/* "91st", and 11/12/13 do not take st/nd/rd. Rounds first, so 90.6 is 91st and
+   not 90.6th. */
+function cmpOrd(n){
+  if(n==null||typeof n!=='number'||!isFinite(n)) return '';
+  const i=Math.round(n), v=i%100;
+  if(v>=11&&v<=13) return i+'th';
+  return i+({1:'st',2:'nd',3:'rd'}[i%10]||'th');
+}
+
+/* One stat cell: the raw number he can quote, then where it ranks, in words.
+   The percentile is the SECOND half deliberately -- "27.3%" is the fact and
+   "91st in position" is the interpretation, and the fact reads first. */
+function cmpStatCell(row,key,d,suffix){
+  const v=cmpUBnum(row&&row.ub,key);
+  if(v==null) return '—';
+  const p=cmpPctOf(row,key);
+  return cmpN(v,d)+(suffix||'')
+    +(p==null?'':' <span class="cmppc">— '+cmpOrd(p)+' in position</span>');
+}
+
+/* ===== the written read =====================================================
+   One GENERATED sentence per player: strongest signal, then biggest caveat.
+   Nothing here is hand-written per player and nothing here is new maths -- the
+   signals are comp_pct percentiles (plus the derived rush-share one for an RB)
+   and the caveats are flags the board already ships and the chips already show.
+   The chips say WHAT is flagged; this says which one matters most.
+
+   Shape is fixed at two clauses: "<signal>, <caveat>." or "<signal>." The budget
+   is TWENTY-TWO words, asserted, and the longest the shipped board produces is
+   21 -- it is read at a glance beside two big numbers, not studied. (An earlier
+   comment here said "roughly fifteen" while the assertion allowed 22 and the
+   real maximum was 21: three numbers for one budget. One number now, and it is
+   the one the suite enforces.) */
+/* VOLUME ONLY, AND THAT IS DELIBERATE. `ypt` (yards per target) is the fifth
+   comp_pct component and it is NOT in any of these lists, because the question
+   the sentence answers is Chris's criterion 1 -- who gets the ball -- and
+   efficiency is what a man does with the ball once he has it. It still appears
+   in full, with its own percentile, in "Is that real?".
+   The consequence has to be stated where the code is, not left implied: the
+   sentence's band is the best of these FOUR, so a player can read "Average" here
+   while holding an Elite yards-per-target. That is why the weak-band head below
+   names his best component and its rank instead of claiming anything about "the
+   board": an earlier version said "Thin usage across the board", which was a
+   claim over all five components that the sentence had not earned. Measured on
+   the shipped board: 31 rows read weaker than some component they hold, of which
+   6 hold a 90th-percentile-or-better ypt behind a Thin or Average head (Luther
+   Burden III is the loudest -- Thin head, 91st-percentile ypt). Caught by audit,
+   2026-09-04. */
+const CMP_READ_SIG={
+  RB:[['rush_share','carry share'],['rz','red-zone role'],['tgt','target share'],
+      ['snap','snap share']],
+  WR:[['tgt','target share'],['rz','red-zone role'],['air','downfield role'],
+      ['snap','snap share']],
+  TE:[['tgt','target share'],['rz','red-zone role'],['snap','snap share'],
+      ['air','downfield role']]
+};
+/* The sentence bands through cmpUBand -- the SAME thresholds as the word beside
+   the Usage number on the card -- so the two can never use one vocabulary for two
+   scales. They DISAGREE OFTEN, in both directions, and by more than one band --
+   measured over all 147 comp_pct rows on the shipped board: 52 agree, 68 differ
+   by one band, 22 by two, 5 by three. (An earlier version of this comment said
+   "6 of 146, always by exactly one band", which was wrong by an order of
+   magnitude; caught by audit, 2026-09-04.)
+
+   That spread is not noise, it is the two numbers measuring different things. The
+   card's band reads the composite usage_joop, which is receiving-weighted; this
+   reads the best single VOLUME component, carries included. So the widest gaps are
+   real: Derrick Henry ships "Usage · Thin (34)" over "Elite carry share", which is
+   an accurate description of a runner who is not a receiver, and Tre Tucker ships
+   "Thin (25)" over "Elite" for the same structural reason in reverse. The other
+   direction -- "Usage · Average (42)" over "Thin usage" (Jayden Reed) -- is a
+   composite propped up by the efficiency component this sentence deliberately
+   ignores. None of them is a contradiction, but a three-band gap on one card is
+   loud, and Chris should see it before he trusts the pairing.
+
+   Returns HTML, not plain text, and the CALLER MUST NOT esc() it. Everything in
+   it is a literal except sample_note, which is escaped right here. */
+/* "a" or "an" before a numeral, by how the numeral is SAID: 8, 11, 18, 80-89 and
+   1100-1899 all begin with a vowel sound. */
+function cmpArt(n){
+  const s=String(n);
+  return (/^(8|11|18)/.test(s) && !/^1[0-9]{2}$/.test(s)) ? 'an' : 'a';
+}
+function cmpReadCaveat(u){
+  if(!u) return '';
+  const gp=cmpUBnum(u,'gp');
+  /* "but note:" rather than a bare "but". The board's notes are written as
+     standalone fragments ("2025 line merges JAX (16 g) + PHI (1 g)"), not as
+     clauses that follow a conjunction, so "but 2025 line merges..." reads as a
+     missing article. The colon lets any note the board ever ships land
+     grammatically. */
+  if(typeof u.sample_note==='string' && u.sample_note)
+    return 'but note: '+esc(u.sample_note)+'.';
+  /* "an 8-game sample", not "a 8-game sample". Spoken-form article, so it keys
+     off how the NUMERAL is read aloud (8, 11, 18 and anything starting with 8),
+     not off its first character. Only 8 can reach this on today's threshold of
+     10; the general form is here so moving the threshold cannot reintroduce it. */
+  if(gp!=null && gp<=10)
+    return 'but the whole thing is '+cmpArt(cmpN(gp,0))+' '+cmpN(gp,0)+'-game sample.';
+  if(u.mover) return 'and he changed teams.';
+  if(u.scheme_flag==='down') return 'and the scheme points the wrong way.';
+  if(u.scheme_flag==='up') return 'and the scheme points his way.';
+  return '';
+}
+function cmpReadText(row){
+  const u=row&&row.ub;
+  if(!u) return 'Priced on ADP alone — no usage data behind this.';
+  const c=u.comp_pct;
+  /* THREE branches, one per flag, and a real third case -- not two branches with
+     the second doing duty as a catch-all.
+
+     Measured on the shipped board 2026-09-04: comp_pct is absent on 32 of 179
+     rows. An earlier comment here called that "19 rookies and the 13 unscored
+     handcuffs, with no overlap"; the audit re-measured and it is 17 rookie-only,
+     2 that are BOTH rookie and unscored, 11 unscored-only, and 2 that are
+     NEITHER (Jonathon Brooks, MarShawn Lloyd -- rookie:false, unscored unset,
+     has25:false). 19 + 13 = 32 only because two errors cancelled.
+
+     Those last two were being told "Unscored handcuff — the board has no usage
+     read on him", which is false, on a card whose "Is that real?" section said
+     "No 2025 on the board" three rows down: two generated sentences
+     contradicting each other on one screen. Each branch now tests its own flag
+     and the fall-through says the one thing that is true of all of them. */
+  if(!c){
+    if(u.rookie)   return 'Rookie — 2026 projection only, no usage to read.';
+    if(u.unscored) return 'Unscored handcuff — the board has no usage read on him.';
+    return 'No 2025 usage on the board — projection only.';
+  }
+  const sigs=[];
+  (CMP_READ_SIG[row.pos]||CMP_READ_SIG.WR).forEach(function(k){
+    /* rush_share is the one signal with no shipped percentile; it goes through
+       the cohort ranker. The other four are comp_pct reads. */
+    const v=(k[0]==='rush_share') ? cmpPctl(row.pos,'rush_share',cmpUBnum(u,'rush_share'))
+                                  : ((typeof c[k[0]]==='number'&&isFinite(c[k[0]]))?c[k[0]]:null);
+    if(v!=null) sigs.push({lbl:k[1], v:v});
+  });
+  const cav=cmpReadCaveat(u);
+  /* A GUARD, not a case: measured 2026-09-04, every one of the 147 comp_pct
+     objects carries all five components as finite numbers, so this line is
+     unreachable on today's data. It exists so a future board that ships a
+     partial comp_pct degrades to a sentence instead of "Elite undefined". */
+  if(!sigs.length) return 'No usage components on the board for him'+(cav?', '+cav:'.');
+  sigs.sort(function(a,b){ return b.v-a.v; });
+  const band=cmpUBand(sigs[0].v);
+  let head;
+  if(band==='Elite'||band==='Strong'){
+    /* Everything sharing the TOP band, capped at two. Three named strengths in a
+       fifteen-word sentence stops being a read and becomes a list. */
+    const top=sigs.filter(function(s){return cmpUBand(s.v)===band;}).slice(0,2);
+    head=band+' '+cmpNameList(top.map(function(s){return s.lbl;}));
+  }else{
+    /* NOT "across the board" -- see the CMP_READ_SIG note. These four signals are
+       volume only, so a universal claim over them is a claim the sentence has not
+       earned. Naming his best one and its rank is both true and more useful:
+       "Average usage — his best is target share, 58th." */
+    head=band+' usage — his best is '+sigs[0].lbl+', '+cmpOrd(sigs[0].v);
+  }
+  return head+(cav?', '+cav:'.');
 }
 
 function cmpCardHTML(row,bestPick,bestUsage){
@@ -5939,9 +6228,14 @@ function cmpCardHTML(row,bestPick,bestUsage){
       +'<div class="cmpcn'+(bestUsage&&!gone?' best':'')+'"><b>'+(u==null?'—':cmpN(u,0))+'</b>'
         +'<span>Usage'+(band?' · '+band:'')+'</span></div>'
     +'</div>'
-    +cmpStripHTML(row)
+    /* The strip was here. cmpReadText says in words what five unlabelled bars
+       said in a code -- and it is NOT esc()'d, by contract: it returns HTML and
+       escapes its own one data-derived fragment. The "no Usage Board row" note
+       that used to sit at the bottom of the card is gone as a separate line
+       because cmpReadText's first branch now says exactly that, in a sentence,
+       in the place the eye already is. */
+    +'<div class="cmpcread">'+cmpReadText(row)+'</div>'
     +cmpChipsHTML(row)
-    +(!row.ub?'<div class="cmpcno">no Usage Board row — priced on ADP alone</div>':'')
     +'</div>';
 }
 
@@ -5971,72 +6265,57 @@ function cmpCardsHTML(rows){
     +'</div>';
 }
 
-/* §6.2 -- returns the <table> STRING only, never the verdict blocks, and
-   touches no DOM. §5.2: 13 rows in two sections. The fold (§5.3) and the RB
-   depth block (§5.4) are stage 6 and are deliberately absent here; backfieldMap
-   is never emitted on this path at all (§5.5, C16). */
-function cmpPlanTable(rows){
-  if(!rows||!rows.length) return '';
-  const N=rows.length, gone=rows.map(function(r){return !!r.taken;});
-  const mixed=rows.some(function(r){return r.pos!==rows[0].pos;});
-  const np=myReturnPick();
+/* ===========================================================================
+   DETAIL REBUILD (2026-09-04) -- five sections, grouped by the DECISION, not by
+   where the data came from.
 
-  /* NO <thead>. The header cells became cmpCardsHTML, which cmpPlanMount emits
-     directly above this table -- so this is a tbody-only table, exactly like the
-     fold's own table has always been. That is what removes the 3-column phone
-     squeeze: the name no longer has to survive inside a 120px grid track.
+   WHAT THIS REPLACES. cmpPlanTable emitted four visible rows and then handed off
+   to cmpFoldBlock, which was ONE <details> holding ~20 rows under the headings
+   "The pick / Usage / Detail / Rushing / Depth". Those headings are a description
+   of the pipeline: Usage rows came from the Usage Board, Rushing rows came from
+   the rushing feed. They are not a description of anything Chris is deciding, so
+   finding "does he actually get the ball" meant opening a 20-row fold and
+   scanning it. Both functions are gone, cmpPlanTable's name with them -- it
+   emits five accordions and a name that says "Table" would be the same class of
+   untrue-comment defect the last audit caught.
 
-     FIVE VISIBLE ROWS, down from thirteen. Nothing was deleted: seven of the
-     eight that left are in cmpFoldBlock below, one tap away, and the eighth --
-     the pick score -- was promoted, not demoted, to the large number on the
-     card. What stayed is
-     what answers "why this one" without needing a second number to divide it by:
-     how much he is reaching, whether the player survives to his next pick, what
-     he falls back to, what hole it fills, and whether the man is hurt. The pick
-     score and the usage score left the table because they are now the two large
-     numbers on the card -- they were rows 1 and 8 of thirteen, which is exactly
-     the "dig for it" problem this rebuild is fixing.
+   THE FIVE, in his stated decision order (most usage possible, then targets,
+   then durability), with the cost and the arithmetic behind them:
 
-     No row here carries a green best-marker any more: the four context rows were
-     already noHi, and the two that WERE highlighted are now the cards' job. One
-     highlight per screen, on the thing being decided. */
-  let h='<div class="cmptw"><table class="cmph2h"><tbody>';
+     1. Who gets the ball      OPEN at rest -- criterion 1 and 2
+     2. Is that real?          the sample behind section 1
+     3. What it costs          price, reach, survival, fallback
+     4. What could go wrong    health, bye, depth chart, contingency
+     5. How the score is built the seven-line formula, unchanged
 
-  h+=cmpRow('Reach / value', rows.map(function(r){return cmpReachText(r.score.reach);}), true,
-            function(v){return esc(v);}, {noHi:true, gone:gone});
-  h+=cmpRow(np?('Lasts to #'+np):'Lasts to your next pick',
-            rows.map(function(r){
-              if(!np) return 'This is your last pick';
-              return pct(r.score.s)+(r.score.sv&&r.score.sv.room!=null?' (this room)':' (national)');
-            }), true, function(v){return v;}, {noHi:true, gone:gone});
-  if(np) h+=cmpRow('Fallback at #'+np, rows.map(function(r){
-              const nm=(r.score.vrNames||[]).slice(0,2).map(function(x){return x.n;});
-              return cmpN(r.score.VR,1)+(nm.length?' — '+esc(cmpNameList(nm)):'');
-            }), true, function(v){return v;}, {noHi:true, gone:gone});
-  h+=cmpRow('Injury / status', rows.map(function(r){return cmpStatus(r);}), true,
-            function(v){return esc(v);}, {noHi:true, gone:gone});
+   Only section 1 is open. At rest the page is: answer card, player cards, "Who
+   gets the ball", four closed headers.
 
-  h+='</tbody></table></div>';
-  if(mixed) h+='<div style="'+CMP_CSS.sub+'">These are different positions — the usage '
-              +'scores are percentiles within each man\'s own position and are not '
-              +'compared against each other.</div>';
-  h+=cmpFoldBlock(rows);          // stage 6 + the eight rows that left the table
-  return h;
-}
+   WHY STILL A TABLE INSIDE EACH ONE. Labels-left / one narrow column per player
+   is what makes "Red-zone target share" survive at three columns on a phone; the
+   label gets its own full-width line and the values sit under it. Cards are lean
+   for the same reason. Nothing about the layout engine changed -- cmpRow, .cmph2h
+   and the --cmpn grid are all untouched.
 
-/* ===== COMPARE REBUILD stage 6 — the fold (§5.3) + RB depth (§5.4) ========
-   Both live inside ONE <details class="cmpmore">, closed by default. The 13
-   rows of §5.2 are the *visible* rows and neither of these is among them, so
-   folding the RB block costs nothing at the default height -- which matters,
-   because §9.6 item 3 already flags 4 columns of nowrap first-column labels as
-   a phone-fit risk and an unfolded ~15-row rushing block would double the
-   scroll. One tap, labelled, and it never fires on a non-RB compare anyway.
-   §9.7: ub.role / ub.ahead_name are a DISPLAY FLAG here and never enter the
+   §9.7 unchanged: ub.role / ub.ahead_name are a DISPLAY FLAG and never enter the
    score -- m is positional, not personal. */
 
-/* The single reconciled team row (§5.3). It REPLACES runTendency(), which is
+/* One <details> per section. Body is passed in as HTML rather than built here,
+   because section 1 can legitimately be a single sentence instead of a table. */
+function cmpSec(title,open,inner){
+  if(!inner) return '';
+  return '<details class="cmpsec"'+(open?' open':'')+'><summary>'+title+'</summary>'
+    +inner+'</details>';
+}
+/* Every section that IS a table gets its own .cmptw scroll box -- the scroll
+   belongs to the table, never to anything above it. */
+function cmpSecTable(body){
+  return body ? ('<div class="cmptw"><table class="cmph2h"><tbody>'+body+'</tbody></table></div>') : '';
+}
+
+/* The single reconciled team row. It REPLACES runTendency(), which is
    deliberately not ported cockpit-side. The soft/avg/tough thresholds are
-   bestAvailable's own (:2647) verbatim, so the two screens can never disagree
+   bestAvailable's own (:3006) verbatim, so the two screens can never disagree
    about what a soft slate is; rank 1 is the easiest. */
 function cmpTeamCtxText(r){
   const tx=r.tx; if(!tx) return null;
@@ -6047,141 +6326,228 @@ function cmpTeamCtxText(r){
   return bits.length?bits.join(' · '):null;
 }
 
-function cmpFoldBlock(rows){
+function cmpDetailBlock(rows){
   if(!rows||!rows.length) return '';
-  const npf=myReturnPick();
   const N=rows.length, gone=rows.map(function(r){return !!r.taken;});
   const mixed=rows.some(function(r){return r.pos!==rows[0].pos;});
-  const allRB=rows.every(function(r){return r.pos==='RB';});
-  const sec=function(t){return '<tr><td colspan="'+(N+1)+'" style="'+CMP_CSS.sec+'">'+t+'</td></tr>';};
-  /* Every numeric read is type-checked here rather than at the cell, so a UB
-     field that is absent, null or a string can never reach the table as
-     "undefined" or "NaN" -- C15 greps the whole string for both. */
-  const ubn=function(k){ return rows.map(function(r){
-    const v=r.ub?r.ub[k]:null; return (typeof v==='number'&&isFinite(v))?v:null; }); };
+  const np=myReturnPick();
+  /* RUSHING SHOWS WHEN AT LEAST ONE COLUMN IS AN RB (Chris, 2026-09-04), not
+     when every column is -- the old allRB gate. Compare an RB against a WR and
+     the carries rows are exactly the RB's argument; hiding them because the man
+     beside him has no carries loses the comparison you opened the screen for.
+     The WR column renders an em dash, which is the honest answer. */
+  const anyRB=rows.some(function(r){return r.pos==='RB';});
+  const anyUB=rows.some(function(r){return !!r.ub;});
+  const has=function(k){ return rows.some(function(r){
+    const v=r.ub?r.ub[k]:null; return v!=null && v!==''; }); };
+
   const S=function(v){ return (v==null||v==='')?'—':esc(String(v)); };
-  const numRow=function(lbl,k,d){
-    return cmpRow(lbl, ubn(k), true, function(v){return cmpN(v,d);}, {noHi:mixed, gone:gone});
+  /* Raw number in, cell out. The value cmpRow highlights on is the NUMBER, and
+     the percentile is appended by the formatter -- so "best" still marks the
+     biggest share, never the longest string. Suppressed on a mixed compare for
+     the §4.3 S10 reason: two positions are two populations. */
+  const statRow=function(lbl,key,d,suffix){
+    return cmpRow(lbl, rows.map(function(r){return cmpUBnum(r.ub,key);}), true,
+      function(v,i){ return cmpStatCell(rows[i],key,d,suffix); },
+      {noHi:mixed, gone:gone});
+  };
+  /* No percentile -- for board scores that ARE already a 0-100 rank, and for
+     projections, where "84th in position" would be ranking a projection against
+     a population of measurements. */
+  const numRow=function(lbl,key,d){
+    return cmpRow(lbl, rows.map(function(r){return cmpUBnum(r.ub,key);}), true,
+      function(v){return cmpN(v,d);}, {noHi:mixed, gone:gone});
   };
   const txtRow=function(lbl,fn){
-    return cmpRow(lbl, rows.map(fn), true, function(v){return S(v);}, {noHi:true, gone:gone});
+    return cmpRow(lbl, rows.map(fn), true, function(v){return S(v);},
+      {noHi:true, gone:gone});
   };
 
-  let h='<details class="cmpmore"><summary>More detail</summary>'
-       +'<div class="cmptw"><table class="cmph2h"><tbody>';
-
-  /* Seven of the eight rows that left the visible table (2026-09-04); the
-     eighth, the pick score, went up onto the card instead. Same order and same
-     copy they had above the fold -- demoted, not removed. The Usage rows are the
-     raw shares behind the strip on the card: the strip says WHERE the score
-     comes from, these say by how much. */
-  /* The arithmetic, in full, so the number on the card can be checked rather
-     than trusted. Every line is a term of pick = (1-s) * m * (VAL + U - V_R),
-     in the order the formula applies them; the two "=" lines are the running
-     result, not extra inputs. Signs are shown, because "fallback 41" and
-     "fallback -41" are opposite facts. */
-  h+=sec('How the pick score is built');
-  h+=cmpRow('Price value', rows.map(function(r){return r.score.VAL;}), true,
-            function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
-  h+=cmpRow('+ Usage edge', rows.map(function(r){return r.score.U;}), true,
-            function(v){return (v==null||!isFinite(v))?'—':((v>0?'+':'')+cmpN(v,1));},
-            {noHi:mixed, gone:gone});
-  h+=cmpRow(npf?('− Fallback at #'+npf):'− Fallback', rows.map(function(r){return r.score.VR;}), false,
-            function(v){return (v==null||!isFinite(v))?'—':('-'+cmpN(v,1));},
-            {noHi:mixed, gone:gone});
-  h+=cmpRow('= Edge over replacement', rows.map(function(r){return r.score.gap;}), true,
-            function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
-  h+=cmpRow('× Lasts to your next pick', rows.map(function(r){return r.score.s;}), false,
-            function(v){return (v==null||!isFinite(v))?'—':('×'+cmpN(1-v,2)+' ('+pct(v)+' survives)');},
-            {noHi:true, gone:gone});
-  h+=cmpRow('× Health', rows.map(function(r){return r.score.mStatus;}), true,
-            function(v,i){return (v==null||!isFinite(v))?'—'
-              :('×'+cmpN(v,2)+(v<1?' ('+esc(cmpStatus(rows[i]))+')':''));},
-            {noHi:true, gone:gone});
-  h+=cmpRow('= Pick score', rows.map(function(r){return r.score.pick;}), true,
-            function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
-
-  h+=sec('The pick');
-  h+=cmpRow('Room price', rows.map(function(r){
-              return (r.al==null)?'national only'
-                : (cmpN(r.al,1)+(r.ls?' ('+r.ls+')':''));
-            }), true, function(v){return esc(v);}, {noHi:true, gone:gone});
-
-  h+=sec('Usage');
-  h+=cmpRow('Usage · percentile vs his own position', ubn('usage_joop'), true,
-            function(v){return cmpN(v,0);}, {noHi:mixed, gone:gone});
-  h+=numRow('Target share % (2025)','tgt_share',1);
-  h+=numRow('Snap share % (2025)','snap_share',1);
-  h+=numRow('RZ-tgt share % (2025)','rz_share',1);
-  h+=numRow('Proj rec share % (2026)','proj_rec_share_adj',1);
-
-  h+=sec('Detail');
-
-  /* Proven merges the games count into the same cell (the audit's #12 merge):
-     "86 · 12 gm" -- a proven percentile without its sample is half a number. */
-  h+=cmpRow('Proven (2025)', ubn('proven_joop'), true, function(v,i){
-       if(v==null) return '—';
-       const u=rows[i].ub, gp=(u&&typeof u.gp==='number'&&isFinite(u.gp))?u.gp:null;
-       return cmpN(v,0)+(gp!=null?' · '+cmpN(gp,0)+' gm':'');
-     }, {noHi:mixed, gone:gone});
-  h+=numRow('Projected (2026)','projected',0);
-  h+=numRow('Air-yards share %','air_share',1);
-  h+=numRow('Yards/target','ypt',1);
-  /* Tier is the one row where LOWER is better, so hiGood is false. */
-  h+=cmpRow('Tier', rows.map(function(r){return r.tr;}), false, function(v,i){
-       return (v==null)?'—':(cmpN(v,0)+(rows[i].tw?' · wall':''));
-     }, {noHi:mixed, gone:gone});
-  h+=txtRow('ADP', function(r){
-       if(r.adp==null) return null;
-       let s=cmpN(r.adp,1);
-       if(typeof r.sd==='number'&&isFinite(r.sd)) s+=' · sd '+cmpN(r.sd,1);
-       if(typeof r.nd==='number'&&isFinite(r.nd)) s+=' · n='+r.nd;
-       if(!r.sdok) s+=' · thin';
-       return s;
-     });
-  /* p.bye is a STRING on the wire ("6"), not the Number §2.1 states -- measured
-     2026-09-04 on the live payload, 271 of 384 rows populated. Formatting it
-     through cmpN would print an em dash on every priced row. byeHits is
-     unaffected: cmpPlanRows compares bye to bye, string to string. */
-  h+=txtRow('Bye', function(r){
-       if(r.bye==null||r.bye==='') return null;
-       const b=Number(r.bye), t=(isFinite(b)&&b>0)?String(b):String(r.bye);
-       return t+(r.byeHits>0?' · '+r.byeHits+' on your roster':'');
-     });
-  h+=txtRow('Team context', cmpTeamCtxText);
-
-  /* §5.4 -- RB depth. Emits ONLY when every row is an RB; a WR+RB compare gets
-     none of it (C6). Rows with no UB row render an em dash throughout. */
-  if(allRB){
-    h+=sec('Rushing');
-    h+=numRow('Carries','rush_att',0);
-    h+=numRow('Rush share %','rush_share',1);
-    h+=numRow('Rush yards','rush_yd',0);
-    h+=numRow('Yards/carry','rush_ypc',1);
-    h+=numRow('RZ carries in-20','rush_rz',0);
-    h+=numRow('Broken tackles','rush_btkl',0);
-    h+=numRow('Yds after contact','rush_yac',0);
-    h+=numRow("'26 proj carries",'p_rush_att',0);
-
-    h+=sec('Depth / Handcuff');
-    h+=txtRow('Role',              function(r){return r.ub?r.ub.role:null;});
-    h+=txtRow("Handcuff if he's out", function(r){return r.ub?r.ub.hc_name:null;});
-    h+=txtRow('Backs up',          function(r){return r.ub?r.ub.ahead_name:null;});
-    /* The only cell in the block that can carry a link. esc() the text, never
-       the tag; rel="noopener" is not optional on a target="_blank". */
-    h+=cmpRow('Contingency take', rows.map(function(r){return r.ub?r.ub.hc_take:null;}), true,
-        function(v,i){
-          if(v==null||v==='') return '—';
-          const u=rows[i].ub, url=(u&&typeof u.hc_url==='string'&&u.hc_url)?u.hc_url:null;
-          return url ? ('<a href="'+esc(url)+'" target="_blank" rel="noopener">'+esc(String(v))+'</a>')
-                     : esc(String(v));
-        }, {noHi:true, gone:gone});
+  /* ---- 1. Who gets the ball -- OPEN ------------------------------------- */
+  let s1;
+  if(!anyUB){
+    /* Not a grid of em dashes. Fires on a QB-only compare (the board covers
+       RB/WR/TE only and always will) and on any all-unscored tray. */
+    s1='<div class="cmpsecnote">No Usage Board row for any of these — they are '
+      +'priced on ADP alone. The pick score still ranks them.</div>';
+  }else{
+    let b='';
+    if(anyRB){
+      b+=statRow('Carries (2025)','rush_att',0);
+      b+=statRow('Rush share','rush_share',1,'%');
+      b+=statRow('Carries inside the 20','rush_rz',0);
+    }
+    /* Criterion 2, and the one field on this screen the board does not ship:
+       tgt / gp, computed in cmpUBnum. Per game before total, because a 14-game
+       season and a 17-game season are not the same 90 targets. */
+    b+=statRow('Targets per game','tpg',1);
+    b+=statRow('Targets (2025)','tgt',0);
+    b+=statRow('Target share','tgt_share',1,'%');
+    b+=statRow('Snap share','snap_share',1,'%');
+    b+=statRow('Red-zone target share','rz_share',1,'%');
+    b+=statRow('Air-yards share','air_share',1,'%');
+    s1=(mixed?('<div class="cmpsecnote">These are different positions — every '
+              +'percentile below ranks a man against his OWN position, so the '
+              +'percentages are not compared across columns.</div>'):'')
+      +cmpSecTable(b);
   }
 
-  h+='</tbody></table></div></details>';
-  return h;
+  /* ---- 2. Is that real? -- the sample under section 1 -------------------- */
+  /* THE SAME anyUB GATE AS SECTION 1, and for the same reason. Every row below
+     except Team context reads a Usage Board field, so with no board row anywhere
+     in the tray this section used to open onto eight columns of em dashes -- the
+     exact "grid of em dashes" section 1 has a fallback to avoid. One guard
+     applied in one place and not the other inside a single function is an
+     inconsistency, not a design; the audit was right to call it (2026-09-04).
+     Team context survives the gate because it comes from TEAMX (OL rank and
+     strength of schedule), not from the board, so it is real even for a QB. */
+  let b2='';
+  if(anyUB){
+    /* gp is out of a 17-game regular season. Stated as "14 of 17" rather than
+       "14" so the missing three are visible without arithmetic. */
+    b2+=cmpRow('Games played', rows.map(function(r){return cmpUBnum(r.ub,'gp');}), true,
+          function(v){return (v==null)?'—':(cmpN(v,0)+' of 17');}, {noHi:false, gone:gone});
+    if(has('sample_note')) b2+=txtRow('Sample note', function(r){return r.ub?r.ub.sample_note:null;});
+    b2+=txtRow('Rookie / projection', function(r){
+          const u=r.ub; if(!u) return null;
+          return u.rookie ? 'Rookie — 2026 projection only'
+               : (u.has25===false ? 'No 2025 on the board' : 'Has a 2025 season');
+        });
+    b2+=txtRow('Changed teams', function(r){
+          const u=r.ub; if(!u) return null;
+          if(!u.mover) return 'no';
+          return (u.team25||'?')+' → '+(u.team26||'?');
+        });
+    b2+=txtRow('Scheme direction', function(r){
+          const f=r.ub?r.ub.scheme_flag:null;
+          return f==='up' ? 'points his way'
+               : (f==='down' ? 'points the wrong way'
+               : (f==='neutral' ? 'neutral' : null));
+        });
+    b2+=numRow('Proven (2025)','proven_joop',0);
+    /* numRow, NOT statRow, and the distinction is load-bearing: these three are
+       2026 PROJECTIONS, and the cohort every percentile ranks against is a
+       population of 2025 MEASUREMENTS. "84th in position" beside a projection
+       would be ranking a forecast against a set of outcomes. */
+    b2+=numRow('Projected (2026)','projected',0);
+    b2+=numRow('Projected rec share (2026)','proj_rec_share_adj',1);
+    if(anyRB) b2+=numRow("Projected carries (2026)",'p_rush_att',0);
+    b2+=statRow('Yards per target','ypt',1);
+    if(anyRB) b2+=statRow('Yards per carry','rush_ypc',1);
+  }
+  b2+=txtRow('Team context', cmpTeamCtxText);
+  /* THE HONESTY FLAG LIVES IN THE HEADING, once. This build has no multi-season
+     injury history and there is no path to one inside its data reach: players.csv
+     carries ids and a rookie/last season but no game counts, and nflverse's
+     rosters.csv stops at 2019. The recent per-season stats are release assets --
+     HTTP downloads, not git -- and that path is recorded blocked. So one season
+     is what there is, and saying so in the header beats repeating a caveat in
+     three columns until he learns to skip it. */
+  const s2=(anyUB?'':'<div class="cmpsecnote">No Usage Board row for any of these — '
+                    +'there is no 2025 usage to check.</div>')
+          +cmpSecTable(b2);
+
+  /* ---- 3. What it costs -------------------------------------------------- */
+  let b3='';
+  b3+=txtRow('ADP', function(r){
+        if(r.adp==null) return null;
+        let s=cmpN(r.adp,1);
+        if(typeof r.sd==='number'&&isFinite(r.sd)) s+=' · sd '+cmpN(r.sd,1);
+        if(typeof r.nd==='number'&&isFinite(r.nd)) s+=' · n='+r.nd;
+        if(!r.sdok) s+=' · thin';
+        return s;
+      });
+  b3+=txtRow('Room price', function(r){
+        return (r.al==null)?'national only':(cmpN(r.al,1)+(r.ls?' ('+r.ls+')':''));
+      });
+  b3+=cmpRow('Reach / value', rows.map(function(r){return cmpReachText(r.score.reach);}), true,
+        function(v){return esc(v);}, {noHi:true, gone:gone});
+  b3+=cmpRow(np?('Lasts to #'+np):'Lasts to your next pick',
+        rows.map(function(r){
+          if(!np) return 'This is your last pick';
+          return pct(r.score.s)+(r.score.sv&&r.score.sv.room!=null?' (this room)':' (national)');
+        }), true, function(v){return v;}, {noHi:true, gone:gone});
+  if(np) b3+=cmpRow('Fallback at #'+np, rows.map(function(r){
+          const nm=(r.score.vrNames||[]).slice(0,2).map(function(x){return x.n;});
+          return cmpN(r.score.VR,1)+(nm.length?' — '+esc(cmpNameList(nm)):'');
+        }), true, function(v){return v;}, {noHi:true, gone:gone});
+  /* Tier is the one row where LOWER is better, so hiGood is false. */
+  b3+=cmpRow('Tier', rows.map(function(r){return r.tr;}), false, function(v,i){
+        return (v==null)?'—':(cmpN(v,0)+(rows[i].tw?' · wall':''));
+      }, {noHi:mixed, gone:gone});
+  const s3=cmpSecTable(b3);
+
+  /* ---- 4. What could go wrong -------------------------------------------- */
+  let b4='';
+  b4+=cmpRow('Injury / status', rows.map(function(r){return cmpStatus(r);}), true,
+        function(v){return esc(v);}, {noHi:true, gone:gone});
+  /* p.bye is a STRING on the wire ("6"), not a Number -- measured 2026-09-04 on
+     the live payload, 271 of 384 rows populated. Formatting it through cmpN
+     would print an em dash on every priced row. byeHits is unaffected:
+     cmpPlanRows compares bye to bye, string to string. */
+  b4+=txtRow('Bye', function(r){
+        if(r.bye==null||r.bye==='') return null;
+        const b=Number(r.bye), t=(isFinite(b)&&b>0)?String(b):String(r.bye);
+        return t+(r.byeHits>0?' · '+r.byeHits+' on your roster':'');
+      });
+  /* Gated on the DATA, not on the position. role / ahead_name / hc_name are
+     populated for 73 / 34 / 58 board rows respectively and are overwhelmingly
+     RB, but a WR who is genuinely behind someone should still say so, and four
+     em-dash rows on a compare where nobody has a depth note is noise. */
+  if(has('role'))       b4+=txtRow('Role', function(r){return r.ub?r.ub.role:null;});
+  if(has('ahead_name')) b4+=txtRow('Behind on the depth chart',
+                            function(r){return r.ub?r.ub.ahead_name:null;});
+  if(has('hc_name'))    b4+=txtRow("Handcuff if he's out",
+                            function(r){return r.ub?r.ub.hc_name:null;});
+  if(has('hc_take')){
+    /* The only cell in the block that can carry a link. esc() the text, never
+       the tag; rel="noopener" is not optional on a target="_blank". */
+    b4+=cmpRow('Contingency take', rows.map(function(r){return r.ub?r.ub.hc_take:null;}), true,
+      function(v,i){
+        if(v==null||v==='') return '—';
+        const u=rows[i].ub, url=(u&&typeof u.hc_url==='string'&&u.hc_url)?u.hc_url:null;
+        return url ? ('<a href="'+esc(url)+'" target="_blank" rel="noopener">'+esc(String(v))+'</a>')
+                   : esc(String(v));
+      }, {noHi:true, gone:gone});
+  }
+  const s4=cmpSecTable(b4);
+
+  /* ---- 5. How the score is built ----------------------------------------- */
+  /* The arithmetic, in full, so the number on the card can be checked rather
+     than trusted. Every line is a term of pick = (1-s) * m * (VAL + U - V_R), in
+     the order the formula applies them; the two "=" lines are the running
+     result, not extra inputs. Signs are shown, because "fallback 41" and
+     "fallback -41" are opposite facts. UNCHANGED by this rebuild -- same seven
+     rows, same copy, same order; only the container around them moved. */
+  let b5='';
+  b5+=cmpRow('Price value', rows.map(function(r){return r.score.VAL;}), true,
+        function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
+  b5+=cmpRow('+ Usage edge', rows.map(function(r){return r.score.U;}), true,
+        function(v){return (v==null||!isFinite(v))?'—':((v>0?'+':'')+cmpN(v,1));},
+        {noHi:mixed, gone:gone});
+  b5+=cmpRow(np?('− Fallback at #'+np):'− Fallback', rows.map(function(r){return r.score.VR;}), false,
+        function(v){return (v==null||!isFinite(v))?'—':('-'+cmpN(v,1));},
+        {noHi:mixed, gone:gone});
+  b5+=cmpRow('= Edge over replacement', rows.map(function(r){return r.score.gap;}), true,
+        function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
+  b5+=cmpRow('× Lasts to your next pick', rows.map(function(r){return r.score.s;}), false,
+        function(v){return (v==null||!isFinite(v))?'—':('×'+cmpN(1-v,2)+' ('+pct(v)+' survives)');},
+        {noHi:true, gone:gone});
+  b5+=cmpRow('× Health', rows.map(function(r){return r.score.mStatus;}), true,
+        function(v,i){return (v==null||!isFinite(v))?'—'
+          :('×'+cmpN(v,2)+(v<1?' ('+esc(cmpStatus(rows[i]))+')':''));},
+        {noHi:true, gone:gone});
+  b5+=cmpRow('= Pick score', rows.map(function(r){return r.score.pick;}), true,
+        function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
+  const s5=cmpSecTable(b5);
+
+  return cmpSec('Who gets the ball',       true,  s1)
+       + cmpSec('Is that real? · 2025 only', false, s2)
+       + cmpSec('What it costs',           false, s3)
+       + cmpSec('What could go wrong',     false, s4)
+       + cmpSec('How the score is built',  false, s5);
 }
-/* ===== end COMPARE REBUILD stage 6 ======================================== */
+/* ===== end DETAIL REBUILD ================================================= */
 
 /* §4.5 state 1 -- the usage verdict, or a NAMED reason there isn't one.
    "No comparison" without a name is the failure this block exists to prevent.
@@ -6414,7 +6780,7 @@ function cmpPlanMount(host, pids){
   host.innerHTML=h
     +cmpVerdictBlock(rows, cmpBand(rows, cmpCtx().cp))
     +cmpCardsHTML(rows)
-    +cmpPlanTable(rows);
+    +cmpDetailBlock(rows);
 }
 /* ===== end COMPARE REBUILD stage 3 ======================================== */
 
@@ -6450,12 +6816,12 @@ function cmpSeedOpen(){ CMP=cmpSeed(); render(); openCompare(); }
    Chris picks the players himself: no cockpit layout, no tray, no board, no
    "top 3" seed. Same payload as the cockpit, so the FULL PICK score runs here,
    timing half included — build/compare.py sets window.__COCKPIT__ alongside
-   window.__COMPARE__ precisely so planOn() (:2277) is satisfied with planOn()
+   window.__COMPARE__ precisely so planOn() (:2636) is satisfied with planOn()
    COMPLETELY UNCHANGED.
 
    REUSE, NOT REIMPLEMENTATION. Every number and every sentence below the picker
    comes from cmpPlanMount -> cmpPlanRows / cmpScore / cmpBand / cmpVerdictBlock
-   / cmpUsageBlock / cmpPlanTable, unmodified. This block adds a picker and a
+   / cmpUsageBlock / cmpDetailBlock, unmodified. This block adds a picker and a
    layout and nothing else; there is no scoring logic in it.
 
    GROUND RULES CARRIED OVER FROM THE REBUILD:
@@ -6980,7 +7346,7 @@ function cmpToolPaintBody(){
   }
   /* The .cmptw wrap used to happen HERE, around the whole body, which left the
      answer card and the player cards inside a horizontal scroll box. Each
-     <table> carries its own wrapper now (cmpPlanTable and cmpFoldBlock), so
+     <table> carries its own wrapper now (one per cmpDetailBlock section), so
      only the tables can scroll sideways -- and that is true on the cockpit tray
      too now, not just here. */
   try{ cmpPlanMount(host, CMP); }
