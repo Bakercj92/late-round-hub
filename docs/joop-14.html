@@ -1439,6 +1439,36 @@ body[data-view="compare"] .cmpcol.gone .gonebadge{color:var(--urgent);font-weigh
 .cmpcread{font-size:var(--fs-body);color:var(--text-dim);margin-top:6px;
  line-height:var(--lh-tight)}
 
+/* ===== the tap-through player panel (2026-09-05) ==========================
+   The card is a button now, so it needs a button's affordances: a pointer, a
+   visible focus ring for the keyboard, and a line telling you it opens. */
+.cmpc{cursor:pointer}
+.cmpc:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cmpcmore{font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps);
+ color:var(--muted);margin-top:8px;padding-top:6px;border-top:1px solid var(--line)}
+.cmpc.open{border-color:var(--accent)}
+.cmpc.open .cmpcmore{color:var(--accent)}
+
+/* The panel itself. Label left, value right, one fact per line — the layout the
+   three-column table could not give these rows, because here they have the whole
+   width of the screen instead of a third of it. */
+.cmppanel{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);
+ text-align:left;cursor:default}
+.cmppsec{font-size:var(--fs-meta);text-transform:uppercase;letter-spacing:var(--ls-caps);
+ color:var(--muted);margin-top:10px;padding-bottom:2px}
+.cmppsec:first-child{margin-top:0}
+.cmppfr{display:flex;justify-content:space-between;gap:var(--s3);align-items:baseline;
+ padding:4px 0;border-bottom:1px solid var(--line)}
+.cmppfl{color:var(--muted);font-size:var(--fs-body);flex:0 1 auto}
+.cmppfv{color:var(--text);font-size:var(--fs-body);text-align:right;
+ font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+/* The opinion layer, deliberately at the bottom and deliberately one control. */
+.cmppod{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.cmppodb{background:none;border:1px solid var(--line);color:var(--text-dim);
+ border-radius:var(--r3);padding:9px 14px;font-size:var(--fs-body);cursor:pointer;
+ font-family:var(--font);min-height:36px}
+.cmppodn{font-size:var(--fs-meta);color:var(--muted)}
+
 /* ===== the five sections (2026-09-04) =====================================
    ONE unscoped block replacing three near-copies of .cmpmore. Every surface --
    the standalone compare page and the cockpit's ⚖ tray on both cockpit and
@@ -1553,6 +1583,14 @@ body[data-view="compare"] .cmptsbar.set:not(.open) .cmptshint{display:none}
     needed ONLY here: on the phone a card is full width and nothing has to
     shrink. 2 cols -> --fs-answer unchanged, 3 -> 18px, 4 -> 16px. */
  .cmpcnm{font-size:calc(var(--fs-answer) - (max(var(--cmpn,2),2) - 2) * 2px)}
+ /* AN OPEN CARD SPANS EVERY COLUMN (2026-09-05). The whole point of the panel
+    is that a player fact gets the full width instead of a third of it — leaving
+    it inside its own 90px track would rebuild the squeeze it was made to fix.
+    grid-column:1/-1 also covers the compare page's extra leading spacer track,
+    so the same one rule is right on both layouts. */
+ .cmpc.open{grid-column:1/-1}
+ /* ...and the name goes back to full size once it has the room. */
+ .cmpc.open .cmpcnm{font-size:var(--fs-answer)}
 }
 </style></head><body>
 <div id="load">Unpacking the tracker&hellip;</div>
@@ -6215,11 +6253,30 @@ function cmpReadText(row){
   return head+(cav?', '+cav:'.');
 }
 
+/* THE WHOLE CARD IS THE TAP TARGET (Chris, 2026-09-05). The name used to be a
+   separate link into openP -- the podcast opinion history -- which meant one
+   small card carried two tap targets with two different destinations, and the
+   one you hit by accident was the archive. Now the card opens the card: tap it
+   and it expands in place into that player's own numbers, with the podcast
+   material one further tap away at the bottom of the panel.
+   role="button" + tabindex + aria-expanded because it IS a button now; the
+   markup has to say so for anything that is not a thumb. */
 function cmpCardHTML(row,bestPick,bestUsage){
   const u=cmpUsageOf(row), band=cmpUBand(u), gone=!!row.taken;
-  return '<div class="cmpc'+(bestPick&&!gone?' win':'')+(gone?' gone':'')+'">'
+  const open=(CMP_OPEN!=='' && CMP_OPEN===String(row.sl));
+  return '<div class="cmpc'+(bestPick&&!gone?' win':'')+(gone?' gone':'')+(open?' open':'')+'"'
+    +' role="button" tabindex="0" aria-expanded="'+(open?'true':'false')+'"'
+    +' onclick="cmpCardTap(\''+esc(String(row.sl))+'\')"'
+    /* A thing that says role="button" and takes focus has to open on Enter and
+       Space, or the markup is a promise the page does not keep. Inline, like
+       every other handler on this path -- a registered listener is what would
+       make it untestable headless. (Written that way on purpose: the smoke
+       suite greps these function sources for DOM-traversal API names, comments
+       included, so naming one here would fail an assertion about the code.) */
+    +' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();'
+      +'cmpCardTap(\''+esc(String(row.sl))+'\');}">'
     +'<div class="cmpcnm">'
-      +'<span style="cursor:pointer" onclick="closeOv4();openP('+row._i+')">'+esc(row.n)+'</span>'
+      +esc(row.n)
       +(gone?' <span class="gonebadge">GONE'+(row.takenAt!=null?' #'+row.takenAt:'')+'</span>':'')
     +'</div>'
     +'<div class="cmpcsub">'+esc(row.pos)+' &middot; '+esc(row.tm||'')+'</div>'
@@ -6236,6 +6293,11 @@ function cmpCardHTML(row,bestPick,bestUsage){
        in the place the eye already is. */
     +'<div class="cmpcread">'+cmpReadText(row)+'</div>'
     +cmpChipsHTML(row)
+    /* The affordance, and then the panel itself. Both are inside the card, so
+       there is exactly one thing on screen per player and no second container
+       to keep in sync. */
+    +'<div class="cmpcmore">'+(open?'Hide details':'Tap for his numbers')+'</div>'
+    +(open?cmpPlayerPanel(row):'')
     +'</div>';
 }
 
@@ -6392,160 +6454,213 @@ function cmpDetailBlock(rows){
       +cmpSecTable(b);
   }
 
-  /* ---- 2. Is that real? -- the sample under section 1 -------------------- */
-  /* THE SAME anyUB GATE AS SECTION 1, and for the same reason. Every row below
-     except Team context reads a Usage Board field, so with no board row anywhere
-     in the tray this section used to open onto eight columns of em dashes -- the
-     exact "grid of em dashes" section 1 has a fallback to avoid. One guard
-     applied in one place and not the other inside a single function is an
-     inconsistency, not a design; the audit was right to call it (2026-09-04).
-     Team context survives the gate because it comes from TEAMX (OL rank and
-     strength of schedule), not from the board, so it is real even for a QB. */
-  let b2='';
-  if(anyUB){
-    /* gp is out of a 17-game regular season. Stated as "14 of 17" rather than
-       "14" so the missing three are visible without arithmetic. */
-    b2+=cmpRow('Games played', rows.map(function(r){return cmpUBnum(r.ub,'gp');}), true,
-          function(v){return (v==null)?'—':(cmpN(v,0)+' of 17');}, {noHi:false, gone:gone});
-    if(has('sample_note')) b2+=txtRow('Sample note', function(r){return r.ub?r.ub.sample_note:null;});
-    b2+=txtRow('Rookie / projection', function(r){
-          const u=r.ub; if(!u) return null;
-          return u.rookie ? 'Rookie — 2026 projection only'
-               : (u.has25===false ? 'No 2025 on the board' : 'Has a 2025 season');
-        });
-    b2+=txtRow('Changed teams', function(r){
-          const u=r.ub; if(!u) return null;
-          if(!u.mover) return 'no';
-          return (u.team25||'?')+' → '+(u.team26||'?');
-        });
-    b2+=txtRow('Scheme direction', function(r){
-          const f=r.ub?r.ub.scheme_flag:null;
-          return f==='up' ? 'points his way'
-               : (f==='down' ? 'points the wrong way'
-               : (f==='neutral' ? 'neutral' : null));
-        });
-    b2+=numRow('Proven (2025)','proven_joop',0);
-    /* numRow, NOT statRow, and the distinction is load-bearing: these three are
-       2026 PROJECTIONS, and the cohort every percentile ranks against is a
-       population of 2025 MEASUREMENTS. "84th in position" beside a projection
-       would be ranking a forecast against a set of outcomes. */
-    b2+=numRow('Projected (2026)','projected',0);
-    b2+=numRow('Projected rec share (2026)','proj_rec_share_adj',1);
-    if(anyRB) b2+=numRow("Projected carries (2026)",'p_rush_att',0);
-    b2+=statRow('Yards per target','ypt',1);
-    if(anyRB) b2+=statRow('Yards per carry','rush_ypc',1);
-  }
-  b2+=txtRow('Team context', cmpTeamCtxText);
-  /* THE HONESTY FLAG LIVES IN THE HEADING, once. This build has no multi-season
-     injury history and there is no path to one inside its data reach: players.csv
-     carries ids and a rookie/last season but no game counts, and nflverse's
-     rosters.csv stops at 2019. The recent per-season stats are release assets --
-     HTTP downloads, not git -- and that path is recorded blocked. So one season
-     is what there is, and saying so in the header beats repeating a caveat in
-     three columns until he learns to skip it. */
-  const s2=(anyUB?'':'<div class="cmpsecnote">No Usage Board row for any of these — '
-                    +'there is no 2025 usage to check.</div>')
-          +cmpSecTable(b2);
+  /* ---- 2. What it costs -- TRIMMED (Chris, 2026-09-05) ------------------- */
+  /* Three rows, and all three are COMPARISONS: they only mean anything read
+     across the columns. "He lasts to your next pick, the other man doesn't" is
+     not a fact about a player, it is the answer to the question the screen was
+     opened to ask.
 
-  /* ---- 3. What it costs -------------------------------------------------- */
-  let b3='';
-  b3+=txtRow('ADP', function(r){
-        if(r.adp==null) return null;
-        let s=cmpN(r.adp,1);
-        if(typeof r.sd==='number'&&isFinite(r.sd)) s+=' · sd '+cmpN(r.sd,1);
-        if(typeof r.nd==='number'&&isFinite(r.nd)) s+=' · n='+r.nd;
-        if(!r.sdok) s+=' · thin';
-        return s;
-      });
-  b3+=txtRow('Room price', function(r){
-        return (r.al==null)?'national only':(cmpN(r.al,1)+(r.ls?' ('+r.ls+')':''));
-      });
-  b3+=cmpRow('Reach / value', rows.map(function(r){return cmpReachText(r.score.reach);}), true,
+     ADP, Room price and Tier LEFT this table for the per-player panel. They are
+     player facts -- an ADP is an ADP whoever is beside it -- and at three narrow
+     columns they were part of the squeeze without paying for the space. */
+  let b2='';
+  b2+=cmpRow('Reach / value', rows.map(function(r){return cmpReachText(r.score.reach);}), true,
         function(v){return esc(v);}, {noHi:true, gone:gone});
-  b3+=cmpRow(np?('Lasts to #'+np):'Lasts to your next pick',
+  b2+=cmpRow(np?('Lasts to #'+np):'Lasts to your next pick',
         rows.map(function(r){
           if(!np) return 'This is your last pick';
           return pct(r.score.s)+(r.score.sv&&r.score.sv.room!=null?' (this room)':' (national)');
         }), true, function(v){return v;}, {noHi:true, gone:gone});
-  if(np) b3+=cmpRow('Fallback at #'+np, rows.map(function(r){
+  if(np) b2+=cmpRow('Fallback at #'+np, rows.map(function(r){
           const nm=(r.score.vrNames||[]).slice(0,2).map(function(x){return x.n;});
           return cmpN(r.score.VR,1)+(nm.length?' — '+esc(cmpNameList(nm)):'');
         }), true, function(v){return v;}, {noHi:true, gone:gone});
-  /* Tier is the one row where LOWER is better, so hiGood is false. */
-  b3+=cmpRow('Tier', rows.map(function(r){return r.tr;}), false, function(v,i){
-        return (v==null)?'—':(cmpN(v,0)+(rows[i].tw?' · wall':''));
-      }, {noHi:mixed, gone:gone});
-  const s3=cmpSecTable(b3);
+  const s2=cmpSecTable(b2);
 
-  /* ---- 4. What could go wrong -------------------------------------------- */
-  let b4='';
-  b4+=cmpRow('Injury / status', rows.map(function(r){return cmpStatus(r);}), true,
-        function(v){return esc(v);}, {noHi:true, gone:gone});
-  /* p.bye is a STRING on the wire ("6"), not a Number -- measured 2026-09-04 on
-     the live payload, 271 of 384 rows populated. Formatting it through cmpN
-     would print an em dash on every priced row. byeHits is unaffected:
-     cmpPlanRows compares bye to bye, string to string. */
-  b4+=txtRow('Bye', function(r){
-        if(r.bye==null||r.bye==='') return null;
-        const b=Number(r.bye), t=(isFinite(b)&&b>0)?String(b):String(r.bye);
-        return t+(r.byeHits>0?' · '+r.byeHits+' on your roster':'');
-      });
-  /* Gated on the DATA, not on the position. role / ahead_name / hc_name are
-     populated for 73 / 34 / 58 board rows respectively and are overwhelmingly
-     RB, but a WR who is genuinely behind someone should still say so, and four
-     em-dash rows on a compare where nobody has a depth note is noise. */
-  if(has('role'))       b4+=txtRow('Role', function(r){return r.ub?r.ub.role:null;});
-  if(has('ahead_name')) b4+=txtRow('Behind on the depth chart',
-                            function(r){return r.ub?r.ub.ahead_name:null;});
-  if(has('hc_name'))    b4+=txtRow("Handcuff if he's out",
-                            function(r){return r.ub?r.ub.hc_name:null;});
-  if(has('hc_take')){
-    /* The only cell in the block that can carry a link. esc() the text, never
-       the tag; rel="noopener" is not optional on a target="_blank". */
-    b4+=cmpRow('Contingency take', rows.map(function(r){return r.ub?r.ub.hc_take:null;}), true,
-      function(v,i){
-        if(v==null||v==='') return '—';
-        const u=rows[i].ub, url=(u&&typeof u.hc_url==='string'&&u.hc_url)?u.hc_url:null;
-        return url ? ('<a href="'+esc(url)+'" target="_blank" rel="noopener">'+esc(String(v))+'</a>')
-                   : esc(String(v));
-      }, {noHi:true, gone:gone});
-  }
-  const s4=cmpSecTable(b4);
-
-  /* ---- 5. How the score is built ----------------------------------------- */
+  /* ---- 3. How the score is built ----------------------------------------- */
   /* The arithmetic, in full, so the number on the card can be checked rather
      than trusted. Every line is a term of pick = (1-s) * m * (VAL + U - V_R), in
      the order the formula applies them; the two "=" lines are the running
      result, not extra inputs. Signs are shown, because "fallback 41" and
-     "fallback -41" are opposite facts. UNCHANGED by this rebuild -- same seven
-     rows, same copy, same order; only the container around them moved. */
-  let b5='';
-  b5+=cmpRow('Price value', rows.map(function(r){return r.score.VAL;}), true,
+     "fallback -41" are opposite facts. UNCHANGED since it was built -- same
+     seven rows, same copy, same order. */
+  let b3='';
+  b3+=cmpRow('Price value', rows.map(function(r){return r.score.VAL;}), true,
         function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
-  b5+=cmpRow('+ Usage edge', rows.map(function(r){return r.score.U;}), true,
+  b3+=cmpRow('+ Usage edge', rows.map(function(r){return r.score.U;}), true,
         function(v){return (v==null||!isFinite(v))?'—':((v>0?'+':'')+cmpN(v,1));},
         {noHi:mixed, gone:gone});
-  b5+=cmpRow(np?('− Fallback at #'+np):'− Fallback', rows.map(function(r){return r.score.VR;}), false,
+  b3+=cmpRow(np?('− Fallback at #'+np):'− Fallback', rows.map(function(r){return r.score.VR;}), false,
         function(v){return (v==null||!isFinite(v))?'—':('-'+cmpN(v,1));},
         {noHi:mixed, gone:gone});
-  b5+=cmpRow('= Edge over replacement', rows.map(function(r){return r.score.gap;}), true,
+  b3+=cmpRow('= Edge over replacement', rows.map(function(r){return r.score.gap;}), true,
         function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
-  b5+=cmpRow('× Lasts to your next pick', rows.map(function(r){return r.score.s;}), false,
+  b3+=cmpRow('× Lasts to your next pick', rows.map(function(r){return r.score.s;}), false,
         function(v){return (v==null||!isFinite(v))?'—':('×'+cmpN(1-v,2)+' ('+pct(v)+' survives)');},
         {noHi:true, gone:gone});
-  b5+=cmpRow('× Health', rows.map(function(r){return r.score.mStatus;}), true,
+  b3+=cmpRow('× Health', rows.map(function(r){return r.score.mStatus;}), true,
         function(v,i){return (v==null||!isFinite(v))?'—'
           :('×'+cmpN(v,2)+(v<1?' ('+esc(cmpStatus(rows[i]))+')':''));},
         {noHi:true, gone:gone});
-  b5+=cmpRow('= Pick score', rows.map(function(r){return r.score.pick;}), true,
+  b3+=cmpRow('= Pick score', rows.map(function(r){return r.score.pick;}), true,
         function(v){return cmpN(v,1);}, {noHi:mixed, gone:gone});
-  const s5=cmpSecTable(b5);
+  const s3=cmpSecTable(b3);
 
-  return cmpSec('Who gets the ball',       true,  s1)
-       + cmpSec('Is that real? · 2025 only', false, s2)
-       + cmpSec('What it costs',           false, s3)
-       + cmpSec('What could go wrong',     false, s4)
-       + cmpSec('How the score is built',  false, s5);
+  /* THREE sections, down from five (Chris, 2026-09-05). "Is that real?" and
+     "What could go wrong" stopped being comparison tables: their rows are player
+     FACTS, they were the widest text in the block, and three narrow columns is
+     the worst possible place to read a sentence. Everything in them moved to
+     cmpPlayerPanel, which gets the full width of the screen -- see the note
+     there. Nothing was deleted except the podcast take, which is now one link. */
+  return cmpSec('Who gets the ball',      true,  s1)
+       + cmpSec('What it costs',          false, s2)
+       + cmpSec('How the score is built', false, s3);
+}
+
+/* ===== the per-player panel (2026-09-05) ==================================
+   Tap a card, the card expands in place and shows THAT player's own numbers at
+   the full width of the screen.
+
+   WHY THIS EXISTS. The five-section block put player facts into a three-column
+   grid, where every label is narrow and every sentence wraps to four lines.
+   Chris, on the live build: the tables "are a bit squished and hard to digest",
+   and the depth/contingency rows "just end up being podcast speculation". Both
+   are true, and they have the same cause -- a comparison table was being used to
+   show things that are not comparisons.
+
+   WHAT IT IS NOT. It is not a new overlay. The card expands INLINE, which means:
+   no new markup to mount, no second scroll container, nothing surface-specific,
+   and it behaves the same on the standalone page and inside the cockpit's tray
+   overlay. On the phone the cards are already full width, so opening one costs
+   nothing; on the laptop the expanded card spans every column (see the CSS).
+
+   THE PODCAST MATERIAL is one link at the bottom, into openP -- the panel that
+   already exists and already carries the whole opinion history. It is one tap
+   away when he wants it and never in the way when he doesn't. hc_name (WHO the
+   handcuff is) stays here because that is a depth-chart fact; hc_take (what JJ
+   said about him) is behind the link, because that is an opinion. */
+
+/* Which card is open. A Sleeper id string, or '' for none. Toggled by an inline
+   onclick calling a global and repainted -- no DOM traversal after innerHTML,
+   the same rule the whole compare path follows. */
+let CMP_OPEN='';
+function cmpCardTap(sl){
+  sl=String(sl==null?'':sl);
+  CMP_OPEN=(CMP_OPEN===sl)?'':sl;
+  /* Repaint through whichever surface is mounted. The standalone page owns
+     cmpToolPaintBody; the cockpit tray re-runs openCompare's mount. Both are
+     idempotent, and calling the one that is not present is a no-op. */
+  try{ if(typeof cmpToolPaintBody==='function' && window.__COMPARE__) cmpToolPaintBody(); }catch(e){}
+  /* THE TRAY MUST NOT JUMP. openCompare() ends with ov.scrollTop=0 (:5476),
+     which is right when the overlay is being OPENED and wrong when it is merely
+     being repainted: with three or four cards on a phone, tapping a lower card
+     scrolled the tray back to the top and away from the card that had just
+     opened, so the tap read as having done nothing. Measured before the fix:
+     scrollTop 880 -> 0 on every tap. Save and restore around the repaint rather
+     than touching openCompare, which four other callers rely on to reset.
+     getElementById only -- no traversal, and the headless stub supports it. */
+  try{
+    if(!window.__COMPARE__ && typeof openCompare==='function'){
+      const ov=document.getElementById('ov4'), y=ov?ov.scrollTop:0;
+      openCompare();
+      if(ov) ov.scrollTop=y;
+    }
+  }catch(e){}
+}
+
+/* One labelled fact. Returns '' when there is nothing to say, so the panel never
+   renders a row of em dashes -- the whole complaint that produced it. */
+function cmpFact(lbl,val){
+  return (val==null||val==='') ? ''
+    : '<div class="cmppfr"><span class="cmppfl">'+lbl+'</span><span class="cmppfv">'+val+'</span></div>';
+}
+
+function cmpPlayerPanel(row){
+  if(!row) return '';
+  const u=row.ub;
+  let h='';
+
+  /* --- the 2025 sample, and how much of it there is --- */
+  let real='';
+  if(u){
+    const gp=cmpUBnum(u,'gp');
+    real+=cmpFact('Games played 2025', gp==null?null:(cmpN(gp,0)+' of 17'));
+    real+=cmpFact('Sample note', (typeof u.sample_note==='string'&&u.sample_note)?esc(u.sample_note):null);
+    real+=cmpFact('Status', u.rookie ? 'Rookie — 2026 projection only'
+                          : (u.has25===false ? 'No 2025 on the board' : 'Has a 2025 season'));
+    real+=cmpFact('Changed teams', u.mover ? esc((u.team25||'?')+' → '+(u.team26||'?')) : null);
+    real+=cmpFact('Scheme', u.scheme_flag==='up' ? 'points his way'
+                          : (u.scheme_flag==='down' ? 'points the wrong way' : null));
+    real+=cmpFact('Proven 2025', cmpN(cmpUBnum(u,'proven_joop'),0)==='—'?null:cmpN(cmpUBnum(u,'proven_joop'),0));
+    real+=cmpFact('Projected 2026', cmpN(cmpUBnum(u,'projected'),0)==='—'?null:cmpN(cmpUBnum(u,'projected'),0));
+    real+=cmpFact('Projected rec share 2026', cmpN(cmpUBnum(u,'proj_rec_share_adj'),1)==='—'?null
+                  :cmpN(cmpUBnum(u,'proj_rec_share_adj'),1)+'%');
+    if(row.pos==='RB')
+      real+=cmpFact('Projected carries 2026', cmpN(cmpUBnum(u,'p_rush_att'),0)==='—'?null
+                    :cmpN(cmpUBnum(u,'p_rush_att'),0));
+    real+=cmpFact('Yards per target', cmpN(cmpUBnum(u,'ypt'),1)==='—'?null:cmpN(cmpUBnum(u,'ypt'),1));
+    if(row.pos==='RB')
+      real+=cmpFact('Yards per carry', cmpN(cmpUBnum(u,'rush_ypc'),1)==='—'?null:cmpN(cmpUBnum(u,'rush_ypc'),1));
+  }
+  if(real) h+='<div class="cmppsec">Is that real? · 2025 only</div>'+real;
+
+  /* --- the situation, which is true of everyone --- */
+  /* TEAM CONTEXT HAS ITS OWN HEADING, and that is not cosmetic. It used to sit
+     under "Is that real? · 2025 only", which meant a player with no board row --
+     every QB, every unscored handcuff -- got that heading with nothing beneath it
+     but an OL rank and a strength of schedule. A heading that says "2025 only"
+     over a 2026 schedule is a false label, and it was the only thing on screen
+     for those players. It comes from TEAMX rather than the Usage Board, so it is
+     real for everyone and belongs to neither the sample nor the price. */
+  const tctx=cmpTeamCtxText(row);
+  if(tctx) h+='<div class="cmppsec">The situation</div>'+cmpFact('Team context',esc(tctx));
+
+  /* --- what he costs, as facts rather than a comparison --- */
+  let cost='';
+  if(row.adp!=null){
+    let s=cmpN(row.adp,1);
+    if(typeof row.sd==='number'&&isFinite(row.sd)) s+=' · sd '+cmpN(row.sd,1);
+    if(typeof row.nd==='number'&&isFinite(row.nd)) s+=' · n='+row.nd;
+    if(!row.sdok) s+=' · thin';
+    cost+=cmpFact('ADP', esc(s));
+  }
+  cost+=cmpFact('Room price', (row.al==null)?'national only'
+                : esc(cmpN(row.al,1)+(row.ls?' ('+row.ls+')':'')));
+  cost+=cmpFact('Tier', row.tr==null?null:(cmpN(row.tr,0)+(row.tw?' · wall':'')));
+  /* "Price and tier", NOT "What it costs" — that name belongs to the comparison
+     section, and with a card open both were on screen at once under the same
+     heading with different content. */
+  if(cost) h+='<div class="cmppsec">Price and tier</div>'+cost;
+
+  /* --- the risk half --- */
+  let risk='';
+  risk+=cmpFact('Injury / status', esc(cmpStatus(row)));
+  if(row.bye!=null&&row.bye!==''){
+    const b=Number(row.bye), t=(isFinite(b)&&b>0)?String(b):String(row.bye);
+    risk+=cmpFact('Bye', esc(t)+(row.byeHits>0?' · '+row.byeHits+' on your roster':''));
+  }
+  if(u){
+    risk+=cmpFact('Role', u.role?esc(String(u.role)):null);
+    risk+=cmpFact('Behind on the depth chart', u.ahead_name?esc(String(u.ahead_name)):null);
+    risk+=cmpFact("Handcuff if he's out", u.hc_name?esc(String(u.hc_name)):null);
+  }
+  if(risk) h+='<div class="cmppsec">What could go wrong</div>'+risk;
+
+  /* --- the opinion layer, behind one link --- */
+  h+='<div class="cmppod"><button class="cmppodb" onclick="closeOv4();openP('+row._i+')">'
+    +'Podcast take →</button>'
+    +'<span class="cmppodn">JJ\'s opinion history and contingency notes</span></div>';
+  /* THE PANEL SWALLOWS ITS OWN CLICKS, and this is not optional. The panel is
+     INSIDE the card, and the card is the tap target -- so without this every tap
+     landing in the panel bubbles up to cmpCardTap and closes the thing you were
+     reading. The audit caught it on the Podcast take button, where it was worse
+     than annoying: on the cockpit tray cmpCardTap re-runs openCompare(), which
+     re-shows #ov4 over the #ov panel openP had just filled, so the one link
+     carrying the podcast material opened it behind an opaque overlay.
+     Stopping the bubble HERE rather than on the button covers both -- every
+     control and every stray tap inside the panel -- while "Hide details" and the
+     card head sit outside the panel and still toggle it. */
+  return '<div class="cmppanel" onclick="event.stopPropagation()">'+h+'</div>';
 }
 /* ===== end DETAIL REBUILD ================================================= */
 
